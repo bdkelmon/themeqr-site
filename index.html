@@ -84,6 +84,17 @@
 </footer>
 
 </body>
+<script>
+  document.querySelector("form").addEventListener("submit", function (e) {
+    e.preventDefault(); // Prevent default form submission behavior
+    const input = this.querySelector("input[type='email']");
+    
+    // ✅ You can also send it somewhere here via fetch() or Formspree
+    
+    alert("Thanks! You're on the waitlist."); // Optional feedback
+    input.value = ""; // Clear the input
+  });
+</script>  
 </html>
 
 
