@@ -1,0 +1,49 @@
+THEMEQR SOFTWARE LICENSE AGREEMENT
+Copyright © 2025 Kelly Miller. All Rights Reserved.
+
+IMPORTANT — READ CAREFULLY:
+This ThemeQR Software License Agreement ("Agreement") is a legal agreement between you (the "User") and Kelly Miller ("Licensor") for the ThemeQR software product, including associated media, files, documentation, and all updates or enhancements (collectively, the "Software").
+
+By installing, copying, accessing, or otherwise using the Software, you agree to be bound by the terms of this Agreement. If you do not agree, you are not permitted to use the Software.
+
+1. GRANT OF LICENSE
+The Licensor grants the User a limited, non-exclusive, non-transferable license to use the Software strictly for personal or internal, non-commercial purposes.
+
+2. RESTRICTIONS
+You may NOT:
+  a. Sell, license, sublicense, rent, lease, or distribute the Software.
+  b. Use the Software for commercial purposes without prior written authorization from the Licensor.
+  c. Copy, reproduce, modify, or create derivative works of the Software.
+  d. Reverse engineer, decompile, disassemble, or otherwise attempt to derive the source code.
+  e. Remove or obscure any proprietary notices or labels on the Software.
+
+3. OWNERSHIP
+All rights, title, and interest in and to the Software remain with the Licensor. The Software is licensed, not sold.
+
+4. TRIAL AND DEMO LIMITATIONS
+The Software may be made available in a limited "trial" or "demo" version for evaluation purposes. Trial/demo users:
+  a. May use the Software only for non-commercial testing or review.
+  b. May not exceed any time, usage, or feature limitations imposed by the Licensor.
+  c. Understand that the Licensor may terminate trial/demo access at any time.
+
+5. TERMINATION
+This license is effective until terminated. It will terminate automatically without notice if the User fails to comply with any provision of this Agreement. Upon termination, the User must destroy all copies of the Software and related materials.
+
+6. NO WARRANTY
+The Software is provided "AS IS" without warranty of any kind, express or implied. The Licensor disclaims all warranties, including but not limited to implied warranties of merchantability, fitness for a particular purpose, and non-infringement.
+
+7. LIMITATION OF LIABILITY
+In no event shall the Licensor be liable for any damages, including incidental, special, or consequential damages, arising out of the use or inability to use the Software, even if advised of the possibility of such damages.
+
+8. GOVERNING LAW
+This Agreement shall be governed by and construed in accordance with the laws of the State of North Carolina, United States of America, without regard to its conflict of law principles.
+
+9. CONTACT
+For licensing inquiries, custom agreements, or commercial licensing requests, contact:
+
+Kelly Miller  
+bdkelmon@gmail.com
+
+---
+
+END OF AGREEMENT
