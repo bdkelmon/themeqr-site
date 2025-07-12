@@ -151,20 +151,26 @@
   }
 
   function updateIndex() {
-    if (!selectedWrapper || !selectedLanding) {
-      alert("Select both a wrapper and landing page.");
-      return;
-    }
-
-    fetch('/update_index', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ wrapper: selectedWrapper, landing: selectedLanding })
-    })
-    .then(res => res.json())
-    .then(data => alert("index.html updated successfully!"))
-    .catch(err => alert("Error updating index: " + err));
+  if (!selectedWrapper || !selectedLanding) {
+    alert("Select both a wrapper and landing page.");
+    return;
   }
+
+  fetch('/update_index', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ wrapper: selectedWrapper, landing: selectedLanding })
+  })
+  .then(res => {
+    if (res.ok) {
+      // Redirect to the updated page
+      window.location.href = '/index.html';
+    } else {
+      alert("❌ Update failed.");
+    }
+  })
+  .catch(err => alert("❌ Error: " + err));
+}
 
   document.getElementById('uploadForm').onsubmit = async (e) => {
     e.preventDefault();
