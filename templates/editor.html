@@ -54,8 +54,8 @@
 
 <div class="section">
   <h3>🎞️ Select Wrapper</h3>
-  <button onclick="selectWrapper('C:/Users/Bdkel/Documents/Themeqr/google_demo.mp4'); this.style.backgroundColor = '#fc9749' ">Wrapper 1</button>
-  <button onclick="selectWrapper('C:/Users/Bdkel/Documents/Themeqr/mixkit-pouring-a-margarita-in-a-glass-43969-hd-ready.mp4'); this.style.backgroundColor = '#fc9749'">Wrapper 2</button>
+  <button class="btn" onclick="selectWrapper(this, 'C:/Users/Bdkel/Documents/Themeqr/google_demo.mp4')">Wrapper 1</button>
+  <button class="btn" onclick="selectWrapper(this, 'C:/Users/Bdkel/Documents/Themeqr/mixkit-pouring-a-margarita-in-a-glass-43969-hd-ready.mp4')">Wrapper 2</button>
   <p id="selectedWrapper">Selected Wrapper: None</p>
 </div>
 
@@ -121,14 +121,24 @@
   let selectedWrapper = null;
   let selectedLanding = null;
 
-  function selectWrapper(file) {
+  function selectWrapper(button, file) {
     selectedWrapper = file;
     document.getElementById('selectedWrapper').innerText = "Selected Wrapper: " + file;
+
+    // Deselect all wrapper buttons and select the clicked one
+    const wrapperButtons = document.querySelectorAll('.wrapper-btn');
+    wrapperButtons.forEach(btn => btn.classList.remove('selected'));
+    button.classList.add('selected');
   }
 
-  function selectLanding(file) {
+  function selectLanding(button, file) {
     selectedLanding = file;
     document.getElementById('selectedLanding').innerText = "Selected Landing Page: " + file;
+
+    // Deselect all landing buttons and select the clicked one
+    const landingButtons = document.querySelectorAll('.landing-btn');
+    landingButtons.forEach(btn => btn.classList.remove('selected'));
+    button.classList.add('selected');
   }
 
   function updateIndex() {
@@ -187,15 +197,8 @@
       status.innerText = "❌ " + data.error;
     }
   };
-    function selectButton(button) {
-    // Remove "selected" from all buttons
-    const allButtons = document.querySelectorAll('.btn');
-    allButtons.forEach(btn => btn.classList.remove('selected'));
-
-    // Add "selected" to the clicked one
-    button.classList.add('selected');
-  }
 </script>
+
 </body>
 </html>
 
