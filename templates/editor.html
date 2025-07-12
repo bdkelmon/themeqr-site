@@ -22,6 +22,9 @@
       margin-top: 1rem;
       cursor: pointer;
     }
+    .selected {
+      background-color: #fc9749 !important;
+    }
     input, select {
       padding: 0.75rem;
       width: 100%;
@@ -54,20 +57,20 @@
 
 <div class="section">
   <h3>🎞️ Select Wrapper</h3>
-  <button class="btn" onclick="selectWrapper(this, 'C:/Users/Bdkel/Documents/Themeqr/google_demo.mp4')">Wrapper 1</button>
-  <button class="btn" onclick="selectWrapper(this, 'C:/Users/Bdkel/Documents/Themeqr/mixkit-pouring-a-margarita-in-a-glass-43969-hd-ready.mp4')">Wrapper 2</button>
+  <button class="btn wrapper-btn" onclick="selectWrapper(this, 'C:/Users/Bdkel/Documents/Themeqr/google_demo.mp4')">Wrapper 1</button>
+  <button class="btn wrapper-btn" onclick="selectWrapper(this, 'C:/Users/Bdkel/Documents/Themeqr/mixkit-pouring-a-margarita-in-a-glass-43969-hd-ready.mp4')">Wrapper 2</button>
   <p id="selectedWrapper">Selected Wrapper: None</p>
 </div>
 
 <div class="section">
   <h3>🌐 Select Landing Page</h3>
-  <button onclick="selectLanding('https://bdkelmon.github.io/themeqr-site/HappyBirthdayAiden.html'); this.style.backgroundColor = '#fc9749'">Landing Page 1</button>
-  <button onclick="selectLanding('https://bdkelmon.github.io/themeqr-site/mixdrinks.html'); this.style.backgroundColor = '#fc9749'">Landing Page 2</button>
+  <button class="btn landing-btn" onclick="selectLanding(this, 'https://bdkelmon.github.io/themeqr-site/HappyBirthdayAiden.html')">Landing Page 1</button>
+  <button class="btn landing-btn" onclick="selectLanding(this, 'https://bdkelmon.github.io/themeqr-site/mixdrinks.html')">Landing Page 2</button>
   <p id="selectedLanding">Selected Landing Page: None</p>
 </div>
 
 <div class="section">
-  <button class="btn" onclick="updateIndex(); this.style.backgroundColor = '#fc9749'">🔄 Update index.html</button>
+  <button class="btn" onclick="updateIndex()">🔄 Update index.html</button>
 </div>
 
 <hr>
@@ -125,9 +128,11 @@
     selectedWrapper = file;
     document.getElementById('selectedWrapper').innerText = "Selected Wrapper: " + file;
 
-    // Deselect all wrapper buttons and select the clicked one
+    // Reset all wrapper buttons
     const wrapperButtons = document.querySelectorAll('.wrapper-btn');
     wrapperButtons.forEach(btn => btn.classList.remove('selected'));
+
+    // Highlight selected
     button.classList.add('selected');
   }
 
@@ -135,9 +140,9 @@
     selectedLanding = file;
     document.getElementById('selectedLanding').innerText = "Selected Landing Page: " + file;
 
-    // Deselect all landing buttons and select the clicked one
     const landingButtons = document.querySelectorAll('.landing-btn');
     landingButtons.forEach(btn => btn.classList.remove('selected'));
+
     button.classList.add('selected');
   }
 
