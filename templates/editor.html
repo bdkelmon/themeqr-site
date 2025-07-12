@@ -206,6 +206,22 @@
       status.innerText = "❌ " + data.error;
     }
   };
+  
+  function resetIndex() {
+  fetch('/reset_index', {
+    method: 'POST'
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      alert("✅ index.html was reset to original.");
+    } else {
+      alert("❌ Error resetting: " + data.error);
+    }
+  })
+  .catch(err => alert("❌ Failed: " + err));
+}
+
 </script>
 
 </body>
