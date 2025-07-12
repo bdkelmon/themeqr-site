@@ -49,6 +49,25 @@
 </section>
 
 <section class="section">
+  <div>
+    <h2>🎬 Switch Wrapper Videos</h2>
+    <button class="btn" onclick="setVideo('https://res.cloudinary.com/themeqr-test/video/upload/v1752014993/themeqr/wrappers/obsg01o6dfzl6du5bsaa.mp4')">Default Wrapper</button>
+    <button class="btn" onclick="setVideo('https://res.cloudinary.com/themeqr-test/video/upload/v1752112312/themeqr/wrappers/google_demo_wrapped.mp4')">Google Demo Wrapper</button>
+  </div>
+
+  <div style="margin: 2rem 0;">
+    <h3>📷 QR Code</h3>
+    <img src="https://res.cloudinary.com/themeqr-test/image/upload/v1752014973/themeqr/qr_codes/kulzt9rsgzjg75mezbde.png" alt="QR Code" style="width: 200px; border: 1px solid #ccc; border-radius: 8px;">
+  </div>
+
+  <div>
+    <h2>🌐 Switch Landing Pages</h2>
+    <button class="btn" onclick="setLanding('https://www.amazon.com/')">Go to Amazon</button>
+    <button class="btn" onclick="setLanding('https://bdkelmon.github.io/themeqr-site/HappyBirthdayAiden.html')">Back to Aiden's Page</button>
+  </div>
+</section>
+  
+<section class="section">
   <h2>🚀 Why ThemeQR?</h2>
   <div class="features">
     <div>
@@ -82,7 +101,20 @@
 <footer class="footer">
   © 2025 ThemeQR. All rights reserved.
 </footer>
+<script>
+  function setVideo(url) {
+    const video = document.getElementById("qrVideo");
+    const source = document.getElementById("videoSource");
+    source.src = url;
+    video.load();
+    video.play();
+  }
 
+  function setLanding(url) {
+    window.location.href = url;
+  }
+</script>
+ 
 </body>
 <script>
   document.querySelector("form").addEventListener("submit", function (e) {
