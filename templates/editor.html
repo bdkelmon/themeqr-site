@@ -54,8 +54,7 @@
 
 <div class="section">
   <h3>🎞️ Select Wrapper</h3>
-  <button onclick="this.style.backgroundColor = '#ff6b6b';">Test Color Change</button>
-  <button onclick="selectWrapper('C:/Users/Bdkel/Documents/Themeqr/google_demo.mp4'); this.style.backgroundColor = '#fc9749' ">Wrapper 1 test</button>
+  <button onclick="selectWrapper('C:/Users/Bdkel/Documents/Themeqr/google_demo.mp4'); this.style.backgroundColor = '#fc9749' ">Wrapper 1</button>
   <button onclick="selectWrapper('C:/Users/Bdkel/Documents/Themeqr/mixkit-pouring-a-margarita-in-a-glass-43969-hd-ready.mp4'); this.style.backgroundColor = '#fc9749'">Wrapper 2</button>
   <p id="selectedWrapper">Selected Wrapper: None</p>
 </div>
@@ -188,6 +187,14 @@
       status.innerText = "❌ " + data.error;
     }
   };
+    function selectButton(button) {
+    // Remove "selected" from all buttons
+    const allButtons = document.querySelectorAll('.btn');
+    allButtons.forEach(btn => btn.classList.remove('selected'));
+
+    // Add "selected" to the clicked one
+    button.classList.add('selected');
+  }
 </script>
 </body>
 </html>
