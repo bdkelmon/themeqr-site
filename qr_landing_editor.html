@@ -89,7 +89,7 @@ function changeLanding(url) {
   .then(data => {
     if (data.success) {
       document.getElementById('status').innerText = "✅ QR code updated!";
-      document.getElementById('qrPreview').src = "/static/themeqr_demo_qr.png?" + new Date().getTime(); // force refresh
+      document.getElementById('qrPreview').src = "https://themeqr-backend.onrender.com/static/themeqr_demo_qr.png?t=" + new Date().getTime();
     } else {
       document.getElementById('status').innerText = "❌ " + data.error;
     }
@@ -108,30 +108,30 @@ function changeLanding(url) {
     sendLanding(url);
   }
 
-  function sendLanding(url) {
-    fetch('/change_qr_landing', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ landing: url })
-    })
-    .then(res => {
-      if (!res.ok) throw new Error("Server error");
-      return res.json();
-    })
-    .then(data => {
-      if (data.success) {
-        updateStatus("✅ QR code updated successfully.");
-        // Bust cache by appending timestamp
-        const qrImg = document.querySelector('img[alt="QR Code"]');
-        qrImg.src = "/static/themeqr_demo_qr.png?t=" + new Date().getTime();
-      } else {
-        updateStatus("❌ Error: " + data.error, true);
-      }
-    })
-    .catch(err => {
-      updateStatus("❌ Network error: " + err.message, true);
-    });
-  }
+ function sendLanding(url) {
+  fetch('https://themeqr-backend.onrender.com/change_qr_landing', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ landing: url })
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Server error");
+    return res.json();
+  })
+  .then(data => {
+    if (data.success) {
+      updateStatus("✅ QR code updated successfully.");
+      const qrImg = document.querySelector('img[alt="QR Code"]');
+      qrImg.src = "https://themeqr-backend.onrender.com/static/themeqr_demo_qr.png?t=" + new Date().getTime();
+    } else {
+      updateStatus("❌ Error: " + data.error, true);
+    }
+  })
+  .catch(err => {
+    updateStatus("❌ Network error: " + err.message, true);
+  });
+}
+
 
   function updateStatus(message, isError = false) {
     const status = document.getElementById('status');
