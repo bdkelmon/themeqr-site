@@ -38,6 +38,9 @@ def update_index():
     wrapper = data['wrapper']
     landing = data['landing']
 
+    print("🔁 Received wrapper:", wrapper)
+    print("🔁 Received landing page:", landing)
+    
     try:
         # 1. Generate QR
         qr_path = "/tmp/themeqr_landing_qr.png"
@@ -83,6 +86,7 @@ def update_index():
         return jsonify(success=True, video_url=cloud_url)
 
     except Exception as e:
+        print("❌ Error in update_index:", str(e)) 
         return jsonify(success=False, error=str(e))
 
 if __name__ == '__main__':
