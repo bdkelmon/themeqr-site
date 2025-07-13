@@ -75,6 +75,9 @@
 
 <div class="section">
   <button class="btn" onclick="resetIndex()">🔁 Reset</button>
+  <a href="https://themeqr-backend.onrender.com/index.html" target="_blank">
+  <button class="btn">👁️ Preview Current Build</button>
+  </a>
 </div>
   
 <hr>
@@ -150,11 +153,28 @@
     button.classList.add('selected');
   }
 
-  function updateIndex() {
+function updateIndex() {
   if (!selectedWrapper || !selectedLanding) {
     alert("Select both a wrapper and landing page.");
     return;
   }
+
+  fetch('https://themeqr-backend.onrender.com/update_index', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ wrapper: selectedWrapper, landing: selectedLanding })
+  })
+  .then(res => {
+    if (res.ok) {
+      // Go to updated index on backend
+      window.location.href = 'https://themeqr-backend.onrender.com/index.html';
+    } else {
+      alert("❌ Update failed.");
+    }
+  })
+  .catch(err => alert("❌ Error: " + err));
+}
+
 
   fetch('/update_index', {
     method: 'POST',
@@ -164,7 +184,7 @@
   .then(res => {
     if (res.ok) {
       // Redirect to the updated page
-      window.location.href = '/index.html';
+      window.location.href = 'https://themeqr-backend.onrender.com/index.html';
     } else {
       alert("❌ Update failed.");
     }
