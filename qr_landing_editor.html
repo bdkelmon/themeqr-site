@@ -31,6 +31,12 @@
       margin-top: 1rem;
       font-style: italic;
     }
+    img.qr-preview {
+      margin-top: 2rem;
+      width: 200px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
     footer {
       background: #f1f1f1;
       text-align: center;
@@ -45,11 +51,11 @@
 
 <header>
   <h1>Update QR Landing Page</h1>
-  <p>Quickly update the destination URL for your ThemeQR code</p>
+  <p>Change where your QR Code leads — instantly!</p>
 </header>
 
 <div class="section">
-  <h2>🔗 Choose a New Destination</h2>
+  <h2>🔗 Choose or Enter a New Destination</h2>
   
   <button class="btn" onclick="changeLanding('https://www.amazon.com')">Amazon</button>
   <button class="btn" onclick="changeLanding('https://www.walmart.com')">Walmart</button>
@@ -61,6 +67,8 @@
   <button class="btn" onclick="submitCustomLanding()">Submit</button>
 
   <p id="status"></p>
+
+  <img src="/static/themeqr_demo_qr.png" alt="QR Code" class="qr-preview" id="qrPreview" />
 </div>
 
 <footer>
@@ -78,6 +86,7 @@ function changeLanding(url) {
   .then(data => {
     if (data.success) {
       document.getElementById('status').innerText = "✅ Landing updated successfully!";
+      refreshQR();
     } else {
       document.getElementById('status').innerText = "❌ Failed: " + data.error;
     }
@@ -95,7 +104,13 @@ function submitCustomLanding() {
   }
   changeLanding(customUrl);
 }
+
+function refreshQR() {
+  const qr = document.getElementById("qrPreview");
+  qr.src = "/static/themeqr_demo_qr.png?" + new Date().getTime(); // Cache-bust
+}
 </script>
 
 </body>
 </html>
+
