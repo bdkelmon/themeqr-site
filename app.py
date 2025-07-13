@@ -98,5 +98,22 @@ if __name__ == '__main__':
     app.run(host='0.0.0.0', port=port)
 
 
+@app.route('/change_qr_landing', methods=['POST'])
+def change_qr_landing():
+    data = request.get_json()
+    new_landing = data.get('landing')
+
+    if not new_landing or not new_landing.startswith("http"):
+        return jsonify(success=False, error="Invalid URL")
+
+    try:
+        # Overwrite latest QR code or update some mapping logic
+        qr_path = "/tmp/themeqr_landing_qr.png"
+        qr_img = qrcode.make(new_landing).convert("RGB")
+        qr_img.save(qr_path)
+
+        return jsonify(success=True)
+    except Exception as e:
+        return jsonify(success=False, error=str(e))
 
 
