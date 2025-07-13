@@ -27,42 +27,45 @@ def update_index():
     data = request.get_json()
     wrapper = data['wrapper']
     landing = data['landing']
-    qr_path = 'static/themeqr_demo_qr.png'
-    
-    # Output filename with unique ID
-    output_filename = f"themeqr_build_{uuid.uuid4().hex[:8]}.mp4"
-    output_path = f"/tmp/{output_filename}"
 
     try:
-        # Call generate_qr_video_wrapper.py
+        qr_path = os.path.join('static', 'themeqr_demo_qr.png')  # Output QR path
+        output_video_path = '/tmp/generated_video.mp4'  # Final video with QR
+
+        # === Run the external QR+video generator script ===
         subprocess.run([
             'python3', 'generate_qr_video_wrapper.py',
             '--wrapper', wrapper,
             '--qr', qr_path,
             '--landing', landing,
-            '--output', output_path
+            '--output', output_video_path
         ], check=True)
 
-        # Update index.html from template and inject new video path
-        with open('index_template.html', 'r') as template:
-            html = template.read()
-
-        # Replace placeholder src in template with new path
-        new_html = html.replace(
-            'src="https://res.cloudinary.com/themeqr-test/video/upload/v1752014993/themeqr/wrappers/obsg01o6dfzl6du5bsaa.mp4"',
-            f'src="/static/{output_filename}"'
-        )
+        # === Update index.html with new video source ===
+        new_index_html = f"""
+        <html>
+        <body>
+          <section class="video-wrapper">
+            <h2>📽️ See It In Action</h2>
+            <video autoplay loop muted playsinline width="100%">
+              <source src="/tmp/generated_video.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+          </section>
+        </body>
+        </html>
+        """
 
         with open('/tmp/index.html', 'w') as f:
-            f.write(new_html)
+            f.write(new_index_html)
 
-        # Optionally copy video to static folder if needed (for previewing)
-        shutil.copyfile(output_path, f'static/{output_filename}')
+        return jsonify(success=True)
 
-        return jsonify(success=True, video_url=f"/static/{output_filename}")
-
+    except subprocess.CalledProcessError as e:
+        return jsonify(success=False, error=f"Video generation failed: {e}")
     except Exception as e:
         return jsonify(success=False, error=str(e))
+
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
