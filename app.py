@@ -3,7 +3,16 @@ import shutil
 import os
 import subprocess
 import uuid
+import cloudinary
+import cloudinary.uploader
+from moviepy.editor import VideoFileClip, CompositeVideoClip, ImageClip
+import qrcode
 
+cloudinary.config(
+    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.getenv('CLOUDINARY_API_KEY'),
+    api_secret=os.getenv('CLOUDINARY_API_SECRET')
+)
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
 @app.route('/')
@@ -29,43 +38,39 @@ def update_index():
     landing = data['landing']
 
     try:
-        qr_path = os.path.join('static', 'themeqr_demo_qr.png')  # Output QR path
-        output_video_path = '/tmp/generated_video.mp4'  # Final video with QR
+        # 1. Generate QR
+        qr_path = "/tmp/themeqr_landing_qr.png"
+        qr_img = qrcode.make(landing).convert("RGB")
+        qr_img.save(qr_path)
 
-        # === Run the external QR+video generator script ===
-        subprocess.run([
-            'python3', 'generate_qr_video_wrapper.py',
-            '--wrapper', wrapper,
-            '--qr', qr_path,
-            '--landing', landing,
-            '--output', output_video_path
-        ], check=True)
+        # 2. Overlay QR on video
+        video_clip = VideoFileClip(wrapper).subclip(0, 10)
+        qr_clip = ImageClip(qr_path).set_duration(video_clip.duration).resize(height=150).set_pos(("right", "bottom"))
+        final_clip = CompositeVideoClip([video_clip, qr_clip])
 
-        # === Update index.html with new video source ===
-        new_index_html = f"""
-        <html>
-        <body>
-          <section class="video-wrapper">
-            <h2>📽️ See It In Action</h2>
-            <video autoplay loop muted playsinline width="100%">
-              <source src="/tmp/generated_video.mp4" type="video/mp4">
-              Your browser does not support the video tag.
-            </video>
-          </section>
-        </body>
-        </html>
-        """
+        final_output_path = "/tmp/final_themeqr_video.mp4"
+        final_clip.write_videofile(final_output_path, codec="libx264", audio_codec="aac")
 
-        with open('/tmp/index.html', 'w') as f:
-            f.write(new_index_html)
+        # 3. Upload to Cloudinary
+        cloud_result = cloudinary.uploader.upload_large(final_output_path, resource_type="video", folder="themeqr/wrappers")
+        cloud_url = cloud_result['secure_url']
 
-        return jsonify(success=True)
+        # 4. Copy index_template.html and inject video URL
+        with open("index_template.html", "r") as template:
+            content = template.read()
 
-    except subprocess.CalledProcessError as e:
-        return jsonify(success=False, error=f"Video generation failed: {e}")
+        updated_html = content.replace(
+            'src="https://res.cloudinary.com/themeqr-test/video/upload/v1752014993/themeqr/wrappers/obsg01o6dfzl6du5bsaa.mp4"',
+            f'src="{cloud_url}"'
+        )
+
+        with open("/tmp/index.html", "w") as f:
+            f.write(updated_html)
+
+        return jsonify(success=True, video_url=cloud_url)
+
     except Exception as e:
         return jsonify(success=False, error=str(e))
-
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
