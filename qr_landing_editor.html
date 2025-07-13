@@ -70,12 +70,6 @@
 
   <img src="https://res.cloudinary.com/themeqr-test/image/upload/v1752014973/themeqr/qr_codes/kulzt9rsgzjg75mezbde.png" alt="QR Code" style="width: 200px; border: 1px solid #ccc; border-radius: 8px;">
 </div>
-<h3>Update QR Code Destination</h3>
-<input type="text" id="customLanding" placeholder="https://example.com">
-<button class="btn" onclick="handleSubmit()">Submit</button>
-
-<br><br>
-<button class="btn" onclick="changeLanding('https://www.amazon.com')">Set to Amazon</button>
 
 <div style="margin-top: 2rem;">
   <img id="qrPreview" src="/static/themeqr_demo_qr.png" width="200" style="border: 1px solid #ccc; border-radius: 8px;">
@@ -86,33 +80,51 @@
 
 <script>
   function changeLanding(url) {
-    fetch('/change_qr_landing', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ landing: url })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        alert("✅ QR code updated!");
-        // Optionally reload or show preview
-        document.getElementById("qrPreview").src = "/static/themeqr_demo_qr.png?" + new Date().getTime();
-      } else {
-        alert("❌ Error: " + data.error);
-      }
-    })
-    .catch(err => alert("❌ Fetch failed: " + err));
+    document.getElementById('customUrl').value = url;
+    sendLanding(url);
   }
 
-  function handleSubmit() {
-    const input = document.getElementById("customLanding").value;
-    if (input) {
-      changeLanding(input);
+  function submitCustomLanding() {
+    const url = document.getElementById('customUrl').value;
+    if (!url.startsWith('http')) {
+      updateStatus("❌ Please enter a valid URL.", true);
+      return;
     }
+    sendLanding(url);
+  }
+
+  function sendLanding(url) {
+    fetch('/change_qr_landing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ landing: url })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Server error");
+      return res.json();
+    })
+    .then(data => {
+      if (data.success) {
+        updateStatus("✅ QR code updated successfully.");
+        // Bust cache by appending timestamp
+        const qrImg = document.querySelector('img[alt="QR Code"]');
+        qrImg.src = "/static/themeqr_demo_qr.png?t=" + new Date().getTime();
+      } else {
+        updateStatus("❌ Error: " + data.error, true);
+      }
+    })
+    .catch(err => {
+      updateStatus("❌ Network error: " + err.message, true);
+    });
+  }
+
+  function updateStatus(message, isError = false) {
+    const status = document.getElementById('status');
+    status.textContent = message;
+    status.style.color = isError ? 'red' : 'green';
   }
 </script>
+
 
 
 </body>
