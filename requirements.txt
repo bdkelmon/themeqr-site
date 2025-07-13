@@ -24,6 +24,7 @@ Pillow==10.2.0
 proglog==0.1.12
 python-dotenv==1.1.1
 qrcode==8.2
+flask-cors
 requests==2.32.4
 six==1.17.0
 SQLAlchemy==2.0.40
