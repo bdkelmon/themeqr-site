@@ -79,10 +79,25 @@
 </footer>
 
 <script>
-  function changeLanding(url) {
-    document.getElementById('customUrl').value = url;
-    sendLanding(url);
-  }
+function changeLanding(url) {
+  fetch('https://themeqr-backend.onrender.com/change_qr_landing', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ landing: url })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      document.getElementById('status').innerText = "✅ QR code updated!";
+      document.getElementById('qrPreview').src = "/static/themeqr_demo_qr.png?" + new Date().getTime(); // force refresh
+    } else {
+      document.getElementById('status').innerText = "❌ " + data.error;
+    }
+  })
+  .catch(err => {
+    document.getElementById('status').innerText = "❌ Network error: " + err;
+  });
+}
 
   function submitCustomLanding() {
     const url = document.getElementById('customUrl').value;
