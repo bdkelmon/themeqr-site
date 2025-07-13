@@ -37,21 +37,28 @@ def serve_updated_index():
 
 @app.route('/change_qr_landing', methods=['POST'])
 def change_qr_landing():
-    data = request.get_json()
-    new_landing = data.get('landing')
-
-    if not new_landing or not new_landing.startswith("http"):
-        return jsonify(success=False, error="Invalid URL")
-
     try:
-        # Generate QR and save to static folder
+        print("📥 Incoming POST to /change_qr_landing")
+        data = request.get_json()
+        print(f"📦 Data received: {data}")
+
+        new_landing = data.get('landing')
+        if not new_landing or not new_landing.startswith("http"):
+            print("❌ Invalid landing URL provided.")
+            return jsonify(success=False, error="Invalid URL format")
+
+        # Save new QR code
         qr_path = os.path.join(app.static_folder, 'themeqr_demo_qr.png')
+        print(f"🖨️ Saving QR to: {qr_path}")
         qr_img = qrcode.make(new_landing).convert("RGB")
         qr_img.save(qr_path)
 
+        print("✅ QR successfully saved.")
         return jsonify(success=True)
+
     except Exception as e:
-        return jsonify(success=False, error=str(e))
+        print("❌ Exception during /change_qr_landing:", str(e))
+        return jsonify(success=False, error=str(e)), 500
         
 @app.route('/update_index', methods=['POST'])
 def update_index():
