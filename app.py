@@ -7,6 +7,7 @@ import cloudinary
 import cloudinary.uploader
 from moviepy.editor import VideoFileClip, CompositeVideoClip, ImageClip
 import qrcode
+import requests
 
 cloudinary.config(
     cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
@@ -43,19 +44,31 @@ def update_index():
         qr_img = qrcode.make(landing).convert("RGB")
         qr_img.save(qr_path)
 
-        # 2. Overlay QR on video
-        video_clip = VideoFileClip(wrapper).subclip(0, 10)
+        # 2. Download wrapper video from URL to /tmp
+        wrapper_temp_path = f"/tmp/{uuid.uuid4()}.mp4"
+        with requests.get(wrapper, stream=True) as r:
+            r.raise_for_status()
+            with open(wrapper_temp_path, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+
+        # 3. Overlay QR on video
+        video_clip = VideoFileClip(wrapper_temp_path).subclip(0, 10)
         qr_clip = ImageClip(qr_path).set_duration(video_clip.duration).resize(height=150).set_pos(("right", "bottom"))
         final_clip = CompositeVideoClip([video_clip, qr_clip])
 
         final_output_path = "/tmp/final_themeqr_video.mp4"
-        final_clip.write_videofile(final_output_path, codec="libx264", audio_codec="aac")
+        final_clip.write_videofile(final_output_path, codec="libx264", audio_codec="aac')
 
-        # 3. Upload to Cloudinary
-        cloud_result = cloudinary.uploader.upload_large(final_output_path, resource_type="video", folder="themeqr/wrappers")
+        # 4. Upload final video to Cloudinary
+        cloud_result = cloudinary.uploader.upload_large(
+            final_output_path,
+            resource_type="video",
+            folder="themeqr/wrappers"
+        )
         cloud_url = cloud_result['secure_url']
 
-        # 4. Copy index_template.html and inject video URL
+        # 5. Inject new video URL into HTML template
         with open("index_template.html", "r") as template:
             content = template.read()
 
