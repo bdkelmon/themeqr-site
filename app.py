@@ -58,7 +58,7 @@ def update_index():
         final_clip = CompositeVideoClip([video_clip, qr_clip])
 
         final_output_path = "/tmp/final_themeqr_video.mp4"
-        final_clip.write_videofile(final_output_path, codec="libx264", audio_codec="aac')
+        final_clip.write_videofile(final_output_path, codec="libx264", audio_codec="aac")
 
         # 4. Upload final video to Cloudinary
         cloud_result = cloudinary.uploader.upload_large(
