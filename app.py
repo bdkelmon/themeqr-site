@@ -3,8 +3,6 @@ from flask import send_from_directory
 import shutil
 import os
 
-port = int(os.environ.get("PORT", 5000))
-app.run(host='0.0.0.0', port=port)
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
 @app.route('/')
@@ -18,7 +16,7 @@ def reset_index():
         return jsonify(success=True)
     except Exception as e:
         return jsonify(success=False, error=str(e))
-        
+
 @app.route('/update_index', methods=['POST'])
 def update_index():
     data = request.get_json()
@@ -37,6 +35,7 @@ def update_index():
 
     return jsonify(success=True)
 
-
 if __name__ == '__main__':
-   
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
+
