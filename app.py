@@ -1,7 +1,6 @@
 from flask import Flask, request, render_template, jsonify, send_from_directory
 import shutil
 import os
-import subprocess
 import uuid
 import cloudinary
 import cloudinary.uploader
@@ -14,7 +13,9 @@ cloudinary.config(
     api_key=os.getenv('CLOUDINARY_API_KEY'),
     api_secret=os.getenv('CLOUDINARY_API_SECRET')
 )
+
 app = Flask(__name__, static_folder='static', template_folder='templates')
+TEMPLATE_PATH = os.path.join(app.root_path, 'themeqr-site', 'index_template.html')
 
 @app.route('/')
 def home():
@@ -23,7 +24,7 @@ def home():
 @app.route('/reset_index', methods=['POST'])
 def reset_index():
     try:
-        shutil.copyfile('index_template.html', '/tmp/index.html')
+        shutil.copyfile(TEMPLATE_PATH, '/tmp/index.html')
         return jsonify(success=True)
     except Exception as e:
         return jsonify(success=False, error=str(e))
@@ -40,14 +41,14 @@ def update_index():
 
     print("🔁 Received wrapper:", wrapper)
     print("🔁 Received landing page:", landing)
-    
+
     try:
         # 1. Generate QR
         qr_path = "/tmp/themeqr_landing_qr.png"
         qr_img = qrcode.make(landing).convert("RGB")
         qr_img.save(qr_path)
 
-        # 2. Download wrapper video from URL to /tmp
+        # 2. Download wrapper video
         wrapper_temp_path = f"/tmp/{uuid.uuid4()}.mp4"
         with requests.get(wrapper, stream=True) as r:
             r.raise_for_status()
@@ -63,16 +64,18 @@ def update_index():
         final_output_path = "/tmp/final_themeqr_video.mp4"
         final_clip.write_videofile(final_output_path, codec="libx264", audio_codec="aac")
 
-        # 4. Upload final video to Cloudinary
+        # 4. Upload video to Cloudinary
         cloud_result = cloudinary.uploader.upload_large(
             final_output_path,
             resource_type="video",
             folder="themeqr/wrappers"
         )
         cloud_url = cloud_result['secure_url']
+        print(f"🌐 Uploaded to Cloudinary: {cloud_url}")
 
-        # 5. Inject new video URL into HTML template
-        with open("index_template.html", "r") as template:
+        # 5. Inject new video URL into index_template.html
+        print(f"📁 Looking for template at: {TEMPLATE_PATH}")
+        with open(TEMPLATE_PATH, "r") as template:
             content = template.read()
 
         updated_html = content.replace(
@@ -83,15 +86,17 @@ def update_index():
         with open("/tmp/index.html", "w") as f:
             f.write(updated_html)
 
+        print("✅ index.html successfully written to /tmp")
         return jsonify(success=True, video_url=cloud_url)
 
     except Exception as e:
-        print("❌ Error in update_index:", str(e)) 
+        print("❌ Error in update_index:", str(e))
         return jsonify(success=False, error=str(e))
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
 
 
 
