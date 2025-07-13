@@ -7,6 +7,7 @@ import cloudinary.uploader
 from moviepy.editor import VideoFileClip, CompositeVideoClip, ImageClip
 import qrcode
 import requests
+from flask_cors import CORS
 
 cloudinary.config(
     cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
@@ -15,6 +16,7 @@ cloudinary.config(
 )
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
+CORS(app)
 TEMPLATE_PATH = os.path.join(app.root_path, 'themeqr-site', 'index_template.html')
 
 @app.route('/')
