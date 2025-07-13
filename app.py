@@ -17,23 +17,30 @@ def reset_index():
     except Exception as e:
         return jsonify(success=False, error=str(e))
 
+@app.route('/index.html')
+def serve_updated_index():
+    return send_from_directory('/tmp', 'index.html')
+
 @app.route('/update_index', methods=['POST'])
 def update_index():
     data = request.get_json()
     wrapper = data['wrapper']
     landing = data['landing']
+    try:
+        with open('/tmp/index.html', 'w') as f:
+            f.write(f"""
+            <html>
+            <body>
+              <video src="{wrapper}" autoplay loop></video>
+              <a href="{landing}">Go to Landing Page</a>
+            </body>
+            </html>
+            """)
+        return jsonify(success=True)
+    except Exception as e:
+        return jsonify(success=False, error=str(e))
 
-    with open('index.html', 'w') as f:
-        f.write(f"""
-        <html>
-        <body>
-          <video src="{wrapper}" autoplay loop></video>
-          <a href="{landing}">Go to Landing Page</a>
-        </body>
-        </html>
-        """)
 
-    return jsonify(success=True)
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
