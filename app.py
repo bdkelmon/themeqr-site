@@ -1,4 +1,5 @@
 from flask import Flask, request, render_template, jsonify, send_from_directory
+from supabase import create_client, Client
 import shutil
 import os
 import uuid
@@ -9,11 +10,17 @@ import qrcode
 import requests
 from flask_cors import CORS
 
+# Cloudniary setup
 cloudinary.config(
     cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
     api_key=os.getenv('CLOUDINARY_API_KEY'),
     api_secret=os.getenv('CLOUDINARY_API_SECRET')
 )
+
+# Supabase setup
+SUPABASE_URL = os.getenv("https://hvfqdrfdefgfqbfdikpn.supabase.co")
+SUPABASE_KEY = os.getenv("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9zOUjFu7fi-4oRVY-D61NCJU")
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
@@ -124,7 +131,21 @@ if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
 
-
-
+# 5. Get the most recent deck
+@app.route('/go')
+def qr_redirect():
+    try:
+        # Get the most recent deck for now
+        response = supabase.table('qr_decks').select('*').order('created_at', desc=True).limit(1).execute()
+        if response.data and len(response.data) > 0:
+            deck = response.data[0]
+            landing_url = deck.get('landing_url')
+            if landing_url:
+                print(f"🔁 Redirecting to: {landing_url}")
+                return redirect(landing_url, code=302)
+        return "No deck found or missing landing URL", 404
+    except Exception as e:
+        print(f"❌ Redirect Error: {e}")
+        return "Error processing QR redirect", 500
 
 
