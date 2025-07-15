@@ -133,19 +133,20 @@ if __name__ == '__main__':
 
 # 5. Get the most recent deck
 @app.route('/go')
-def qr_redirect():
-    try:
-        # Get the most recent deck for now
-        response = supabase.table('qr_decks').select('*').order('created_at', desc=True).limit(1).execute()
-        if response.data and len(response.data) > 0:
-            deck = response.data[0]
-            landing_url = deck.get('landing_url')
-            if landing_url:
-                print(f"🔁 Redirecting to: {landing_url}")
-                return redirect(landing_url, code=302)
-        return "No deck found or missing landing URL", 404
-    except Exception as e:
-        print(f"❌ Redirect Error: {e}")
-        return "Error processing QR redirect", 500
+def redirect_to_landing():
+    deck_id = request.args.get('deck_id')
+
+    if not deck_id:
+        return "Missing deck_id", 400
+
+    # Fetch from Supabase
+    response = supabase.table('qr_decks').select("landing_url").eq("id", deck_id).single().execute()
+
+    if response.error:
+        return f"Deck not found: {response.error.message}", 404
+
+    landing_url = response.data["landing_url"]
+    return redirect(landing_url, code=302)
+
 
 
