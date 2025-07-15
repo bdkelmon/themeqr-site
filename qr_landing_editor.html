@@ -3,145 +3,113 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ThemeQR - Update Landing</title>
+  <title>ThemeQR - Dynamic Redirect QR</title>
   <style>
-    body { margin: 0; font-family: sans-serif; background: #fff; color: #333; }
-    header { padding: 2rem; background: #0a2540; color: #fff; text-align: center; }
-    h1 { margin: 0; font-size: 2.5rem; }
-    h2 { color: #0a2540; margin-top: 2rem; text-align: center; }
-    .section { padding: 2rem 1rem; max-width: 700px; margin: auto; text-align: center; }
+    body { font-family: sans-serif; background: #f9f9f9; padding: 2rem; text-align: center; }
+    h1 { color: #0a2540; }
     .btn {
-      background: #00b894;
-      color: #fff;
-      padding: 0.75rem 1.5rem;
-      text-decoration: none;
+      padding: 0.7rem 1.5rem;
+      margin: 0.5rem;
+      background-color: #00b894;
+      color: white;
       border: none;
       border-radius: 5px;
-      margin: 0.5rem;
       cursor: pointer;
     }
     input[type="url"] {
-      padding: 0.75rem;
-      width: 80%;
-      border: 1px solid #ccc;
+      width: 60%;
+      padding: 0.6rem;
+      margin: 1rem auto;
       border-radius: 4px;
-      margin-top: 1rem;
+      border: 1px solid #ccc;
     }
-    #status {
-      margin-top: 1rem;
-      font-style: italic;
-    }
-    img.qr-preview {
+    #status { margin-top: 1rem; font-style: italic; }
+    img.qr {
       margin-top: 2rem;
       width: 200px;
       border: 1px solid #ccc;
       border-radius: 8px;
     }
-    footer {
-      background: #f1f1f1;
-      text-align: center;
-      padding: 1rem;
-      font-size: 0.9rem;
-      color: #666;
-      margin-top: 4rem;
-    }
   </style>
 </head>
 <body>
+  <h1>🎯 ThemeQR Dynamic Redirect</h1>
+  <p>This QR code always points to <strong>https://themeqr.com/go</strong></p>
 
-<header>
-  <h1>Update QR Landing Page</h1>
-  <p>Change where your QR Code leads — instantly!</p>
-</header>
+  <div>
+    <button class="btn" onclick="setRedirect('https://www.amazon.com')">Amazon</button>
+    <button class="btn" onclick="setRedirect('https://www.walmart.com')">Walmart</button>
+    <button class="btn" onclick="setRedirect('https://themeqr.com')">Reset to ThemeQR</button>
+  </div>
 
-<div class="section">
-  <h2>🔗 Choose or Enter a New Destination</h2>
-  
-  <button class="btn" onclick="changeLanding('https://www.amazon.com')">Amazon</button>
-  <button class="btn" onclick="changeLanding('https://www.walmart.com')">Walmart</button>
-  <button class="btn" onclick="changeLanding('https://bdkelmon.github.io/themeqr-site/mixdrinks.html')">MixDrinks</button>
+  <div>
+    <p>Or enter a custom destination URL:</p>
+    <input type="url" id="customUrl" placeholder="https://example.com" />
+    <br/>
+    <button class="btn" onclick="customSubmit()">Submit</button>
+  </div>
 
-  <p style="margin-top:2rem;"><strong>Or enter a custom URL:</strong></p>
-  <input type="url" id="customUrl" placeholder="https://example.com" />
-  <br/>
-  <button class="btn" onclick="submitCustomLanding()">Submit</button>
+  <div>
+    <h3>QR Code:</h3>
+    <button class="btn" onclick="generateQr()">Generate QR</button>
+    <br>
+    <img class="qr" id="qrImg" src="https://themeqr-backend.onrender.com/static/themeqr_demo_qr.png" alt="QR Code">
+  </div>
 
   <p id="status"></p>
 
-  <img src="https://themeqr-backend.onrender.com/static/themeqr_demo_qr.png" alt="QR Code" style="width: 200px; border: 1px solid #ccc; border-radius: 8px;">
-</div>
-
-<div style="margin-top: 2rem;">
-  <img id="qrPreview" src="/static/themeqr_demo_qr.png" width="200" style="border: 1px solid #ccc; border-radius: 8px;">
-</div>
-<footer>
-  © 2025 ThemeQR. All rights reserved.
-</footer>
-
-<script>
-function changeLanding(url) {
-  fetch('https://themeqr-backend.onrender.com/change_qr_landing', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ landing: url })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.success) {
-      document.getElementById('status').innerText = "✅ QR code updated!";
-      document.getElementById('qrPreview').src = "https://themeqr-backend.onrender.com/static/themeqr_demo_qr.png?t=" + new Date().getTime();
-    } else {
-      document.getElementById('status').innerText = "❌ " + data.error;
+  <script>
+    function setRedirect(url) {
+      fetch('https://themeqr-backend.onrender.com/update_redirect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target: url })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          updateStatus("✅ Redirect updated!");
+        } else {
+          updateStatus("❌ " + data.error, true);
+        }
+      })
+      .catch(err => updateStatus("❌ Network error: " + err.message, true));
     }
-  })
-  .catch(err => {
-    document.getElementById('status').innerText = "❌ Network error: " + err;
-  });
-}
 
-  function submitCustomLanding() {
-    const url = document.getElementById('customUrl').value;
-    if (!url.startsWith('http')) {
-      updateStatus("❌ Please enter a valid URL.", true);
-      return;
+    function customSubmit() {
+      const url = document.getElementById('customUrl').value;
+      if (!url.startsWith('http')) {
+        updateStatus("❌ Please enter a valid URL.", true);
+        return;
+      }
+      setRedirect(url);
     }
-    sendLanding(url);
-  }
 
- function sendLanding(url) {
-  fetch('https://themeqr-backend.onrender.com/change_qr_landing', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ landing: url })
-  })
-  .then(res => {
-    if (!res.ok) throw new Error("Server error");
-    return res.json();
-  })
-  .then(data => {
-    if (data.success) {
-      updateStatus("✅ QR code updated successfully.");
-      const qrImg = document.querySelector('img[alt="QR Code"]');
-      qrImg.src = "https://themeqr-backend.onrender.com/static/themeqr_demo_qr.png?t=" + new Date().getTime();
-    } else {
-      updateStatus("❌ Error: " + data.error, true);
+    function generateQr() {
+      fetch('https://themeqr-backend.onrender.com/generate_qr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ link: 'https://themeqr.com/go' })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          const qrImg = document.getElementById('qrImg');
+          qrImg.src = data.qr_url + '?t=' + new Date().getTime(); // bust cache
+          updateStatus("✅ QR code re-generated.");
+        } else {
+          updateStatus("❌ " + data.error, true);
+        }
+      })
+      .catch(err => updateStatus("❌ Network error: " + err.message, true));
     }
-  })
-  .catch(err => {
-    updateStatus("❌ Network error: " + err.message, true);
-  });
-}
 
-
-  function updateStatus(message, isError = false) {
-    const status = document.getElementById('status');
-    status.textContent = message;
-    status.style.color = isError ? 'red' : 'green';
-  }
-</script>
-
-
-
+    function updateStatus(msg, isError = false) {
+      const el = document.getElementById('status');
+      el.innerText = msg;
+      el.style.color = isError ? 'red' : 'green';
+    }
+  </script>
 </body>
 </html>
 
