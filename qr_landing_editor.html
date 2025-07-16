@@ -117,9 +117,6 @@
     }
 
     function generateQr() {
-        // This function should request the QR code for the *dynamic redirect link*
-        // which is https://themeqr.com/go. The backend then fetches the current
-        // landing page set by setRedirect.
         fetch('https://themeqr-backend.onrender.com/generate_qr', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -129,8 +126,8 @@
         .then(data => {
             if (data.success) {
                 const qrImg = document.getElementById('qrImg');
-                // Append a timestamp to the URL to force the browser to reload the image
-                qrImg.src = data.qr_url + '?t=' + new Date().getTime();
+                // *** IMPORTANT: Ensure this line is exactly as shown ***
+                qrImg.src = data.qr_url + '?t=' + new Date().getTime(); // Append unique timestamp
                 updateStatus("✅ QR code re-generated.", false);
             } else {
                 updateStatus("❌ " + data.error, true);
