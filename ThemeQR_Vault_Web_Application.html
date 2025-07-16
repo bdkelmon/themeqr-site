@@ -1,0 +1,406 @@
+import React, { useState, useEffect, createContext, useContext } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, collection, doc, getDocs, setDoc, onSnapshot, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import { Home, Folder, PlusCircle, Save, Link, QrCode, Film, FileText, XCircle, Loader2 } from 'lucide-react'; // Using lucide-react for icons
+
+// Initialize Firebase (global variables provided by the Canvas environment)
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+// Auth Context to manage user state
+const AuthContext = createContext(null);
+
+const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        setUserId(currentUser.uid);
+      } else {
+        // Sign in anonymously if no initial token is provided
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          try {
+            await signInWithCustomToken(auth, __initial_auth_token);
+          } catch (error) {
+            console.error("Error signing in with custom token:", error);
+            await signInAnonymously(auth); // Fallback to anonymous
+          }
+        } else {
+          await signInAnonymously(auth);
+        }
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ user, userId, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+// Custom Modal component
+const Modal = ({ isOpen, onClose, title, children }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+        <button onClick={onClose} className="absolute top-3 right-3 text-gray-500 hover:text-gray-700">
+          <XCircle size={24} />
+        </button>
+        <h2 className="text-2xl font-bold mb-4 text-gray-800">{title}</h2>
+        {children}
+      </div>
+    </div>
+  );
+};
+
+// Component to display a single deck item
+const DeckItem = ({ deck, onSelectDeck, selectedDeckId }) => {
+  const isSelected = deck.id === selectedDeckId;
+  return (
+    <div
+      className={`flex items-center justify-between p-4 my-2 bg-gray-50 rounded-lg shadow-sm cursor-pointer transition-all duration-200 ease-in-out
+        ${isSelected ? 'border-2 border-emerald-500 ring-2 ring-emerald-200' : 'border border-gray-200 hover:bg-gray-100'}`}
+      onClick={() => onSelectDeck(deck.id)}
+    >
+      <div className="flex items-center">
+        <Folder size={20} className="text-blue-500 mr-3" />
+        <div>
+          <h3 className="font-semibold text-lg text-gray-800">{deck.name}</h3>
+          <p className="text-sm text-gray-600 truncate max-w-[200px] sm:max-w-[300px]">{deck.landing_page || 'No landing page set'}</p>
+        </div>
+      </div>
+      {isSelected && (
+        <span className="text-emerald-600 font-bold text-sm">Selected</span>
+      )}
+    </div>
+  );
+};
+
+// Main Vault Page Component
+const VaultPage = () => {
+  const { userId, loading: authLoading } = useContext(AuthContext);
+  const [decks, setDecks] = useState([]);
+  const [loadingDecks, setLoadingDecks] = useState(true);
+  const [error, setError] = useState(null);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [isCreateDeckModalOpen, setIsCreateDeckModalOpen] = useState(false);
+  const [urlToSave, setUrlToSave] = useState('');
+  const [selectedDeckId, setSelectedDeckId] = useState(null);
+  const [newDeckName, setNewDeckName] = useState('');
+  const [savingStatus, setSavingStatus] = useState('');
+
+  // Firestore path for user's decks
+  const getDecksCollectionRef = () => {
+    if (!userId) return null;
+    return collection(db, `artifacts/${appId}/users/${userId}/vaults`);
+  };
+
+  // Fetch decks from Firestore
+  useEffect(() => {
+    if (!userId || authLoading) return;
+
+    setLoadingDecks(true);
+    setError(null);
+
+    const decksRef = getDecksCollectionRef();
+    if (!decksRef) {
+      setLoadingDecks(false);
+      return;
+    }
+
+    const q = query(decksRef, orderBy('createdAt', 'desc'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedDecks = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setDecks(fetchedDecks);
+      setLoadingDecks(false);
+    }, (err) => {
+      console.error("Error fetching decks:", err);
+      setError("Failed to load your vault. Please try again.");
+      setLoadingDecks(false);
+    });
+
+    return () => unsubscribe(); // Cleanup listener
+  }, [userId, authLoading]);
+
+  const handleSaveUrl = async () => {
+    if (!urlToSave || !selectedDeckId) {
+      setSavingStatus("Please enter a URL and select a deck.");
+      return;
+    }
+    if (!urlToSave.startsWith('http://') && !urlToSave.startsWith('https://')) {
+      setSavingStatus("Please enter a valid URL starting with http:// or https://");
+      return;
+    }
+
+    setSavingStatus("Saving URL...");
+    try {
+      const deckRef = doc(getDecksCollectionRef(), selectedDeckId);
+      await setDoc(deckRef, { landing_page: urlToSave, updatedAt: serverTimestamp() }, { merge: true });
+      setSavingStatus("URL saved successfully!");
+      setTimeout(() => {
+        setIsSaveModalOpen(false);
+        setSavingStatus('');
+        setUrlToSave('');
+        setSelectedDeckId(null);
+      }, 1500);
+    } catch (e) {
+      console.error("Error saving URL:", e);
+      setSavingStatus("Error saving URL: " + e.message);
+    }
+  };
+
+  const handleCreateNewDeck = async () => {
+    if (!newDeckName.trim()) {
+      setSavingStatus("Please enter a deck name.");
+      return;
+    }
+    if (!urlToSave.startsWith('http://') && !urlToSave.startsWith('https://')) {
+      setSavingStatus("Please enter a valid URL starting with http:// or https://");
+      return;
+    }
+
+    setSavingStatus("Creating new deck...");
+    try {
+      const newDeckRef = doc(getDecksCollectionRef()); // Firestore generates a new ID
+      await setDoc(newDeckRef, {
+        name: newDeckName.trim(),
+        landing_page: urlToSave,
+        qr_code: '', // Placeholder for QR code data/URL
+        wrapper: '', // Placeholder for wrapper video data/URL
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      setSavingStatus("New deck created and URL saved!");
+      setTimeout(() => {
+        setIsCreateDeckModalOpen(false);
+        setSavingStatus('');
+        setUrlToSave('');
+        setNewDeckName('');
+      }, 1500);
+    } catch (e) {
+      console.error("Error creating new deck:", e);
+      setSavingStatus("Error creating new deck: " + e.message);
+    }
+  };
+
+  const openSaveModal = () => {
+    setUrlToSave(''); // Clear previous URL
+    setSelectedDeckId(null); // Clear previous selection
+    setSavingStatus(''); // Clear previous status
+    setIsSaveModalOpen(true);
+  };
+
+  const openCreateDeckModal = () => {
+    setUrlToSave(''); // Clear previous URL
+    setNewDeckName(''); // Clear previous name
+    setSavingStatus(''); // Clear previous status
+    setIsCreateDeckModalOpen(true);
+  };
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <Loader2 className="animate-spin text-blue-500" size={48} />
+        <p className="ml-3 text-lg text-gray-700">Loading user session...</p>
+      </div>
+    );
+  }
+
+  if (!userId) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4 text-center">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Welcome to ThemeQR Vault</h2>
+        <p className="text-gray-600 mb-6">Please ensure you are signed in to access your vault.</p>
+        {/* In a real app, you'd have a proper sign-in button here */}
+        <p className="text-sm text-gray-500">
+          (In this demo, you are automatically signed in anonymously or via a custom token.)
+        </p>
+        <p className="text-sm text-gray-500 mt-2">
+          If you see this message for prolonged periods, there might be a Firebase configuration issue.
+        </p>
+        <p className="text-gray-600 mt-4">Your User ID: <span className="font-mono text-sm break-all">{userId || 'N/A'}</span></p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-4 font-inter text-gray-800">
+      <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-xl shadow-lg mb-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-extrabold flex items-center">
+            <QrCode size={32} className="mr-3" /> ThemeQR Vault
+          </h1>
+          <div className="text-sm bg-white bg-opacity-20 rounded-full px-4 py-1 flex items-center">
+            <span className="mr-2">User ID:</span>
+            <span className="font-mono text-xs break-all">{userId}</span>
+          </div>
+        </div>
+        <p className="mt-2 text-lg opacity-90">Manage your dynamic QR code landing pages.</p>
+      </header>
+
+      <section className="bg-white p-6 rounded-xl shadow-lg mb-6">
+        <h2 className="text-2xl font-bold mb-4 flex items-center">
+          <Link size={24} className="mr-2 text-blue-600" /> Save Current URL
+        </h2>
+        <p className="text-gray-700 mb-4">
+          Paste the URL you want to save as a landing page for your ThemeQR decks.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 mb-4">
+          <input
+            type="url"
+            placeholder="e.g., https://www.example.com/your-product"
+            className="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            value={urlToSave}
+            onChange={(e) => setUrlToSave(e.target.value)}
+          />
+          <button
+            onClick={openSaveModal}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-all duration-200 ease-in-out flex items-center justify-center"
+          >
+            <Save size={20} className="mr-2" /> Save URL
+          </button>
+        </div>
+        <button
+          onClick={openCreateDeckModal}
+          className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-all duration-200 ease-in-out flex items-center justify-center"
+        >
+          <PlusCircle size={20} className="mr-2" /> Create New Deck & Save URL
+        </button>
+      </section>
+
+      <section className="bg-white p-6 rounded-xl shadow-lg">
+        <h2 className="text-2xl font-bold mb-4 flex items-center">
+          <Folder size={24} className="mr-2 text-purple-600" /> Your Decks
+        </h2>
+        {loadingDecks ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="animate-spin text-blue-500" size={32} />
+            <p className="ml-3 text-lg text-gray-700">Loading your decks...</p>
+          </div>
+        ) : error ? (
+          <p className="text-red-500 text-center py-8">{error}</p>
+        ) : decks.length === 0 ? (
+          <p className="text-gray-600 text-center py-8">You don't have any decks yet. Create one above!</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {decks.map(deck => (
+              <DeckItem
+                key={deck.id}
+                deck={deck}
+                onSelectDeck={setSelectedDeckId}
+                selectedDeckId={selectedDeckId}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Save URL Modal */}
+      <Modal isOpen={isSaveModalOpen} onClose={() => setIsSaveModalOpen(false)} title="Save URL to Deck">
+        <p className="text-gray-700 mb-4">Select a deck to save the URL to:</p>
+        <input
+          type="url"
+          placeholder="URL to save (e.g., https://example.com)"
+          className="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+          value={urlToSave}
+          onChange={(e) => setUrlToSave(e.target.value)}
+        />
+        <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-2 mb-4">
+          {decks.length === 0 ? (
+            <p className="text-gray-500 text-center py-4">No decks available. Create a new one!</p>
+          ) : (
+            decks.map(deck => (
+              <DeckItem
+                key={deck.id}
+                deck={deck}
+                onSelectDeck={setSelectedDeckId}
+                selectedDeckId={selectedDeckId}
+              />
+            ))
+          )}
+        </div>
+        <p className={`text-sm text-center ${savingStatus.includes('Error') ? 'text-red-500' : 'text-blue-600'} mb-4`}>
+          {savingStatus}
+        </p>
+        <button
+          onClick={handleSaveUrl}
+          disabled={!urlToSave || !selectedDeckId || savingStatus.includes('Saving')}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition-all duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {savingStatus.includes('Saving') ? (
+            <Loader2 className="animate-spin inline-block mr-2" size={20} />
+          ) : (
+            <Save size={20} className="inline-block mr-2" />
+          )}
+          Save to Selected Deck
+        </button>
+      </Modal>
+
+      {/* Create New Deck Modal */}
+      <Modal isOpen={isCreateDeckModalOpen} onClose={() => setIsCreateDeckModalOpen(false)} title="Create New Deck">
+        <p className="text-gray-700 mb-4">Enter a name for your new deck. The URL will be saved as its landing page.</p>
+        <input
+          type="text"
+          placeholder="New Deck Name"
+          className="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+          value={newDeckName}
+          onChange={(e) => setNewDeckName(e.target.value)}
+        />
+        <input
+          type="url"
+          placeholder="URL to save (e.g., https://example.com)"
+          className="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+          value={urlToSave}
+          onChange={(e) => setUrlToSave(e.target.value)}
+        />
+        <p className={`text-sm text-center ${savingStatus.includes('Error') ? 'text-red-500' : 'text-blue-600'} mb-4`}>
+          {savingStatus}
+        </p>
+        <button
+          onClick={handleCreateNewDeck}
+          disabled={!newDeckName.trim() || !urlToSave || savingStatus.includes('Creating')}
+          className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition-all duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {savingStatus.includes('Creating') ? (
+            <Loader2 className="animate-spin inline-block mr-2" size={20} />
+          ) : (
+            <PlusCircle size={20} className="inline-block mr-2" />
+          )}
+          Create Deck & Save URL
+        </button>
+      </Modal>
+
+      <footer className="text-center text-gray-600 text-sm mt-8">
+        <p>&copy; 2025 ThemeQR Vault Simulation. All rights reserved.</p>
+        <p className="mt-1">Powered by Firebase & React.</p>
+      </footer>
+    </div>
+  );
+};
+
+// Main App Component
+export default function App() {
+  return (
+    <AuthProvider>
+      <VaultPage />
+    </AuthProvider>
+  );
+}
