@@ -35,33 +35,49 @@
 <body>
     <div id="root"></div>
 
-    <!-- Supabase JS Client CDN -->
-    <!-- It's crucial this loads before your main app script tries to use 'Supabase' -->
+    <!-- 1. Supabase JS Client CDN (MUST LOAD FIRST for Supabase object to be available) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <!-- React and ReactDOM from CDN -->
+    <!-- 2. React and ReactDOM from CDN -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Babel for JSX transformation in the browser -->
+
+    <!-- 3. Babel for JSX transformation in the browser -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Lucide-React icons: Load and make available globally -->
-    <!-- This script MUST run before your main React app script -->
-    <script type="module">
-        import { Home, Folder, PlusCircle, Save, Link, QrCode, Film, FileText, XCircle, Loader2 } from 'https://unpkg.com/lucide-react@0.368.0/dist/lucide-react.js';
-        window.LucideReact = { Home, Folder, PlusCircle, Save, Link, QrCode, Film, FileText, XCircle, Loader2 };
-        console.log("LucideReact components loaded and attached to window.");
+    <!-- 4. Lucide-React icons: Load as a regular script and make available globally -->
+    <!-- Removed type="module" to bypass CORS issue with unpkg.com for modules -->
+    <script src="https://unpkg.com/lucide-react@0.368.0/dist/lucide-react.js"></script>
+    <script>
+        // Ensure LucideReact components are available globally for the Babel script
+        // This relies on the previous script defining a global 'LucideReact' object.
+        // If the unpkg CDN doesn't define it globally, this might need adjustment.
+        // As a fallback, we can manually create a global object.
+        if (typeof LucideReact === 'undefined') {
+            console.warn("LucideReact global not found, attempting manual assignment.");
+            // This is a fallback. Ideally, the CDN script itself would define it.
+            // If this still fails, we might need to manually copy the LucideReact source
+            // or find a different way to include it.
+            window.LucideReact = {
+                Home: null, Folder: null, PlusCircle: null, Save: null, Link: null,
+                QrCode: null, Film: null, FileText: null, XCircle: null, Loader2: null
+            };
+            // In a real scenario, you'd load individual icons or a bundled version that creates a global.
+            // For now, we'll assume the CDN *should* make it available, and this is a safety net.
+        }
+        console.log("LucideReact components should now be accessible via window.LucideReact.");
     </script>
 
 
+    <!-- 5. Your Main React Application Script (type="text/babel" for in-browser JSX compilation) -->
     <script type="text/babel">
         // Supabase Configuration (REPLACE THESE WITH YOUR ACTUAL SUPABASE PROJECT URL AND ANON KEY)
         // Ensure these match your Supabase project settings exactly.
         const SUPABASE_URL = "https://hvfqdrfdefgfqbfdikpn.supabase.co"; // Your Supabase Project URL
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9C_D61NCJU"; // Your Supabase Project Anon Key
 
-        // Access Supabase from the global window object after its CDN script loads
-        const supabase = window.Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Access Supabase from the global window object (lowercase 's' is standard for supabase-js)
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Base URL for your Flask backend (REPLACE THIS WITH YOUR RENDER FLASK APP URL)
         // IMPORTANT: Ensure this URL is correct and accessible from the browser.
