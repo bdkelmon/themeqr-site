@@ -51,7 +51,8 @@
         const SUPABASE_URL = "https://hvfqdrfdefgfqbfdikpn.supabase.co"; // Your Supabase Project URL
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9zOUjFu7fi-4oRVY-D61NCJU"; // Your Supabase Project Anon Key
 
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabase = window.supabase.createClient("https://hvfqdrfdefgfqbfdikpn.supabase.co",
+                                                      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9zOUjFu7fi-4oRVY-D61NCJU");
 
         // Base URL for your Flask backend (REPLACE THIS WITH YOUR RENDER FLASK APP URL)
         const FLASK_API_BASE_URL = 'http://127.0.0.1:5000'; // e.g., 'https://your-themeqr-backend.onrender.com'
