@@ -516,10 +516,17 @@
           );
         }
 
-        // Modern React 18 rendering API
-        const container = document.getElementById('root');
-        const root = ReactDOM.createRoot(container);
-        root.render(<App />);
+      // Modern React 18 rendering API - wrapped to avoid "root is null" error
+       document.addEventListener('DOMContentLoaded', function () {
+       const container = document.getElementById('root');
+       if (container) {
+         const root = ReactDOM.createRoot(container);
+         root.render(<App />);
+       } else {
+         console.error('Root container not found');
+       } 
+     });
+
 
     </script>
 </body>
