@@ -1,5 +1,7 @@
 # app.py
 
+# app.py
+
 from flask import Flask, request, render_template, jsonify, send_from_directory, redirect
 from supabase import create_client, Client
 import shutil
@@ -11,6 +13,7 @@ from moviepy.editor import VideoFileClip, CompositeVideoClip, ImageClip
 import qrcode
 import requests
 from flask_cors import CORS
+from datetime import datetime, timezone
 
 # Cloudinary setup
 cloudinary.config(
@@ -20,38 +23,62 @@ cloudinary.config(
 )
 
 # Supabase setup
-# IMPORTANT: Ensure these environment variables are set in your Render deployment.
-# Do NOT hardcode sensitive keys directly in the code.
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://hvfqdrfdefgfqbfdikpn.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9zOUjFu7fi-4oRVY-D61NCJU")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9C_D61NCJU") # Ensure this is correct
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
 
-# Define the path to your HTML template for the editor
-# Ensure 'themeqr-site' is a subfolder containing 'index_template.html'
 TEMPLATE_PATH = os.path.join(app.root_path, 'themeqr-site', 'index_template.html')
-
-# Define a fixed ID for the demo QR's dynamic redirect in Supabase.
-# This ID will be used to store and retrieve the current landing URL for 'themeqr.com/go'.
 DEMO_DECK_ID = "demo_qr_redirect"
 
-# Ensure 'static' directory exists for storing generated QR codes
 if not os.path.exists(app.static_folder):
     os.makedirs(app.static_folder)
 
+# --- Helper Function for Vault Management ---
+async def get_or_create_user_vault(user_id: str):
+    """
+    Fetches a user's vault. If it doesn't exist, creates a default one.
+    Returns the vault ID or None if an error occurs.
+    """
+    try:
+        # Try to fetch the existing vault for the user
+        response = supabase.table('vaults').select('id').eq('user_id', user_id).single().execute()
+
+        if response.data:
+            print(f"✅ Found existing vault for user {user_id}: {response.data['id']}")
+            return response.data['id']
+        elif response.error and response.error.code == 'PGRST116': # No rows found
+            # If no vault found, create a new one
+            print(f"ℹ️ No vault found for user {user_id}. Creating a new one...")
+            insert_response = supabase.table('vaults').insert({
+                'user_id': user_id,
+                'vault_name': f"Vault for {user_id[:8]}", # Default name
+                'created_at': datetime.now(timezone.utc).isoformat(),
+                'updated_at': datetime.now(timezone.utc).isoformat()
+            }).execute()
+
+            if insert_response.error:
+                print(f"❌ Error creating vault for user {user_id}: {insert_response.error.message}")
+                return None
+            print(f"✅ Created new vault for user {user_id}: {insert_response.data[0]['id']}")
+            return insert_response.data[0]['id']
+        else:
+            print(f"❌ Supabase error checking vault for user {user_id}: {response.error.message}")
+            return None
+    except Exception as e:
+        print(f"❌ Exception in get_or_create_user_vault: {str(e)}")
+        return None
+
+# --- Existing Routes ---
 @app.route('/')
 def home():
-    """Renders the main editor page."""
-    # Make sure 'editor.html' exists in your 'templates' folder
     return render_template('editor.html')
 
 @app.route('/reset_index', methods=['POST'])
 def reset_index():
-    """Resets the index.html file to its original template."""
     try:
-        # Copies the original template to /tmp/index.html
         shutil.copyfile(TEMPLATE_PATH, '/tmp/index.html')
         print("✅ index.html reset to template.")
         return jsonify(success=True)
@@ -61,16 +88,10 @@ def reset_index():
 
 @app.route('/index.html')
 def serve_updated_index():
-    """Serves the potentially updated index.html from the /tmp directory."""
-    # This assumes that update_index or reset_index has written to /tmp/index.html
     return send_from_directory('/tmp', 'index.html')
 
 @app.route('/change_qr_landing', methods=['POST'])
 def change_qr_landing():
-    """
-    Updates the target landing URL for the demo QR code in Supabase.
-    This URL is what 'themeqr.com/go' will redirect to.
-    """
     try:
         print("📥 Incoming POST to /change_qr_landing")
         data = request.get_json()
@@ -81,8 +102,6 @@ def change_qr_landing():
             print("❌ Invalid landing URL provided.")
             return jsonify(success=False, error="Invalid URL format"), 400
 
-        # Upsert (update or insert) the landing URL for the DEMO_DECK_ID in Supabase.
-        # 'on_conflict' ensures that if a row with DEMO_DECK_ID already exists, it's updated.
         response = supabase.table('qr_decks').upsert(
             {'id': DEMO_DECK_ID, 'landing_url': new_landing},
             on_conflict='id'
@@ -101,43 +120,41 @@ def change_qr_landing():
 
 @app.route('/generate_qr', methods=['POST'])
 def generate_qr():
-    """
-    Generates a QR code image for the fixed URL 'https://themeqr.com/go'
-    and makes it available for the frontend to display.
-    """
     try:
         data = request.get_json()
-        link_to_encode = data.get('link') # This should be "https://themeqr.com/go"
+        link_to_encode = data.get('link')
 
         if not link_to_encode:
             return jsonify(success=False, error="Missing link to encode."), 400
 
-        # Define the filename for the QR code image that the frontend will display
-        qr_filename = 'demo_themeqr_go_qr.png'
-        qr_path = os.path.join(app.static_folder, qr_filename)
+        temp_qr_filename = f"temp_qr_{uuid.uuid4()}.png"
+        temp_qr_path = os.path.join("/tmp", temp_qr_filename)
 
-        # Generate the QR code image
         qr_img = qrcode.make(link_to_encode).convert("RGB")
-        qr_img.save(qr_path)
+        qr_img.save(temp_qr_path)
+        print(f"✅ Temporary QR code generated for '{link_to_encode}' at '{temp_qr_path}'")
 
-        # Return the URL of the generated QR code image relative to the static folder
-        qr_url = f"/static/{qr_filename}"
-        print(f"✅ QR code generated for '{link_to_encode}' at '{qr_url}'")
-        return jsonify(success=True, qr_url=qr_url)
+        cloud_result = cloudinary.uploader.upload(
+            temp_qr_path,
+            folder="themeqr/qrcodes_dynamic_demo"
+        )
+        cloud_url = cloud_result['secure_url']
+        print(f"🌐 Uploaded QR to Cloudinary: {cloud_url}")
+
+        os.remove(temp_qr_path)
+        print(f"🗑️ Cleaned up temporary file: {temp_qr_path}")
+
+        return jsonify(success=True, qr_url=cloud_url)
 
     except Exception as e:
-        print(f"❌ Error generating QR code: {e}")
+        print(f"❌ Error generating or uploading QR code: {e}")
         return jsonify(success=False, error=str(e)), 500
 
 @app.route('/update_index', methods=['POST'])
 def update_index():
-    """
-    Updates the index.html with a new video URL, overlaying a QR code on the video.
-    This route is for the video overlay functionality, separate from the dynamic QR redirect.
-    """
     data = request.get_json()
-    wrapper = data.get('wrapper') # URL of the wrapper video
-    landing = data.get('landing') # Landing page for the QR code to be overlaid on video
+    wrapper = data.get('wrapper')
+    landing = data.get('landing')
 
     print("🔁 Received wrapper:", wrapper)
     print("🔁 Received landing page:", landing)
@@ -146,13 +163,11 @@ def update_index():
         return jsonify(success=False, error="Missing wrapper or landing URL."), 400
 
     try:
-        # 1. Generate QR for the video overlay
-        qr_path = "/tmp/themeqr_landing_qr_video_overlay.png" # Unique name for this QR
+        qr_path = "/tmp/themeqr_landing_qr_video_overlay.png"
         qr_img = qrcode.make(landing).convert("RGB")
         qr_img.save(qr_path)
         print(f"✅ QR for video overlay generated at {qr_path}")
 
-        # 2. Download wrapper video
         wrapper_temp_path = f"/tmp/{uuid.uuid4()}.mp4"
         print(f"Downloading wrapper from {wrapper} to {wrapper_temp_path}")
         with requests.get(wrapper, stream=True) as r:
@@ -162,10 +177,7 @@ def update_index():
                     f.write(chunk)
         print("✅ Wrapper video downloaded.")
 
-        # 3. Overlay QR on video
-        # Ensure moviepy is installed and its dependencies are met in your Render environment
-        video_clip = VideoFileClip(wrapper_temp_path).subclip(0, 10) # Using first 10 seconds
-        # Resize QR and position it (e.g., bottom right)
+        video_clip = VideoFileClip(wrapper_temp_path).subclip(0, 10)
         qr_clip = ImageClip(qr_path).set_duration(video_clip.duration).resize(height=150).set_pos(("right", "bottom"))
         final_clip = CompositeVideoClip([video_clip, qr_clip])
 
@@ -174,22 +186,18 @@ def update_index():
         final_clip.write_videofile(final_output_path, codec="libx264", audio_codec="aac")
         print("✅ Final video with QR overlay created.")
 
-        # 4. Upload video to Cloudinary
         cloud_result = cloudinary.uploader.upload_large(
             final_output_path,
             resource_type="video",
-            folder="themeqr/wrappers" # Organize uploads in a specific folder
+            folder="themeqr/wrappers"
         )
         cloud_url = cloud_result['secure_url']
         print(f"🌐 Uploaded to Cloudinary: {cloud_url}")
 
-        # 5. Inject new video URL into index_template.html
         print(f"📁 Looking for template at: {TEMPLATE_PATH}")
         with open(TEMPLATE_PATH, "r") as template:
             content = template.read()
 
-        # Replace a specific placeholder video URL in your template with the new Cloudinary URL
-        # Make sure the placeholder string exactly matches what's in your index_template.html
         updated_html = content.replace(
             'src="https://res.cloudinary.com/themeqr-test/video/upload/v1752014993/themeqr/wrappers/obsg01o6dfzl6du5bsaa.mp4"',
             f'src="{cloud_url}"'
@@ -206,16 +214,10 @@ def update_index():
 
 @app.route('/go')
 def redirect_to_landing():
-    """
-    Redirects to the current landing URL associated with the DEMO_DECK_ID.
-    This is the endpoint that the 'themeqr.com/go' QR code will point to.
-    """
     try:
-        # Fetch the current landing URL for the DEMO_DECK_ID from Supabase
         response = supabase.table('qr_decks').select("landing_url").eq("id", DEMO_DECK_ID).single().execute()
 
         if response.error:
-            # If no entry is found for DEMO_DECK_ID, redirect to a default fallback URL
             print(f"❌ Supabase fetch error for DEMO_DECK_ID: {response.error.message}. Redirecting to default.")
             return redirect("https://themeqr.com", code=302)
 
@@ -224,11 +226,136 @@ def redirect_to_landing():
         return redirect(landing_url, code=302)
 
     except Exception as e:
-        # Catch any other exceptions during the redirect process and fall back
         print(f"❌ Exception in /go redirect: {e}. Redirecting to default.")
         return redirect("https://themeqr.com", code=302)
 
+# --- NEW API Endpoints for ThemeQR Vault (Supabase Integration) ---
+
+@app.route('/api/vaults/<string:user_id>', methods=['GET'])
+async def get_user_vault_and_decks(user_id):
+    """
+    Fetches the user's vault and all associated decks.
+    If no vault exists for the user, it creates one.
+    """
+    try:
+        vault_id = await get_or_create_user_vault(user_id)
+        if not vault_id:
+            return jsonify({"error": "Could not retrieve or create user vault."}), 500
+
+        # Fetch decks associated with this vault_id
+        response = supabase.table('decks').select('*').eq('vault_id', vault_id).order('created_at', desc=True).execute()
+
+        if response.error:
+            print(f"❌ Supabase error fetching decks for vault {vault_id}: {response.error.message}")
+            return jsonify({"error": response.error.message}), 500
+
+        decks = response.data
+        return jsonify({"vault_id": vault_id, "decks": decks}), 200
+
+    except Exception as e:
+        print(f"❌ Exception in get_user_vault_and_decks: {str(e)}")
+        return jsonify({"error": "An unexpected error occurred: " + str(e)}), 500
+
+
+@app.route('/api/vaults/<string:vault_id>/decks', methods=['POST'])
+def create_deck_in_vault(vault_id):
+    """
+    Creates a new deck within a specific vault.
+    Requires 'user_id', 'deck_name', and 'landing_page' in the request body.
+    """
+    data = request.get_json()
+    user_id = data.get('user_id') # For verification
+    deck_name = data.get('deck_name')
+    landing_page = data.get('landing_page')
+
+    if not user_id or not deck_name or not landing_page:
+        return jsonify({"error": "User ID, deck name, and landing page are required"}), 400
+
+    if not landing_page.startswith('http://') and not landing_page.startswith('https://'):
+        return jsonify({"error": "Landing page must be a valid URL starting with http:// or https://"}), 400
+
+    try:
+        # Verify that the vault_id belongs to the user_id
+        vault_check_response = supabase.table('vaults').select('id').eq('id', vault_id).eq('user_id', user_id).single().execute()
+        if not vault_check_response.data:
+            return jsonify({"error": "Vault not found or does not belong to this user."}), 403 # Forbidden
+
+        # Insert new deck
+        response = supabase.table('decks').insert({
+            'vault_id': vault_id,
+            'deck_name': deck_name,
+            'landing_page': landing_page,
+            'qr_code': '', # Placeholder
+            'wrapper': '', # Placeholder
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        }).execute()
+
+        if response.error:
+            print(f"❌ Supabase error creating deck in vault {vault_id}: {response.error.message}")
+            return jsonify({"error": response.error.message}), 500
+
+        new_deck = response.data[0]
+        return jsonify(new_deck), 201
+
+    except Exception as e:
+        print(f"❌ Exception in create_deck_in_vault: {str(e)}")
+        return jsonify({"error": "An unexpected error occurred: " + str(e)}), 500
+
+@app.route('/api/decks/<string:deck_id>', methods=['PUT'])
+def update_deck(deck_id):
+    """
+    Updates an existing deck's landing page.
+    Requires 'user_id' and 'landing_page' in the request body.
+    Also verifies ownership via vault.
+    """
+    data = request.get_json()
+    user_id = data.get('user_id') # For verification
+    landing_page = data.get('landing_page')
+    deck_name = data.get('deck_name') # Optional: allow updating name too
+
+    if not user_id or not landing_page:
+        return jsonify({"error": "User ID and landing page are required"}), 400
+
+    if not landing_page.startswith('http://') and not landing_page.startswith('https://'):
+        return jsonify({"error": "Landing page must be a valid URL starting with http:// or https://"}), 400
+
+    try:
+        # First, get the deck and its associated vault_id
+        deck_response = supabase.table('decks').select('vault_id').eq('id', deck_id).single().execute()
+        if not deck_response.data:
+            return jsonify({"error": "Deck not found."}), 404
+        
+        deck_vault_id = deck_response.data['vault_id']
+
+        # Then, verify that the vault_id belongs to the user_id
+        vault_check_response = supabase.table('vaults').select('id').eq('id', deck_vault_id).eq('user_id', user_id).single().execute()
+        if not vault_check_response.data:
+            return jsonify({"error": "You do not have permission to update this deck."}), 403 # Forbidden
+
+        update_data = {
+            'landing_page': landing_page,
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        }
+        if deck_name:
+            update_data['deck_name'] = deck_name
+
+        response = supabase.table('decks').update(update_data).eq('id', deck_id).execute()
+
+        if response.error:
+            print(f"❌ Supabase error updating deck {deck_id}: {response.error.message}")
+            return jsonify({"error": response.error.message}), 500
+
+        if not response.data:
+            return jsonify({"error": "Deck not found or nothing to update."}), 404
+
+        return jsonify({"message": "Deck updated successfully", "deck": response.data[0]}), 200
+
+    except Exception as e:
+        print(f"❌ Exception in update_deck: {str(e)}")
+        return jsonify({"error": "An unexpected error occurred: " + str(e)}), 500
+
+
 if __name__ == '__main__':
-    # Get the port from environment variable, default to 5000 for local development
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
