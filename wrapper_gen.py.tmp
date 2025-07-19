@@ -1,0 +1,81 @@
+import os
+import argparse
+import qrcode
+from PIL import Image
+from moviepy.editor import VideoFileClip, CompositeVideoClip, ImageClip
+
+def generate_qr_video(wrapper, qr_img_path, landing_url, output_path, duration=10):
+
+    # Step 1: Handle QR image (local or URL)
+    import tempfile
+    import requests
+    is_url = str(qr_img_path).startswith("http://") or str(qr_img_path).startswith("https://")
+    if is_url:
+        # Download QR image from URL to temp file
+        tmp_qr = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+        print(f"[QR] Downloading QR image from URL: {qr_img_path}")
+        r = requests.get(qr_img_path, stream=True)
+        r.raise_for_status()
+        with open(tmp_qr.name, "wb") as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
+        qr_img_path_local = tmp_qr.name
+    else:
+        # Generate QR code and save locally
+        
+        
+        qr_img.save(qr_img_path)
+        print(f"[QR] Saved QR code image to: {qr_img_path}")
+        qr_img_path_local = qr_img_path
+
+
+    # Step 2: Load wrapper (video or image)
+    is_wrapper_url = str(wrapper).startswith("http://") or str(wrapper).startswith("https://")
+    wrapper_path_local = wrapper
+    if is_wrapper_url:
+        # Download wrapper video/image from URL to temp file
+        tmp_wrapper = tempfile.NamedTemporaryFile(suffix=os.path.splitext(wrapper)[1], delete=False)
+        print(f"[Wrapper] Downloading wrapper from URL: {wrapper}")
+        r = requests.get(wrapper, stream=True)
+        r.raise_for_status()
+        with open(tmp_wrapper.name, "wb") as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
+        wrapper_path_local = tmp_wrapper.name
+    if not os.path.exists(wrapper_path_local):
+        raise FileNotFoundError(f"Wrapper file not found at: {wrapper_path_local}")
+
+
+    # Check if wrapper is an image or video based on file extension
+    image_extensions = ['.png', '.jpg', '.jpeg', '.bmp', '.gif']
+    file_ext = os.path.splitext(wrapper_path_local)[1].lower()
+
+    if file_ext in image_extensions:
+        # Handle image: Create a static clip with specified duration
+        base_clip = ImageClip(wrapper_path_local).set_duration(duration)
+    else:
+        # Handle video: Load and limit to specified duration
+        base_clip = VideoFileClip(wrapper_path_local)
+        base_clip = base_clip.subclip(0, min(duration, base_clip.duration))
+
+
+    # Step 3: Prepare QR overlay
+    qr_clip = ImageClip(qr_img_path_local).set_duration(base_clip.duration)
+    qr_clip = qr_clip.resize(height=150).set_pos(("right", "bottom"))
+
+    # Step 4: Overlay QR on base clip (video or image)
+    final_clip = CompositeVideoClip([base_clip, qr_clip])
+    final_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
+    print(f"[DONE] Final video with QR saved to: {output_path}")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Generate QR embedded video.")
+    parser.add_argument('--wrapper', required=True, help="Path to wrapper video or image")
+    parser.add_argument('--qr', required=True, help="Path to save generated QR image")
+    parser.add_argument('--landing', required=True, help="Landing page URL")
+    parser.add_argument('--output', required=True, help="Output video path")
+    parser.add_argument('--duration', type=float, default=10, help="Duration for image wrapper (seconds)")
+
+    args = parser.parse_args()
+    generate_qr_video(args.wrapper, args.qr, args.landing, args.output, args.duration)
