@@ -44,7 +44,6 @@ async def get_or_create_user_vault(user_id: str):
     """
     try:
         # Try to fetch the existing vault for the user
-        response = supabase.table('vaults').select('id').eq('user_id', user_id).single().execute()
 
         if response.data:
             print(f"✅ Found existing vault for user {user_id}: {response.data['id']}")
@@ -228,6 +227,7 @@ def redirect_to_landing():
     except Exception as e:
         print(f"❌ Exception in /go redirect: {e}. Redirecting to default.")
         return redirect("https://themeqr.com", code=302)
+
 
 # --- NEW API Endpoints for ThemeQR Vault (Supabase Integration) ---
 
