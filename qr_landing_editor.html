@@ -86,6 +86,10 @@
 </footer>
 
 <script>
+const supabaseUrl = 'https://hvfqdrfdefgfqbfdikpn.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9zOUjFu7fi-4oRVY-D61NCJU';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
     function setRedirect(url) {
         // Change the endpoint to match your Flask app
         fetch('https://themeqr-backend.onrender.com/change_qr_landing', {
