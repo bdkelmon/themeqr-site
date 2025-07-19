@@ -31,8 +31,8 @@ app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
 
 TEMPLATE_PATH = os.path.join(app.root_path, 'themeqr-site', 'index_template.html')
-DEMO_DECK_ID = "demo_qr_redirect"
-
+#--DEMO_DECK_ID = "demo_qr_redirect" changed to a real deck ID 
+DEMO_DECK_ID = "71f42d9b-fe22-4085-87f0-944ab85ac07e"
 if not os.path.exists(app.static_folder):
     os.makedirs(app.static_folder)
 
@@ -98,11 +98,11 @@ def change_qr_landing():
         print(f"📦 Data received: {data}")
 
         new_landing = data.get('landing')
-        if not new_landing or not new_landing.startswith("http"):
+        if not new_landing or not new_landing.startswith("http") or not new_landing.startswith("https"):
             print("❌ Invalid landing URL provided.")
             return jsonify(success=False, error="Invalid URL format"), 400
 
-        response = supabase.table('qr_decks').upsert(
+        response = supabase.table('decks').upsert(
             {'id': DEMO_DECK_ID, 'landing_url': new_landing},
             on_conflict='id'
         ).execute()
@@ -215,7 +215,7 @@ def update_index():
 @app.route('/go')
 def redirect_to_landing():
     try:
-        response = supabase.table('qr_decks').select("landing_url").eq("id", DEMO_DECK_ID).single().execute()
+        response = supabase.table('decks').select("landing_url").eq("id", DEMO_DECK_ID).single().execute()
 
         if response.error:
             print(f"❌ Supabase fetch error for DEMO_DECK_ID: {response.error.message}. Redirecting to default.")
@@ -261,17 +261,17 @@ async def get_user_vault_and_decks(user_id):
 def create_deck_in_vault(vault_id):
     """
     Creates a new deck within a specific vault.
-    Requires 'user_id', 'deck_name', and 'landing_page' in the request body.
+    Requires 'user_id', 'deck_name', and 'landing_url' in the request body.
     """
     data = request.get_json()
     user_id = data.get('user_id') # For verification
     deck_name = data.get('deck_name')
-    landing_page = data.get('landing_page')
+    landing_url = data.get('landing_url')
 
-    if not user_id or not deck_name or not landing_page:
+    if not user_id or not deck_name or not landing_url:
         return jsonify({"error": "User ID, deck name, and landing page are required"}), 400
 
-    if not landing_page.startswith('http://') and not landing_page.startswith('https://'):
+    if not landing_url.startswith('http://') and not landing_url.startswith('https://'):
         return jsonify({"error": "Landing page must be a valid URL starting with http:// or https://"}), 400
 
     try:
@@ -284,7 +284,7 @@ def create_deck_in_vault(vault_id):
         response = supabase.table('decks').insert({
             'vault_id': vault_id,
             'deck_name': deck_name,
-            'landing_page': landing_page,
+            'landing_url': landing_url,
             'qr_code': '', # Placeholder
             'wrapper': '', # Placeholder
             'created_at': datetime.now(timezone.utc).isoformat(),
@@ -306,18 +306,18 @@ def create_deck_in_vault(vault_id):
 def update_deck(deck_id):
     """
     Updates an existing deck's landing page.
-    Requires 'user_id' and 'landing_page' in the request body.
+    Requires 'user_id' and 'landing_url' in the request body.
     Also verifies ownership via vault.
     """
     data = request.get_json()
     user_id = data.get('user_id') # For verification
-    landing_page = data.get('landing_page')
+    landing_url = data.get('landing_url')
     deck_name = data.get('deck_name') # Optional: allow updating name too
 
-    if not user_id or not landing_page:
+    if not user_id or not landing_url:
         return jsonify({"error": "User ID and landing page are required"}), 400
 
-    if not landing_page.startswith('http://') and not landing_page.startswith('https://'):
+    if not landing_url.startswith('http://') and not landing_url.startswith('https://'):
         return jsonify({"error": "Landing page must be a valid URL starting with http:// or https://"}), 400
 
     try:
@@ -334,7 +334,7 @@ def update_deck(deck_id):
             return jsonify({"error": "You do not have permission to update this deck."}), 403 # Forbidden
 
         update_data = {
-            'landing_page': landing_page,
+            'landing_url': landing_url,
             'updated_at': datetime.now(timezone.utc).isoformat()
         }
         if deck_name:
