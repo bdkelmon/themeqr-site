@@ -34,6 +34,16 @@ DEMO_DECK_ID = "71f42d9b-fe22-4085-87f0-944ab85ac07e"
 if not os.path.exists(app.static_folder):
     os.makedirs(app.static_folder)
 
+
+@app.route('/test_supabase')
+def test_supabase():
+  try:
+    response = supabase.table('decks').select('*').execute()
+    if response.error:
+      return jsonify({"error": response.error.message}), 500
+    return jsonify({"data": response.data}), 200
+  except Exception as e:
+    return jsonify({"error": str(e)}), 500
 # --- Helper Function for Vault Management ---
 async def get_or_create_user_vault(user_id: str):
     """
@@ -95,18 +105,31 @@ def change_qr_landing():
         print(f"📦 Data received: {data}")
 
         new_landing = data.get('landing')
-        if not new_landing or not new_landing.startswith("http") or not new_landing.startswith("https"):
-            print("❌ Invalid landing URL provided.")
-            return jsonify(success=False, error="Invalid URL format"), 400
 
-        response = supabase.table('decks').upsert(
-            {'id': DEMO_DECK_ID, 'landing_url': new_landing},
-            on_conflict='id'
-        ).execute()
+        # Corrected URL validation logic
+        # Check if new_landing is not empty AND if it starts with either "http://" OR "https://"
+        if not new_landing or (not new_landing.startswith("http://") and not new_landing.startswith("https://")):
+            print("❌ Invalid landing URL format. Must start with http:// or https://")
+            return jsonify(success=False, error="Invalid URL format. Must start with http:// or https://"), 400
 
+        # Use the update().eq() method for direct row update
+        # This translates to a PATCH request with a filter, which is what we confirmed works
+        response = supabase.table('decks').update(
+            {'landing_url': new_landing}
+        ).eq('id', DEMO_DECK_ID).execute()
+
+        # Supabase Python client's execute() returns a PostgrestAPIResponse object
+        # which has a 'data' attribute for successful responses and 'error' for errors.
         if response.error:
             print(f"❌ Supabase error updating landing URL: {response.error.message}")
             return jsonify(success=False, error=response.error.message), 500
+
+        # Check if any data was actually updated (optional, but good for robust checks)
+        # If no rows match DEMO_DECK_ID, response.data will be an empty list.
+        if not response.data:
+            print(f"⚠️ Supabase update successful but no row found for ID: {DEMO_DECK_ID}. Check if ID exists.")
+            return jsonify(success=False, error="Deck ID not found or no changes made."), 404
+
 
         print(f"✅ Supabase updated for {DEMO_DECK_ID} to {new_landing}.")
         return jsonify(success=True)
@@ -114,7 +137,6 @@ def change_qr_landing():
     except Exception as e:
         print(f"❌ Exception during /change_qr_landing: {str(e)}")
         return jsonify(success=False, error=str(e)), 500
-
 @app.route('/generate_qr', methods=['POST'])
 def generate_qr():
     try:
