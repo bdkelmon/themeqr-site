@@ -1,7 +1,5 @@
 # app.py
 
-# app.py
-
 from flask import Flask, request, render_template, jsonify, send_from_directory, redirect
 from supabase import create_client, Client
 import shutil
@@ -25,7 +23,7 @@ cloudinary.config(
 # Supabase setup
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://hvfqdrfdefgfqbfdikpn.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9C_D61NCJU") # Ensure this is correct
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase: Client = supabase.create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
@@ -73,7 +71,7 @@ async def get_or_create_user_vault(user_id: str):
 # --- Existing Routes ---
 @app.route('/')
 def home():
-    return render_template('editor.html')
+    return render_template('qr_landing_editor.html')
 
 @app.route('/reset_index', methods=['POST'])
 def reset_index():
