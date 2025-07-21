@@ -23,7 +23,7 @@ cloudinary.config(
 # Supabase setup
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://hvfqdrfdefgfqbfdikpn.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9C_D61NCJU") # Ensure this is correct
-supabase: Client = supabase.create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
@@ -118,12 +118,6 @@ def change_qr_landing():
             {'landing_url': new_landing}
         ).eq('id', DEMO_DECK_ID).execute()
 
-        # Supabase Python client's execute() returns a PostgrestAPIResponse object
-        # which has a 'data' attribute for successful responses and 'error' for errors.
-        if response.error:
-            print(f"❌ Supabase error updating landing URL: {response.error.message}")
-            return jsonify(success=False, error=response.error.message), 500
-
         # Check if any data was actually updated (optional, but good for robust checks)
         # If no rows match DEMO_DECK_ID, response.data will be an empty list.
         if not response.data:
@@ -136,7 +130,12 @@ def change_qr_landing():
 
     except Exception as e:
         print(f"❌ Exception during /change_qr_landing: {str(e)}")
-        return jsonify(success=False, error=str(e)), 500
+        # Check if the exception contains a specific message from Supabase's API error
+        if hasattr(e, 'message'): # Some Supabase client errors might have a 'message' attribute
+             return jsonify(success=False, error=e.message), 500
+        else:
+             return jsonify(success=False, error=str(e)), 500
+    
 @app.route('/generate_qr', methods=['POST'])
 def generate_qr():
     try:
@@ -377,5 +376,8 @@ def update_deck(deck_id):
 
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
+   # port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+   # from dotenv import load_dotenv 
+   # load_dotenv()  # Load environment variables from .env file 
+    app.run(debug=True, port=5000)
