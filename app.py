@@ -13,6 +13,7 @@ import requests
 from flask_cors import CORS
 from datetime import datetime, timezone
 
+port = int(os.environ.get('PORT', 5000))
 # Cloudinary setup
 cloudinary.config(
     cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
