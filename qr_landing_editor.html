@@ -63,9 +63,9 @@
 <section class="section">
   <h2>🔗 Choose or Enter a New Destination</h2>
 
-  <button class="btn" onclick="setRedirect('https://www.amazon.com')">Amazon</button>
-  <button class="btn" onclick="setRedirect('https://www.walmart.com')">Walmart</button>
-  <button class="btn" onclick="setRedirect('https://themeqr.com')">Reset to ThemeQR</button>
+  <button class="btn" onclick="changeQrLanding('https://www.amazon.com')">Amazon</button>
+  <button class="btn" onclick="changeQrLanding('https://www.walmart.com')">Walmart</button>
+  <button class="btn" onclick="changeQrLanding('https://themeqr.com')">Reset to ThemeQR</button>
 
   <p style="margin-top:2rem;"><strong>Or enter a custom URL:</strong></p>
   <input type="url" id="customUrl" placeholder="https://example.com" />
@@ -85,56 +85,14 @@
   © 2025 ThemeQR. All rights reserved.
 </footer>
 
- <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> 
 <script>
-  
-const supabaseUrl = 'https://hvfqdrfdefgfqbfdikpn.supabase.co'; 
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9zOUjFu7fi-4oRVY-D61NCJU'; 
-const supabase = supabase.createClient(supabaseUrl, process.env.supabaseKey);
-
-async function testSupabase() {
-  const { data, error } = await supabase.from('decks').select('*');
-  if (error) {
-    console.error('Supabase error:', error);
-    throw new Error(error.message);
-  }
-  console.log('Data:', data);
-}
-testSupabase();
-    function setRedirect(url) {
-        // Change the endpoint to match your Flask app
-        fetch('https://themeqr-backend.onrender.com/change_qr_landing', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ landing: url }) // Change 'target' to 'landing' to match Flask
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                updateStatus("✅ Redirect updated!", false);
-                // After successfully updating the redirect, regenerate the QR code
-                // to reflect the new target.
-                generateQr();
-            } else {
-                updateStatus("❌ " + data.error, true);
-            }
-        })
-        .catch(err => updateStatus("❌ Network error: " + err.message, true));
-    }
-
-    function customSubmit() {
-        const url = document.getElementById('customUrl').value;
-        if (!url.startsWith('http')) {
-            updateStatus("❌ Please enter a valid URL (e.g., https://example.com).", true);
-            return;
-        }
-        setRedirect(url);
-    }
     
     async function changeQrLanding(landingUrl) {
     try {
       const response = await fetch('https://themeqr-backend.onrender.com/change_qr_landing', {
+    //  const response = await fetch('http://127.0.0.1:5000/change_qr_landing', {  
         method: 'POST',
+        table:'decks',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ landing: landingUrl })
       });
