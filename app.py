@@ -82,7 +82,10 @@ async def get_or_create_user_vault(user_id: str):
 # --- Existing Routes ---
 @app.route('/')
 def home():
-    return render_template('qr_landing_editor.html')
+    return render_template('qr_landing_editor.html',
+        supabase_url=os.environ.get('SUPABASE_URL'),
+        supabase_key=os.environ.get('SUPABASE_ANON_KEY')
+        )
 
 @app.route('/reset_index', methods=['POST'])
 def reset_index():
