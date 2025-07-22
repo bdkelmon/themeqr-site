@@ -85,14 +85,13 @@
   © 2025 ThemeQR. All rights reserved.
 </footer>
 
-<script type ="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-    const supabase = createClient(
-    window.SUPABASE_URL,
-    window.SUPABASE_KEY
-  );
-    console.log("Using Supabase URL:", window.SUPABASE_URL);
-    console.log("Using Anon Key:", window.SUPABASE_KEY);
+<script type>
+    const SUPABASE_URL = "{{ supabase_url }}";
+    const SUPABASE_KEY = "{{ supabase_key }}";
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+   
+    console.log("Using Supabase URL:", SUPABASE_URL);
+    console.log("Using Anon Key:", SUPABASE_KEY);
  
     async function changeQrLanding(landingUrl) {
     try {
