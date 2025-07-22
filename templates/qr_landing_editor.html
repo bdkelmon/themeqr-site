@@ -88,7 +88,7 @@
 <script>
     const SUPABASE_URL = "{{ supabase_url }}";
     const SUPABASE_KEY = "{{ supabase_key }}";
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
    
     console.log("Using Supabase URL:", SUPABASE_URL);
     console.log("Using Anon Key:", SUPABASE_KEY);
