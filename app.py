@@ -103,6 +103,9 @@ def serve_updated_index():
 
 @app.route('/change_qr_landing', methods=['POST'])
 def change_qr_landing():
+    print("Loading homepage")
+    print("Supabase URL:", os.environ.get('SUPABASE_URL'))
+    print("Supabase Key:", os.environ.get('SUPABASE_ANON_KEY'))
     try:
         print("📥 Incoming POST to /change_qr_landing")
         data = request.get_json()
