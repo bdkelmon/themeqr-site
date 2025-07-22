@@ -82,10 +82,10 @@ async def get_or_create_user_vault(user_id: str):
 # --- Existing Routes ---
 @app.route('/')
 def home():
-    return render_template('qr_landing_editor.html',
-        supabase_url=os.environ.get('SUPABASE_URL'),
-        supabase_key=os.environ.get('SUPABASE_ANON_KEY')
-        )
+    print("Loading homepage")
+    print("Supabase URL:", os.environ.get('SUPABASE_URL'))
+    print("Supabase Key:", os.environ.get('SUPABASE_ANON_KEY'))
+    return render_template('qr_landing_editor.html',)
 
 @app.route('/reset_index', methods=['POST'])
 def reset_index():
@@ -103,9 +103,6 @@ def serve_updated_index():
 
 @app.route('/change_qr_landing', methods=['POST'])
 def change_qr_landing():
-    print("Loading homepage")
-    print("Supabase URL:", os.environ.get('SUPABASE_URL'))
-    print("Supabase Key:", os.environ.get('SUPABASE_ANON_KEY'))
     try:
         print("📥 Incoming POST to /change_qr_landing")
         data = request.get_json()
