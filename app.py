@@ -79,13 +79,13 @@ async def get_or_create_user_vault(user_id: str):
         print(f"❌ Exception in get_or_create_user_vault: {str(e)}")
         return None
 
-# --- Existing Routes ---
+# --- Render /Template/qr_landing_editor.html ---
 @app.route('/')
-def home():
-    print("Loading homepage")
-    print("Supabase URL:", os.environ.get('SUPABASE_URL'))
-    print("Supabase Key:", os.environ.get('SUPABASE_ANON_KEY'))
-    return render_template('qr_landing_editor.html',)
+def serve_qr_landing_editor():
+    print(f"Flask serving qr_landing_editor.html. Supabase URL: {SUPABASE_URL}, Key is defined: {bool(SUPABASE_KEY)}")
+    return render_template('qr_landing_editor.html', 
+                           supabase_url=SUPABASE_URL, 
+                           supabase_key=SUPABASE_KEY)
 
 @app.route('/reset_index', methods=['POST'])
 def reset_index():
