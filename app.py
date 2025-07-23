@@ -12,6 +12,11 @@ import qrcode
 import requests
 from flask_cors import CORS
 from datetime import datetime, timezone
+from dotenv import load_dotenv
+
+
+# Load environment variables from ".env" file
+load_dotenv()
 
 port = int(os.environ.get('PORT', 5000))
 # Cloudinary setup
@@ -22,8 +27,8 @@ cloudinary.config(
 )
 
 # Supabase setup
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://hvfqdrfdefgfqbfdikpn.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9C_D61NCJU") # Ensure this is correct
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
