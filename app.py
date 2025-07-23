@@ -1,8 +1,10 @@
 # app.py
 
+import os
+
+
 from flask import Flask, request, render_template, jsonify, send_from_directory, redirect
 import shutil
-import os
 import uuid
 import cloudinary
 import cloudinary.uploader
@@ -14,16 +16,15 @@ from datetime import datetime, timezone
 from supabase import create_client 
 
 
-
 # Supabase setup
-supabase_url = os.environ.get("SUPABASE_URL")
-supabase_key = os.environ.get("SUPABASE_KEY")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-
-if not supabase_url or not supabase_key:
+if not SUPABASE_URL or not SUPABASE_KEY:
     raise Exception("SUPABASE_URL or SUPABASE_KEY not set")
 
-supabase = create_client(supabase_url, supabase_key)
+# Supabase client setup
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 port = int(os.environ.get('PORT', 5000))
 # Cloudinary setup
