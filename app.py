@@ -93,8 +93,8 @@ async def get_or_create_user_vault(user_id: str):
 def serve_qr_landing_editor():
     print(f"Flask serving qr_landing_editor.html. Supabase URL: {SUPABASE_URL}, Key is defined: {bool(SUPABASE_KEY)}")
     return render_template('qr_landing_editor.html', 
-                           supabase_url=SUPABASE_URL, 
-                           supabase_key=SUPABASE_KEY)
+                           supabase_url=os.environ['SUPABASE_URL'],
+                           supabase_key=os.environ['SUPABASE_KEY'])
 
 @app.route('/reset_index', methods=['POST'])
 def reset_index():
