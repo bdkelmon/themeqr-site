@@ -87,7 +87,7 @@
 
 <script type ="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
+ 
     const SUPABASE_URL = "{{ supabase_url }}";
     const SUPABASE_KEY = "{{ supabase_key }}";
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -124,7 +124,8 @@
             throw error;
         }
     }
-
+    window.changeQrLanding = changeQrLanding;
+    
     // This event listener for 'qr-form' is currently unused because your HTML has no element with id="qr-form".
     // Your buttons use direct onclick="changeQrLanding(...)".
     // Your custom URL input uses onclick="customSubmit()".
@@ -154,7 +155,8 @@
             updateStatus("Please enter a custom URL.", true);
         }
     }
-
+    window.customSubmit = customSubmit;
+    
     function generateQr() {
         // IMPORTANT: For the QR code to reflect the *updated* landing_url in Supabase,
         // your backend's /generate_qr endpoint must fetch the current landing_url from the DB
