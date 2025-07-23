@@ -1,7 +1,6 @@
 # app.py
 
 from flask import Flask, request, render_template, jsonify, send_from_directory, redirect
-from supabase import create_client, Client
 import shutil
 import os
 import uuid
@@ -12,11 +11,19 @@ import qrcode
 import requests
 from flask_cors import CORS
 from datetime import datetime, timezone
-from dotenv import load_dotenv
+from supabase import create_client 
 
 
-# Load environment variables from ".env" file
-load_dotenv()
+
+# Supabase setup
+supabase_url = os.environ.get("SUPABASE_URL")
+supabase_key = os.environ.get("SUPABASE_KEY")
+
+
+if not supabase_url or not supabase_key:
+    raise Exception("SUPABASE_URL or SUPABASE_KEY not set")
+
+supabase = create_client(supabase_url, supabase_key)
 
 port = int(os.environ.get('PORT', 5000))
 # Cloudinary setup
@@ -26,10 +33,6 @@ cloudinary.config(
     api_secret=os.getenv('CLOUDINARY_API_SECRET')
 )
 
-# Supabase setup
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
