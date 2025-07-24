@@ -77,7 +77,7 @@
   <h2>📷 QR Code</h2>
  <!-- <button class="btn" onclick="generateQr()">Generate QR</button> -->
  <!-- <br> -->
-  <img class="qr" id="qrImg" src="https://themeqr-backend.onrender.com/static/demo_themeqr_go_qr.png" alt="QR Code">
+  <img class="qr" id="qrImg" src="https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png" alt="QR Code">
   <p id="status"></p>
 </section>
 
@@ -156,7 +156,7 @@
         }
     }
     window.customSubmit = customSubmit;
-    
+
     function generateQr() {
         // IMPORTANT: For the QR code to reflect the *updated* landing_url in Supabase,
         // your backend's /generate_qr endpoint must fetch the current landing_url from the DB
@@ -172,7 +172,7 @@
                 const qrImg = document.getElementById('qrImg');
                 // Append unique timestamp to force browser to reload image from server, not cache
                 qrImg.src = data.qr_url + '?t=' + new Date().getTime(); 
-                updateStatus("✅ QR code re-generated.", false);
+                updateStatus("✅ Courious? Scan Here!!!.", false);
             } else {
                 updateStatus("❌ " + data.error, true);
             }
