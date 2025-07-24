@@ -57,7 +57,7 @@
 
 <header>
   <h1>ThemeQR Dynamic Redirect</h1>
-  <p>This QR code always points to <strong>https://themeqr.com/go</strong></p>
+  <p>This QR code always points to <strong>https://themeqr.com/go.html</strong></p>
 </header>
 
 <section class="section">
@@ -75,8 +75,7 @@
 
 <section class="section">
   <h2>📷 QR Code</h2>
- <!-- <button class="btn" onclick="generateQr()">Generate QR</button> -->
- <!-- <br> -->
+ 
   <img class="qr" id="qrImg" src="https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png" alt="QR Code">
   <p id="status"></p>
 </section>
@@ -116,7 +115,7 @@
             console.log('Success:', data);
             // After successful update, also generate the QR to reflect the new URL
             // This assumes your /generate_qr endpoint pulls the latest landing_url from DB
-            generateQr(); 
+          //  generateQr(); 
             return data;
         } catch (error) {
             console.error('Fetch error:', error);
@@ -187,12 +186,12 @@
     }
 
     // Initial QR code generation when the page loads
-    document.addEventListener('DOMContentLoaded', () => {
+    //document.addEventListener('DOMContentLoaded', () => {
         // You might want to modify generateQr() to fetch the current
         // landing_url for DEMO_DECK_ID from your backend's API
         // if you want the QR code to always show the current DB state.
-        generateQr(); 
-    });
+       // generateQr(); 
+   // });
 
 </script>
 </body>
