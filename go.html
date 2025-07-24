@@ -12,10 +12,10 @@
 
     // Get ID from URL query string
     const urlParams = new URLSearchParams(window.location.search);
-    const deckId = urlParams.get("id");
+    const deckid = urlParams.get("id");
 
     async function redirectToLanding() {
-      if (!deckId) {
+      if (!deckid) {
         document.body.innerText = "Missing Deck ID.";
         return;
       }
