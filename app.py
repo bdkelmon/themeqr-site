@@ -14,7 +14,10 @@ import requests
 from flask_cors import CORS
 from datetime import datetime, timezone
 from supabase import create_client 
+from dotenv import load_dotenv
 
+# Load environment variables
+load_dotenv()
 
 # Supabase setup
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -45,6 +48,79 @@ if not os.path.exists(app.static_folder):
     os.makedirs(app.static_folder)
 
 
+@app.route("/")
+def index():
+    return render_template("index.html", user=session.get("user"))
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
+        try:
+            response = supabase.auth.sign_in_with_password({"email": email, "password": password})
+            session["user"] = response.user.__dict__
+            session["session"] = response.session.__dict__ if response.session else None
+            flash("Logged in successfully!", "success")
+            return redirect(url_for("index"))
+        except Exception as e:
+            flash(f"Login failed: {str(e)}", "error")
+            return render_template("login.html")
+    return render_template("login.html")
+
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
+        try:
+            response = supabase.auth.sign_up({"email": email, "password": password})
+            session["user"] = response.user.__dict__
+            session["session"] = response.session.__dict__ if response.session else None
+            flash("Sign-up successful! Please check your email to confirm.", "success")
+            return redirect(url_for("index"))
+        except Exception as e:
+            flash(f"Sign-up failed: {str(e)}", "error")
+            return render_template("signup.html")
+    return render_template("signup.html")
+
+@app.route("/logout")
+def logout():
+    try:
+        supabase.auth.sign_out()
+        session.pop("user", None)
+        session.pop("session", None)
+        flash("Logged out successfully!", "success")
+        return redirect(url_for("index"))
+    except Exception as e:
+        flash(f"Logout failed: {str(e)}", "error")
+        return redirect(url_for("index"))
+
+@app.route("/google-login")
+def google_login():
+    try:
+        response = supabase.auth.sign_in_with_oauth({"provider": "google"})
+        return redirect(response.url)
+    except Exception as e:
+        flash(f"Google login failed: {str(e)}", "error")
+        return redirect(url_for("login"))
+
+@app.route("/auth/callback")
+def auth_callback():
+    try:
+        session_data = supabase.auth.get_session()
+        if session_data:
+            session["user"] = session_data.user.__dict__
+            session["session"] = session_data.__dict__
+            flash("Logged in with Google successfully!", "success")
+        else:
+            flash("Authentication failed.", "error")
+        return redirect(url_for("index"))
+    except Exception as e:
+        flash(f"Authentication failed: {str(e)}", "error")
+        return redirect(url_for("login"))
+
+
 @app.route('/test_supabase')
 def test_supabase():
   try:
@@ -54,7 +130,7 @@ def test_supabase():
     return jsonify({"data": response.data}), 200
   except Exception as e:
     return jsonify({"error": str(e)}), 500
-# --- Helper Function for Vault Management ---
+  # --- Helper Function for Vault Management ---
 async def get_or_create_user_vault(user_id: str):
     """
     Fetches a user's vault. If it doesn't exist, creates a default one.
@@ -89,7 +165,7 @@ async def get_or_create_user_vault(user_id: str):
         return None
 
 # --- Render /Template/qr_landing_editor.html ---
-@app.route('/')
+@app.route('/editor')
 def serve_qr_landing_editor():
     print(f"Flask serving qr_landing_editor.html. Supabase URL: {SUPABASE_URL}, Key is defined: {bool(SUPABASE_KEY)}")
     return render_template('qr_landing_editor.html', 
