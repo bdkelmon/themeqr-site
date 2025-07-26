@@ -65,7 +65,13 @@ def signup():
         password = request.form.get("password")
         try:
             response = supabase.auth.sign_up({"email": email, "password": password})
-            session["user"] = response.user.__dict__
+            user_data = response.user.__dict__
+            # Store only serializable user data
+            session["user"] = {
+                "id": user_data.get("id"),
+                "email": user_data.get("email"),
+                "created_at": user_data.get("created_at")
+            }
             session["session"] = response.session.__dict__ if response.session else None
             flash("Sign-up successful! Please check your email to confirm.", "success")
             return redirect(url_for("index"))
