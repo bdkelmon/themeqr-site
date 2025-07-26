@@ -64,7 +64,7 @@
   <section class="section">
     <div>
       <h2>🌐 Curious about dynamic QR switching in action</h2>
-      <button class="btn" onclick="editor()">Click Here!</button>
+      <a href="{{ url_for('editor') }}" class="btn">Click Here!</a>
     </div>
     <div style="margin: 2rem 0;">
       <h3>📷 QR Code</h3>
@@ -116,6 +116,11 @@
     function setLanding(url) {
       window.location.href = url;
     }
+
+     function editor() {
+      window.location.href = '/editor';
+    }
+    
   </script>
 </body>
 </html>
