@@ -92,6 +92,23 @@ def logout():
         flash(f"Logout failed: {str(e)}", "error")
         return redirect(url_for("index"))
 
+@app.route("/reset-password", methods=["GET", "POST"])
+def reset_password():
+    if request.method == "POST":
+        email = request.form.get("email")
+        if not email:
+            flash("Email is required.", "error")
+            return render_template("reset_password.html")
+        try:
+            # Send password reset email via Supabase
+            supabase.auth.reset_password_for_email(email, redirect_to="https://your-app.onrender.com/reset-password-confirm")
+            flash("Password reset email sent! Please check your email.", "success")
+            return redirect(url_for("index"))
+        except Exception as e:
+            flash(f"Failed to send password reset email: {str(e)}", "error")
+            return render_template("reset_password.html")
+    return render_template("reset_password.html")
+
 @app.route("/google-login")
 def google_login():
     try:
