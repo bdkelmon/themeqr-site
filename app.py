@@ -101,7 +101,7 @@ def reset_password():
             return render_template("reset_password.html")
         try:
             # Send password reset email via Supabase
-            supabase.auth.reset_password_for_email(email, redirect_to="https://your-app.onrender.com/reset-password-confirm")
+            supabase.auth.reset_password_for_email(email)
             flash("Password reset email sent! Please check your email.", "success")
             return redirect(url_for("index"))
         except Exception as e:
