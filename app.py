@@ -109,6 +109,32 @@ def reset_password():
             return render_template("reset_password.html")
     return render_template("reset_password.html")
 
+@app.route("/reset-password-confirm", methods=["GET", "POST"])
+def reset_password_confirm():
+    if request.method == "POST":
+        new_password = request.form.get("password")
+        if not new_password:
+            flash("Password is required.", "error")
+            return render_template("reset_password_confirm.html")
+        try:
+            supabase.auth.update_user({"password": new_password})
+            flash("Password updated successfully! Please log in.", "success")
+            return redirect(url_for("login"))
+        except Exception as e:
+            flash(f"Failed to update password: {str(e)}", "error")
+            return render_template("reset_password_confirm.html")
+    access_token = request.args.get("access_token")
+    token_type = request.args.get("type")
+    if not access_token or token_type != "recovery":
+        flash("Invalid or missing recovery token.", "error")
+        return redirect(url_for("login"))
+    try:
+        supabase.auth.verify_otp({"type": "recovery", "token": access_token})
+        return render_template("reset_password_confirm.html")
+    except Exception as e:
+        flash(f"Invalid or expired recovery token: {str(e)}", "error")
+        return redirect(url_for("login"))
+    
 @app.route("/google-login")
 def google_login():
     try:
