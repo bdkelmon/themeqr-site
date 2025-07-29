@@ -4,39 +4,63 @@
   <meta charset="UTF-8" />
   <title>Redirecting...</title>
   <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+    // Log start of script execution
+    console.log("Loading go.html script at", new Date().toISOString());
 
-    const SUPABASE_URL = "https://hvfqdrfdefgfqbfdikpn.supabase.co";  
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9zOUjFu7fi-4oRVY-D61NCJU";  
+    // Import Supabase client
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+    console.log("Supabase client imported successfully");
+
+    const SUPABASE_URL = "https://hvfqdrfdefgfqbfdikpn.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9zOUjFu7fi-4oRVY-D61NCJU";
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log("Supabase client initialized with URL:", SUPABASE_URL);
 
     // Get ID from URL query string
     const urlParams = new URLSearchParams(window.location.search);
     const deckid = urlParams.get("id");
+    console.log("Parsed deckid from URL:", deckid);
 
     async function redirectToLanding() {
       if (!deckid) {
+        console.error("Missing Deck ID.");
         document.body.innerText = "Missing Deck ID.";
         return;
       }
 
-      const { data, error } = await supabase
-        .from("decks")
-        .select("landing_url")
-        .eq("id", deckid)
-        .single();
+      console.log("Attempting to fetch landing_url for deckid:", deckid);
+      try {
+        const { data, error } = await supabase
+          .from("decks")
+          .select("landing_url")
+          .eq("id", deckid)
+          .single();
 
-      if (error || !data) {
-        console.error("❌ Supabase error:", error);
-        document.body.innerText = "Could not find destination for this QR code.";
-        return;
+        if (error) {
+          console.error("❌ Supabase error:", error.message, "Details:", error.details);
+          document.body.innerText = `Could not find destination for this QR code. Error: ${error.message}`;
+          return;
+        }
+
+        if (!data || !data.landing_url) {
+          console.warn("No landing_url found for deckid:", deckid);
+          document.body.innerText = "No destination found for this QR code.";
+          return;
+        }
+
+        console.log("✅ Found landing_url:", data.landing_url);
+        window.location.href = data.landing_url;
+      } catch (e) {
+        console.error("❌ Unexpected error in redirectToLanding:", e.message, e.stack);
+        document.body.innerText = `Error during redirect: ${e.message}`;
       }
-
-      // ✅ Redirect
-      window.location.href = data.landing_url;
     }
 
-    redirectToLanding();
+    // Execute and handle uncaught promise rejections
+    redirectToLanding().catch(e => {
+      console.error("❌ Uncaught promise rejection:", e.message, e.stack);
+      document.body.innerText = `Failed to redirect: ${e.message}`;
+    });
   </script>
 </head>
 <body>
