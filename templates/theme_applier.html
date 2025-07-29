@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Theme Applier - ThemeQR</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    h1 { color: #2c3e50; text-align: center; }
+    .folder-list { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    .folder { background: #3498db; color: #fff; padding: 10px; border-radius: 5px; cursor: pointer; }
+    .folder:hover { background: #2980b9; }
+    #theme-window { display: none; margin-top: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+    #theme-window h3 { color: #2c3e50; }
+    #theme-window p { margin: 5px 0; }
+    #apply-button { background: #e74c3c; color: #fff; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+    #apply-button:hover { background: #c0392b; }
+    #deck-picker { display: none; margin-top: 20px; }
+    #deck-list { display: flex; flex-wrap: wrap; gap: 10px; }
+    .deck { background: #2ecc71; color: #fff; padding: 10px; border-radius: 5px; cursor: pointer; }
+    .deck:hover { background: #27ae60; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Apply a Theme to Your Deck</h1>
+    <div class="folder-list" id="folder-list"></div>
+    <div id="theme-window">
+      <h3>Selected Theme Details</h3>
+      <p><strong>Wrapper URL:</strong> <span id="wrapper-url"></span></p>
+      <p><strong>Landing URL:</strong> <span id="landing-url"></span></p>
+      <button id="apply-button">Apply to Deck</button>
+    </div>
+    <div id="deck-picker">
+      <h3>Select a Deck to Apply Theme</h3>
+      <div id="deck-list"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+    const SUPABASE_URL = "{{ supabase_url }}";
+    const SUPABASE_KEY = "{{ supabase_key }}";
+    const userId = "{{ session.user.id }}"; // Assume this is passed from Flask
+   
+    // Validate and normalize SUPABASE_URL
+    let validatedSupabaseUrl = SUPABASE_URL;
+    try {
+      new URL(validatedSupabaseUrl); // Test if it's a valid URL
+    } catch (e) {
+      console.error('Invalid SUPABASE_URL:', SUPABASE_URL, e);
+      validatedSupabaseUrl = 'https://default-supabase-url.supabase.co'; // Fallback URL
+      console.warn('Falling back to default Supabase URL:', validatedSupabaseUrl);
+    }
+    console.log('Using Supabase URL:', validatedSupabaseUrl);
+
+    const supabase = createClient(validatedSupabaseUrl, SUPABASE_KEY);
+
+    // Load themes
+    async function loadThemes() {
+      const { data, error } = await supabase.from('themes').select('id, name');
+      if (error) {
+        console.error('Error loading themes:', error);
+        return;
+      }
+      const folderList = document.getElementById('folder-list');
+      data.forEach(theme => {
+        const folder = document.createElement('div');
+        folder.className = 'folder';
+        folder.textContent = theme.name;
+        folder.onclick = () => showThemeDetails(theme.id);
+        folderList.appendChild(folder);
+      });
+    }
+
+    // Show theme details
+    async function showThemeDetails(themeId) {
+      const { data, error } = await supabase.from('themes').select('wrapper_url, landing_url').eq('id', themeId).single();
+      if (error) {
+        console.error('Error loading theme details:', error);
+        return;
+      }
+      document.getElementById('wrapper-url').textContent = data.wrapper_url;
+      document.getElementById('landing-url').textContent = data.landing_url;
+      document.getElementById('theme-window').style.display = 'block';
+      document.getElementById('apply-button').onclick = () => showDeckPicker(themeId, data.wrapper_url, data.landing_url);
+    }
+
+    // Show deck picker
+    async function showDeckPicker(themeId, wrapperUrl, landingUrl) {
+      const { data: vaults, error: vaultError } = await supabase.from('vaults').select('id').eq('user_id', userId);
+      if (vaultError) {
+        console.error('Error loading vaults:', vaultError);
+        return;
+      }
+      const vaultIds = vaults.map(v => v.id);
+      const { data: decks, error: deckError } = await supabase.from('decks').select('id, deck_name').in('vault_id', vaultIds);
+      if (deckError) {
+        console.error('Error loading decks:', deckError);
+        return;
+      }
+      const deckList = document.getElementById('deck-list');
+      deckList.innerHTML = '';
+      decks.forEach(deck => {
+        const deckItem = document.createElement('div');
+        deckItem.className = 'deck';
+        deckItem.textContent = deck.deck_name || `Deck ${deck.id}`;
+        deckItem.onclick = () => applyThemeToDeck(themeId, deck.id, wrapperUrl, landingUrl);
+        deckList.appendChild(deckItem);
+      });
+      document.getElementById('deck-picker').style.display = 'block';
+    }
+
+    // Apply theme to deck
+    async function applyThemeToDeck(themeId, deckId, wrapperUrl, landingUrl) {
+      const qrPath = `/tmp/qr_${deckId}.png`; // Assume backend generates this
+      const outputPath = `/tmp/output_${deckId}.mp4`;
+      try {
+        const response = await fetch('/generate_qr_video_wrapper', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            wrapper: wrapperUrl,
+            qr: qrPath,
+            landing: landingUrl,
+            output: outputPath
+          })
+        });
+        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+        const result = await response.json();
+        if (result.success) {
+          const { error } = await supabase.from('decks').update({
+            wrapper: result.output_url,
+            landing_url: landingUrl,
+            updated_at: new Date().toISOString()
+          }).eq('id', deckId);
+          if (error) throw error;
+          alert('Theme applied successfully!');
+          document.getElementById('deck-picker').style.display = 'none';
+        } else {
+          alert('Failed to apply theme: ' + result.error);
+        }
+      } catch (error) {
+        console.error('Error applying theme:', error);
+        alert('Failed to apply theme: ' + error.message);
+      }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', loadThemes);
+  </script>
+</body>
+</html>
