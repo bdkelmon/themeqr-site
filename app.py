@@ -313,7 +313,7 @@ def update_index():
         print(f"❌ Error in update_index: {str(e)}")
         return jsonify(success=False, error=str(e))
 
-@app.route('/go')
+#@app.route('/go')
 @app.route('/go.html')
 def redirect_to_landing():
     try:
@@ -326,10 +326,10 @@ def redirect_to_landing():
             print(f"❌ Supabase fetch error: {response.error.message}")
             return redirect("https://themeqr.com", code=302)
         landing_url = response.data["landing_url"]
-        print(f"✅ Redirecting /go to: {landing_url} for deck_id {deck_id}")
+        print(f"✅ Redirecting /go to: {landing_url} for deck_id {deck_id} at {datetime.now()}")
         return redirect(landing_url, code=302)
     except Exception as e:
-        print(f"❌ Exception in /go: {e}")
+        print(f"❌ Exception in /go: {e} at {datetime.now()}")
         return redirect("https://themeqr.com", code=302)
 
 @app.route('/api/vaults/<string:user_id>', methods=['GET'])
