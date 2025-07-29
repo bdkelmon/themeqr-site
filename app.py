@@ -314,14 +314,19 @@ def update_index():
         return jsonify(success=False, error=str(e))
 
 @app.route('/go')
+@app.route('/go.html')
 def redirect_to_landing():
     try:
-        response = supabase.table('decks').select("landing_url").eq("id", DEMO_DECK_ID).single().execute()
+        deck_id = request.args.get('id')
+        if not deck_id:
+            print("⚠️ No id parameter provided, using DEMO_DECK_ID")
+            deck_id = "71f42d9b-fe22-4085-87f0-944ab85ac07e"  # Fallback to DEMO_DECK_ID
+        response = supabase.table('decks').select("landing_url").eq("id", deck_id).single().execute()
         if response.error:
             print(f"❌ Supabase fetch error: {response.error.message}")
             return redirect("https://themeqr.com", code=302)
         landing_url = response.data["landing_url"]
-        print(f"✅ Redirecting /go to: {landing_url}")
+        print(f"✅ Redirecting /go to: {landing_url} for deck_id {deck_id}")
         return redirect(landing_url, code=302)
     except Exception as e:
         print(f"❌ Exception in /go: {e}")
