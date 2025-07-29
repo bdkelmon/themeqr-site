@@ -3,6 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <title>Redirecting...</title>
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+    const SUPABASE_URL = "https://hvfqdrfdefgfqbfdikpn.supabase.co";  
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9zOUjFu7fi-4oRVY-D61NCJU";  
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Get ID from URL query string
+    const urlParams = new URLSearchParams(window.location.search);
+    const deckid = urlParams.get("id");
+
+    async function redirectToLanding() {
+      if (!deckid) {
+        document.body.innerText = "Missing Deck ID.";
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("decks")
+        .select("landing_url")
+        .eq("id", deckid)
+        .single();
+
+      if (error || !data) {
+        console.error("❌ Supabase error:", error);
+        document.body.innerText = "Could not find destination for this QR code.";
+        return;
+      }
+
+      // ✅ Redirect
+      window.location.href = data.landing_url;
+    }
+
+    redirectToLanding();
+  </script>
 </head>
 <body>
   <p>Redirecting...</p>
