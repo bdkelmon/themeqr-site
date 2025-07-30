@@ -313,7 +313,7 @@ def update_index():
         print(f"❌ Error in update_index: {str(e)}")
         return jsonify(success=False, error=str(e))
 
-#@app.route('/go')
+@app.route('/go')
 @app.route('/go.html')
 def redirect_to_landing():
     try:
@@ -417,10 +417,8 @@ def update_deck(deck_id):
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
-    port = int(os.environ.get("PORT", 5000))
-   # app.run(host='0.0.0.0', port=port)
+   # port = int(os.environ.get('PORT', 5000))
+   # app.run(host='0.0.0.0', port=port, debug=True)
+  
    # from dotenv import load_dotenv 
    # load_dotenv()  # Load environment variables from .env file 
-    app.run(debug=True, port=5000)
