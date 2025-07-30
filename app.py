@@ -317,6 +317,7 @@ def update_index():
 @app.route('/go.html')
 def redirect_to_landing():
     try:
+        print(f"⚠️ Start of the /go.html route {datetime.now()}")
         deck_id = request.args.get('id')
         if not deck_id:
             print("⚠️ No id parameter provided, using DEMO_DECK_ID")
@@ -418,8 +419,8 @@ def update_deck(deck_id):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
-   # port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    port = int(os.environ.get("PORT", 5000))
+   # app.run(host='0.0.0.0', port=port)
    # from dotenv import load_dotenv 
    # load_dotenv()  # Load environment variables from .env file 
     app.run(debug=True, port=5000)
