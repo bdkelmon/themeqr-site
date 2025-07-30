@@ -6,14 +6,13 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-
   <title>ThemeQR – QR Codes That Entertain</title>
   <style>
     body { margin: 0; font-family: sans-serif; background: #fff; color: #333; }
-    header { padding: 2rem; background: #0a2540; color: #fff; text-align: center; }
+    header { padding: 2rem; background: #0a2540; color: #fff; text-align: center; position: relative; min-height: 120px; }
     h1 { margin: 0; font-size: 2.5rem; }
     h2 { color: #0a2540; }
-    .signup h2 {color: #fff;}
+    .signup h2 { color: #fff; }
     .hero { padding: 3rem 1rem; text-align: center; background: #f9f9f9; }
     .hero p { max-width: 600px; margin: 1rem auto; font-size: 1.2rem; }
     .btn { background: #00b894; color: #fff; padding: 0.75rem 1.5rem; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 1rem; }
@@ -25,112 +24,99 @@
     .signup { background: #0a2540; color: #fff; padding: 2rem; }
     input[type="email"] { padding: 0.75rem; width: 250px; max-width: 80%; border: none; border-radius: 4px; margin-right: 0.5rem; }
     .footer { background: #f1f1f1; text-align: center; padding: 1rem; font-size: 0.9rem; color: #666; }
+    .auth-controls { position: absolute; bottom: 1rem; right: 2rem; display: flex; align-items: center; gap: 1rem; }
+    .auth-controls span { font-size: 1rem; }
+    .auth-controls a { color: #fff; text-decoration: none; }
+    .auth-controls a:hover { text-decoration: underline; }
+    .auth-controls .logout-btn { background: #ff4d4f; padding: 0.5rem 1rem; border-radius: 5px; }
+    .auth-controls .logout-btn:hover { background: #e6393b; text-decoration: none; }
   </style>
 </head>
 <body>
- 
-<header>
-  <h1>ThemeQR</h1>
-   <p class="text-lg">Please <a href="{{ url_for('login') }}" class="text-amber-500 hover:underline">log in</a> or <a href="{{ url_for('signup') }}" class="text-amber-500 hover:underline">sign up</a>.</p>
-  <p>QR Codes That Do More Than Link – They Entertain</p>
-</header>
-
-<section class="hero">
-  <h2>Create QR Codes with Video Personality</h2>
-  <p>ThemeQR lets you wrap your QR codes in viral memes, stylish videos, and branded themes. Update your QR destination anytime with just a tap.</p>
-  <a href="#signup" class="btn">Get Early Access</a>
-</section>
-
-<section class="video-wrapper">
-  <h2>📽️ See It In Action</h2>
-  <video autoplay loop muted playsinline width="100%">
-  <source src="https://res.cloudinary.com/themeqr-test/video/upload/v1752014993/themeqr/wrappers/obsg01o6dfzl6du5bsaa.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-  </video>
-</section>
-
-<section class="section">
-<!--  <div>
-    <h2>🎬 Switch Wrapper Videos</h2>
-    <button class="btn" onclick="setVideo('https://res.cloudinary.com/themeqr-test/video/upload/v1752014993/themeqr/wrappers/obsg01o6dfzl6du5bsaa.mp4')">Default Wrapper</button>
-    <button class="btn" onclick="setVideo('https://res.cloudinary.com/themeqr-test/video/upload/v1752112312/themeqr/wrappers/google_demo_wrapped.mp4')">Google Demo Wrapper</button>
-  </div> -->
-  <div>
-    <h2>🌐 Courious about dynamic QR swithcing in action</h2>
-   <button class="btn" onclick="window.location.href='https://themeqr-backend.onrender.com/'">Click Here!</button> 
-   <!--<button class="btn" onclick="setLanding('https://bdkelmon.github.io/themeqr-site/HappyBirthdayAiden.html')">Back to Aiden's Page</button> -->
-  
-  <!--   <button class="btn" onclick="window.location.href='https://bdkelmon.github.io/themeqr-site/templates/editor.html'">Deck Editor</button> -->
-  
-  </div> 
-
-  <div style="margin: 2rem 0;">
-    <h3>📷 QR Code</h3>
-    <img src="https://res.cloudinary.com/themeqr-test/image/upload/v1752014973/themeqr/qr_codes/kulzt9rsgzjg75mezbde.png" alt="QR Code" style="width: 200px; border: 1px solid #ccc; border-radius: 8px;">
-  </div>
-
-</section>
-  
-<section class="section">
-  <h2>🚀 Why ThemeQR?</h2>
-  <div class="features">
-    <div>
-      <h3>🎥 Video Wrappers</h3>
-      <p>Play a funny or branded video around your QR scan.</p>
+  <header>
+    <h1>ThemeQR</h1>
+    <p>QR Codes That Do More Than Link – They Entertain</p>
+    <div class="auth-controls">
+      {% if user %}
+        <span>Hello, {{ user.email }}!</span>
+        <a href="{{ url_for('logout') }}" class="logout-btn">Log Out</a>
+      {% else %}
+        <a href="{{ url_for('login') }}">Log In</a>
+        <a href="{{ url_for('signup') }}">Sign Up</a>
+      {% endif %}
     </div>
+  </header>
+
+  <section class="hero">
+    <h2>Create QR Codes with Video Personality</h2>
+    <p>ThemeQR lets you wrap your QR codes in viral memes, stylish videos, and branded themes. Update your QR destination anytime with just a tap.</p>
+    <a href="{{ url_for('signup') }}" class="btn">Get Early Access</a>
+  </section>
+
+  <section class="video-wrapper">
+    <h2>📽️ See It In Action</h2>
+    <video autoplay loop muted playsinline width="100%">
+      <source src="https://res.cloudinary.com/themeqr-test/video/upload/v1752014993/themeqr/wrappers/obsg01o6dfzl6du5bsaa.mp4" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+  </section>
+
+  <section class="section">
     <div>
-      <h3>🔁 Dynamic Links</h3>
-      <p>Change where your QR points, anytime, even after printing.</p>
+      <h2>🌐 Curious about dynamic QR switching in action</h2>
+      <a href="{{ url_for('serve_qr_landing_editor') }}" class="btn">Click Here!</a>
     </div>
-    <div>
-      <h3>🎨 Custom Themes</h3>
-      <p>Pick from memes, categories, or upload your own.</p>
+    <div style="margin: 2rem 0;">
+      <h3>📷 QR Code</h3>
+      <img src="https://res.cloudinary.com/themeqr-test/image/upload/v1752014973/themeqr/qr_codes/kulzt9rsgzjg75mezbde.png" alt="QR Code" style="width: 200px; border: 1px solid #ccc; border-radius: 8px;">
     </div>
-    <div>
-      <h3>📊 Use for Marketing</h3>
-      <p>Perfect for campaigns, events, promotions, birthdays.</p>
+  </section>
+
+  <section class="section">
+    <h2>🚀 Why ThemeQR?</h2>
+    <div class="features">
+      <div>
+        <h3>🎥 Video Wrappers</h3>
+        <p>Play a funny or branded video around your QR scan.</p>
+      </div>
+      <div>
+        <h3>🔁 Dynamic Links</h3>
+        <p>Change where your QR points, anytime, even after printing.</p>
+      </div>
+      <div>
+        <h3>🎨 Custom Themes</h3>
+        <p>Pick from memes, categories, or upload your own.</p>
+      </div>
+      <div>
+        <h3>📊 Use for Marketing</h3>
+        <p>Perfect for campaigns, events, promotions, birthdays.</p>
+      </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section class="signup" id="signup">
-  <h2>📬 Get Notified When We Launch</h2>
-  <form action="https://formspree.io/f/xanjrepy" method="POST">
-    <input type="email" name="email" placeholder="Your email" required />
-    <button class="btn" type="submit">Join the Waitlist</button>
-  </form>
-</section>
+  <section class="signup" id="signup">
+    <h2>📬 Get Notified When We Launch</h2>
+    <p>Join our waitlist to get early access to ThemeQR.</p>
+    <a href="{{ url_for('signup') }}" class="btn">Join the Waitlist</a>
+  </section>
 
+  <footer class="footer">
+    © 2025 ThemeQR. All rights reserved.
+  </footer>
 
-<footer class="footer">
-  © 2025 ThemeQR. All rights reserved.
-</footer>
-<script>
-  function setVideo(url) {
-    const video = document.getElementById("qrVideo");
-    const source = document.getElementById("videoSource");
-    source.src = url;
-    video.load();
-    video.play();
-  }
+  <script>
+    function setVideo(url) {
+      const video = document.getElementById("qrVideo");
+      const source = document.getElementById("videoSource");
+      source.src = url;
+      video.load();
+      video.play();
+    }
 
-  function setLanding(url) {
-    window.location.href = url;
-  }
-</script>
- 
+    function setLanding(url) {
+      window.location.href = url;
+    }
+
+  </script>
 </body>
-<script>
-  document.querySelector("form").addEventListener("submit", function (e) {
-    e.preventDefault(); // Prevent default form submission behavior
-    const input = this.querySelector("input[type='email']");
-    
-    // ✅ You can also send it somewhere here via fetch() or Formspree
-    
-    alert("Thanks! You're on the waitlist."); // Optional feedback
-    input.value = ""; // Clear the input
-  });
-</script>  
 </html>
-
-
