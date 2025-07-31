@@ -11,6 +11,7 @@ from flask_cors import CORS
 from datetime import datetime, timezone
 from supabase import create_client
 from dotenv import load_dotenv
+import json
 
 # Load environment variables
 load_dotenv()
@@ -21,6 +22,9 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise Exception("SUPABASE_URL or SUPABASE_KEY not set")
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+app = Flask(__name__, template_folder='themeqr-site/templates', static_folder='themeqr-site')
+app.secret_key = os.getenv("FLASK_SECRET_KEY")
 
 # Cloudinary setup
 cloudinary.config(
@@ -84,13 +88,14 @@ def signup():
 def logout():
     try:
         supabase.auth.sign_out()
-        session.pop("user", None)
-        session.pop("session", None)
+        response = make_response(redirect(url_for("login")))
+        response.set_cookie('user', '', expires=0)  # Clear cookie
         flash("Logged out successfully!", "success")
-        return redirect(url_for("index"))
+        return response
     except Exception as e:
         flash(f"Logout failed: {str(e)}", "error")
         return redirect(url_for("index"))
+    
 
 @app.route("/reset-password", methods=["GET", "POST"])
 def reset_password():
