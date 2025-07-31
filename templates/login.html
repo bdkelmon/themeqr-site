@@ -34,5 +34,11 @@
     <p>Forgot your password? <a href="{{ url_for('reset_password') }}">Reset Password</a></p>
     <p>Don't have an account? <a href="{{ url_for('signup') }}">Sign Up</a></p>
   </div>
+<script>
+  // After successful login
+  localStorage.setItem('user', JSON.stringify({'email': 'user@example.com'}));
+  window.location.href = '/';
+</script>
+
 </body>
 </html>

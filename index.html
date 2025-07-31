@@ -36,14 +36,8 @@
   <header>
     <h1>ThemeQR</h1>
     <p>QR Codes That Do More Than Link – They Entertain</p>
-    <div class="auth-controls">
-      {% if user %}
-        <span>Hello, {{ user.email }}!</span>
-        <a href="{{ url_for('logout') }}" class="logout-btn">Log Out</a>
-      {% else %}
-        <a href="{{ url_for('login') }}">Log In</a>
-        <a href="{{ url_for('signup') }}">Sign Up</a>
-      {% endif %}
+    <div class="auth-controls" id="user-nav">
+  
     </div>
   </header>
 
@@ -105,6 +99,28 @@
   </footer>
 
   <script>
+    // Check if user data exists (e.g., from localStorage)
+    const user = JSON.parse(localStorage.getItem('user')) || null;
+  
+    const navDiv = document.getElementById('user-nav');
+    if (user && user.email) {
+      navDiv.innerHTML = `
+        <span>Hello, ${user.email}!</span>
+        <a href="/logout" class="logout-btn">Log Out</a>
+      `;
+    } else {
+      navDiv.innerHTML = `
+        <a href="/login">Log In</a>
+        <a href="/signup">Sign Up</a>
+      `;
+    }
+  
+    // Optional: Handle logout click to clear user data
+    document.querySelector('.logout-btn')?.addEventListener('click', () => {
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }); 
+
     function setVideo(url) {
       const video = document.getElementById("qrVideo");
       const source = document.getElementById("videoSource");
