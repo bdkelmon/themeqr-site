@@ -6,7 +6,7 @@ import cloudinary.uploader
 from moviepy.editor import VideoFileClip, CompositeVideoClip, ImageClip
 import qrcode
 import requests
-from flask import Flask, request, render_template, jsonify, send_from_directory, redirect, session, flash, url_for
+from flask import Flask, request, render_template, jsonify, make_response, send_from_directory, redirect, session, flash, url_for
 from flask_cors import CORS
 from datetime import datetime, timezone
 from supabase import create_client
