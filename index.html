@@ -39,15 +39,7 @@
     <div class="auth-controls" id="user-nav">
   
     </div>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, message in messages %}
-        <p class="{{ category }}">{{ message }}</p>
-      {% endfor %}
-    {% endif %}
-    {% endwith %}
-
-
+ 
   </header>
 
   <section class="hero">
@@ -143,7 +135,9 @@
     
     // Run on page load and handle redirect
     window.addEventListener('load', updateUserNav);
-
+    window.addEventListener('popstate', () => {
+      window.location.reload();  // Force reload on back/forward
+    }); 
     // Handle logout click to clear cookie
     document.querySelector('.logout-btn')?.addEventListener('click', () => {
       document.cookie = 'user=; Max-Age=0; path=/';
