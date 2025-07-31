@@ -46,21 +46,23 @@ if not os.path.exists(app.static_folder):
 def index():
     return render_template("index.html", user=session.get("user"))
 
-@app.route("/login", methods=["GET", "POST"])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == "POST":
-        email = request.form.get("email")
-        password = request.form.get("password")
-        try:
-            response = supabase.auth.sign_in_with_password({"email": email, "password": password})
-            session["user"] = response.user.__dict__
-            session["session"] = response.session.__dict__ if response.session else None
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        response = supabase.auth.sign_in_with_password({"email": email, "password": password})
+        if response.user:
+            user_data = {'email': response.user.email, 'id': response.user.id}
+            response = make_response(redirect(url_for('index')))  # Redirect to index after login
+            response.set_cookie('user', json.dumps(user_data), max_age=3600)  # 1-hour expiry
             flash("Logged in successfully!", "success")
-            return redirect(url_for("index"))
-        except Exception as e:
-            flash(f"Login failed: {str(e)}", "error")
-            return render_template("login.html")
-    return render_template("login.html")
+            return response
+        else:
+            flash("Invalid email or password.", "error")
+            return redirect(url_for('login'))
+    return render_template('login.html')
+     
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
@@ -87,12 +89,15 @@ def signup():
 @app.route("/logout")
 def logout():
     try:
+        print(f"Signing out at {datetime.now()}")
         supabase.auth.sign_out()
+        print(f"Sign-out completed at {datetime.now()}")
         response = make_response(redirect(url_for("login")))
         response.set_cookie('user', '', expires=0)  # Clear cookie
         flash("Logged out successfully!", "success")
         return response
     except Exception as e:
+        print(f"Sign-out error: {str(e)} at {datetime.now()}")
         flash(f"Logout failed: {str(e)}", "error")
         return redirect(url_for("index"))
     

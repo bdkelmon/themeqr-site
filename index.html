@@ -108,6 +108,7 @@
   </footer>
 
   <script>
+   function updateUserNav() { 
   // Get user data from cookie
     const cookies = document.cookie.split('; ').reduce((acc, cookie) => {
       const [name, value] = cookie.split('=');
@@ -128,6 +129,20 @@
         <a href="/signup">Sign Up</a>
       `;
     }  
+    
+    // Add logout event listener if not already added
+    const logoutBtn = navDiv.querySelector('.logout-btn');
+    if (logoutBtn && !logoutBtn.dataset.eventListener) {
+      logoutBtn.addEventListener('click', () => {
+        document.cookie = 'user=; Max-Age=0; path=/';
+        window.location.href = '/login';
+      });
+      logoutBtn.dataset.eventListener = 'true'; // Prevent duplicate listeners
+    }
+    }
+    
+    // Run on page load and handle redirect
+    window.addEventListener('load', updateUserNav);
 
     // Handle logout click to clear cookie
     document.querySelector('.logout-btn')?.addEventListener('click', () => {
