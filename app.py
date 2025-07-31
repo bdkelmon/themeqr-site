@@ -90,10 +90,11 @@ def signup():
 def logout():
     try:
         print(f"Signing out at {datetime.now()}")
-        supabase.auth.sign_out()
+        if supabase.auth.get_session():
+            supabase.auth.sign_out()
         print(f"Sign-out completed at {datetime.now()}")
-        response = make_response(redirect(url_for("login")))
-        response.set_cookie('user', '', expires=0)  # Clear cookie
+        response = make_response(redirect("https://themeqr-backend.onrender.com/login"))
+        response.set_cookie('user', '', expires=0, path='/')
         flash("Logged out successfully!", "success")
         return response
     except Exception as e:

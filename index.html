@@ -36,16 +36,13 @@
   <header>
     <h1>ThemeQR</h1>
     <p>QR Codes That Do More Than Link – They Entertain</p>
-    <div class="auth-controls" id="user-nav">
-  
-    </div>
- 
+    <div class="auth-controls" id="user-nav"></div>
   </header>
 
   <section class="hero">
     <h2>Create QR Codes with Video Personality</h2>
     <p>ThemeQR lets you wrap your QR codes in viral memes, stylish videos, and branded themes. Update your QR destination anytime with just a tap.</p>
-    <a href="{{ url_for('signup') }}" class="btn">Get Early Access</a>
+    <a href="https://themeqr-backend.onrender.com/signup" class="btn">Get Early Access</a>
   </section>
 
   <section class="video-wrapper">
@@ -59,7 +56,7 @@
   <section class="section">
     <div>
       <h2>🌐 Curious about dynamic QR switching in action</h2>
-      <a href="{{ url_for('serve_qr_landing_editor') }}" class="btn">Click Here!</a>
+      <a href="https://themeqr-backend.onrender.com/serve_qr_landing_editor" class="btn">Click Here!</a>
     </div>
     <div style="margin: 2rem 0;">
       <h3>📷 QR Code</h3>
@@ -92,7 +89,7 @@
   <section class="signup" id="signup">
     <h2>📬 Get Notified When We Launch</h2>
     <p>Join our waitlist to get early access to ThemeQR.</p>
-    <a href="{{ url_for('signup') }}" class="btn">Join the Waitlist</a>
+    <a href="https://themeqr-backend.onrender.com/signup" class="btn">Join the Waitlist</a>
   </section>
 
   <footer class="footer">
@@ -100,55 +97,41 @@
   </footer>
 
   <script>
-   function updateUserNav() { 
-  // Get user data from cookie
-    const cookies = document.cookie.split('; ').reduce((acc, cookie) => {
-      const [name, value] = cookie.split('=');
-      acc[name] = value;
-      return acc;
-    }, {});
-    const user = cookies.user ? JSON.parse(decodeURIComponent(cookies.user)) : null;  
+    function updateUserNav() {
+      const cookies = document.cookie.split('; ').reduce((acc, cookie) => {
+        const [name, value] = cookie.split('=');
+        acc[name] = value;
+        return acc;
+      }, {});
+      const user = cookies.user ? JSON.parse(decodeURIComponent(cookies.user)) : null;
 
-    const navDiv = document.getElementById('user-nav');
-    if (user && user.email) {
-      navDiv.innerHTML = `
-        <span>Hello, ${user.email}!</span>
-        <a href="/logout" class="logout-btn">Log Out</a>
-      `;
-    } else {
-      navDiv.innerHTML = `
-        <a href="/login">Log In</a>
-        <a href="/signup">Sign Up</a>
-      `;
-    }  
-    
-    // Add logout event listener if not already added
-    const logoutBtn = navDiv.querySelector('.logout-btn');
-    if (logoutBtn && !logoutBtn.dataset.eventListener) {
-      logoutBtn.addEventListener('click', () => {
-        document.cookie = 'user=; Max-Age=0; path=/';
-        window.location.href = '/login';
-      });
-      logoutBtn.dataset.eventListener = 'true'; // Prevent duplicate listeners
+      const navDiv = document.getElementById('user-nav');
+      if (user && user.email) {
+        navDiv.innerHTML = `
+          <span>Hello, ${user.email}!</span>
+          <a href="/logout" class="logout-btn">Log Out</a>
+        `;
+      } else {
+        navDiv.innerHTML = `
+          <a href="https://themeqr-backend.onrender.com/login">Log In</a>
+          <a href="https://themeqr-backend.onrender.com/signup">Sign Up</a>
+        `;
+      }
+
+      const logoutBtn = navDiv.querySelector('.logout-btn');
+      if (logoutBtn && !logoutBtn.dataset.eventListener) {
+        logoutBtn.addEventListener('click', () => {
+          document.cookie = 'user=; Max-Age=0; path=/';
+          window.location.href = '/logout';
+        });
+        logoutBtn.dataset.eventListener = 'true';
+      }
     }
-    }
-    
-    // Run on page load and handle redirect
+
     window.addEventListener('load', updateUserNav);
     window.addEventListener('popstate', () => {
-      window.location.reload();  // Force reload on back/forward
-    }); 
-    // Handle logout click to clear cookie
-    document.querySelector('.logout-btn')?.addEventListener('click', () => {
-      document.cookie = 'user=; Max-Age=0; path=/';
-      window.location.href = '/login';
+      window.location.reload();
     });
-  
-    // Optional: Handle logout click to clear user data
-    document.querySelector('.logout-btn')?.addEventListener('click', () => {
-      localStorage.removeItem('user');
-      window.location.href = '/login';
-    }); 
 
     function setVideo(url) {
       const video = document.getElementById("qrVideo");
@@ -161,7 +144,6 @@
     function setLanding(url) {
       window.location.href = url;
     }
-
   </script>
 </body>
-</html>
+</html> 
