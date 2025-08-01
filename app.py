@@ -43,12 +43,12 @@ if not os.path.exists(app.static_folder):
     os.makedirs(app.static_folder)
 
 @app.route("/")
-def manager():
-    return render_template("manager.html", user=session.get("user"))
-
-@app.route("/manager")
 def index():
     return render_template("index.html", user=session.get("user"))
+
+@app.route("/manager")
+def manager():
+    return render_template("manager.html", user=session.get("user"))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
