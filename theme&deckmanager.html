@@ -5,13 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Theme & Deck Manager</title>
     <style>
-        /* Base styles inherited from qr_landing_editor.html */
         body {
             margin: 0;
             font-family: sans-serif;
             background: #fff;
             color: #333;
-            min-height: 100vh; /* Ensure full height for sticky footer */
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
@@ -20,8 +19,8 @@
             background: #0a2540;
             color: #fff;
             text-align: center;
-            position: relative; /* Needed for auth-controls if added later */
-            min-height: 120px; /* Ensure space for header content */
+            position: relative;
+            min-height: 120px;
         }
         h1 {
             margin: 0;
@@ -29,30 +28,30 @@
         }
         h2 {
             color: #0a2540;
-            text-align: center; /* Center h2 within its section */
+            text-align: center;
             margin-top: 2rem;
-            margin-bottom: 1.5rem; /* Added spacing */
+            margin-bottom: 1.5rem;
         }
         .btn {
             background: #00b894;
             color: #fff;
             padding: 0.75rem 1.5rem;
             text-decoration: none;
-            border: none; /* Ensure no default button border */
+            border: none;
             border-radius: 5px;
             margin: 0.5rem;
             cursor: pointer;
             transition: background 0.2s ease-in-out;
-            display: inline-block; /* Ensure padding works */
+            display: inline-block;
         }
         .btn:hover {
-            background: #008f73; /* Slightly darker green on hover */
+            background: #008f73;
         }
-        .main-content-wrapper { /* Replaces .container for overall content width */
+        .main-content-wrapper {
             padding: 2rem 1rem;
-            max-width: 1000px; /* Adjusted to fit the content */
-            margin: 0 auto; /* Center the content wrapper */
-            flex-grow: 1; /* Allows content to push footer down */
+            max-width: 1000px;
+            margin: 0 auto;
+            flex-grow: 1;
         }
         .footer {
             background: #f1f1f1;
@@ -60,39 +59,34 @@
             padding: 1rem;
             font-size: 0.9rem;
             color: #666;
-            margin-top: 4rem; /* Spacing from content above */
+            margin-top: 4rem;
         }
-
-        /* Specific styles for the manager components */
-        .content-grid { /* For theme and deck sections side-by-side */
+        .content-grid {
             display: grid;
-            grid-template-columns: 1fr; /* Default to single column on small screens */
-            gap: 2rem; /* Space between columns */
+            grid-template-columns: 1fr;
+            gap: 2rem;
         }
-        @media (min-width: 1024px) { /* Breakpoint for two columns */
+        @media (min-width: 1024px) {
             .content-grid {
                 grid-template-columns: 1fr 1fr;
             }
         }
-
-        .content-section { /* Styling for individual theme/deck sections */
-            padding: 1rem; /* Padding within the section */
-            background-color: #f9f9f9; /* Light background for sections */
-            border: 1px solid #eee; /* Light border */
-            border-radius: 8px; /* Rounded corners */
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+        .content-section {
+            padding: 1rem;
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
-
-        .card-grid { /* For displaying theme/deck cards within their sections */
+        .card-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Responsive columns */
-            gap: 1rem; /* Space between cards */
-            margin-bottom: 1.5rem; /* Space below cards */
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
         }
-
         .item-card {
-            background-color: #ffffff; /* White background for cards */
-            border: 1px solid #e0e0e0; /* Light gray border */
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
             border-radius: 8px;
             padding: 1rem;
             text-align: center;
@@ -103,50 +97,48 @@
             align-items: center;
             justify-content: center;
             min-height: 120px;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05); /* Subtle card shadow */
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
         }
         .item-card:hover {
-            background-color: #f5f5f5; /* Slightly darker on hover */
-            border-color: #c0c0c0; /* Darker border on hover */
+            background-color: #f5f5f5;
+            border-color: #c0c0c0;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
             transform: translateY(-2px);
         }
         .item-card.selected {
-            background-color: #e0f2fe; /* Light blue for selected */
-            border-color: #3b82f6; /* Strong blue border for selected */
+            background-color: #e0f2fe;
+            border-color: #3b82f6;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
             transform: translateY(-1px);
         }
         .item-card svg {
             width: 48px;
             height: 48px;
-            color: #0a2540; /* Dark blue icon from header color */
+            color: #0a2540;
             margin-bottom: 0.5rem;
         }
         .item-card-name {
             font-weight: 600;
-            color: #333; /* Standard text color */
+            color: #333;
             font-size: 1.1rem;
             word-break: break-all;
         }
-
-        /* Details Display */
-        .details-section { /* Styling for the detail display area */
+        .details-section {
             margin-top: 2rem;
             padding: 1.5rem;
             background-color: #fff;
             border: 1px solid #e0e0e0;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            text-align: left; /* Ensure text aligns left within this section */
+            text-align: left;
         }
         .details-section h3 {
-            color: #0a2540; /* Dark blue heading */
+            color: #0a2540;
             margin-top: 0;
             margin-bottom: 1rem;
         }
         .details-section h3 span {
-            color: #00b894; /* Green for selected name */
+            color: #00b894;
         }
         pre {
             background-color: #f8f8f8;
@@ -163,8 +155,6 @@
             text-align: left;
             color: #333;
         }
-
-        /* Form elements */
         select {
             padding: 0.75rem;
             width: 100%;
@@ -172,11 +162,10 @@
             border-radius: 4px;
             margin-top: 0.5rem;
             margin-bottom: 1rem;
-            box-sizing: border-box; /* Include padding and border in element's total width and height */
+            box-sizing: border-box;
             font-size: 1rem;
             color: #333;
             background-color: #fff;
-            /* Custom arrow for select */
             -webkit-appearance: none;
             -moz-appearance: none;
             appearance: none;
@@ -192,8 +181,6 @@
             color: #0a2540;
             margin-bottom: 0.5rem;
         }
-
-        /* Loading and Error Indicators */
         .indicator-message {
             text-align: center;
             padding: 1rem 0;
@@ -203,7 +190,7 @@
             display: inline-block;
             width: 24px;
             height: 24px;
-            border: 4px solid #00b894; /* Green spinner */
+            border: 4px solid #00b894;
             border-top-color: transparent;
             border-radius: 50%;
             animation: spin 1s linear infinite;
@@ -223,8 +210,6 @@
         .hidden {
             display: none;
         }
-
-        /* Modal Styling */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -246,7 +231,7 @@
             max-width: 500px;
             transform: translateY(-20px);
             animation: slideIn 0.3s forwards ease-out;
-            box-sizing: border-box; /* Ensure padding doesn't expand width */
+            box-sizing: border-box;
         }
         @keyframes slideIn {
             to { transform: translateY(0); opacity: 1; }
@@ -260,8 +245,8 @@
             border-bottom: 1px solid #e0e0e0;
         }
         .modal-header h3 {
-            color: #0a2540; /* Dark blue modal heading */
-            margin: 0; /* Remove default h3 margin */
+            color: #0a2540;
+            margin: 0;
         }
         .modal-close-button {
             background: none;
@@ -276,10 +261,19 @@
     </style>
 </head>
 <body class="flex flex-col min-h-screen">
-
     <header>
         <h1>Theme & Deck Manager</h1>
         <p>Manage your themes and decks effortlessly.</p>
+        {% if user %}
+            <div style="position: absolute; top: 1rem; right: 1rem;">
+                <span>Hello, {{ user.email }}!</span>
+                <a href="{{ url_for('logout') }}" class="btn" style="background-color: #ff4d4f; margin-left: 1rem;">Log Out</a>
+            </div>
+        {% else %}
+            <div style="position: absolute; top: 1rem; right: 1rem;">
+                <span>Please log in to manage themes and decks.</span>
+            </div>
+        {% endif %}
     </header>
 
     <div class="main-content-wrapper">
@@ -289,12 +283,6 @@
                 <h2>Available Themes</h2>
                 <div id="themeFoldersContainer" class="card-grid">
                     <!-- Theme cards will be populated here by JavaScript -->
-                    <div class="item-card">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-4.5-7.5l-2.25 2.25M9.75 4.5l-2.25 2.25M3.75 12l-.75.75-.75-.75M2.25 12.75a3 3 0 003 3h13.5a3 3 0 003-3M6.75 12l-.75.75-.75-.75M17.25 12l.75.75.75-.75M2.25 12.75a3 3 0 003 3h13.5a3 3 0 003-3M6.75 12l-.75.75-.75-.75M17.25 12l.75.75.75-.75M12 10.5h.008v.008H12V10.5zm0 3h.008v.008H12v-3zm0 3h.008v.008H12v-3z" />
-                        </svg>
-                        <span class="item-card-name">Loading Themes...</span>
-                    </div>
                 </div>
                 <!-- Theme Details Section -->
                 <section id="themeDetailsSection" class="details-section hidden">
@@ -311,12 +299,6 @@
                 <h2>Your Decks</h2>
                 <div id="deckFoldersContainer" class="card-grid">
                     <!-- Deck cards will be populated here by JavaScript -->
-                    <div class="item-card">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-4.5-7.5l-2.25 2.25M9.75 4.5l-2.25 2.25M3.75 12l-.75.75-.75-.75M2.25 12.75a3 3 0 003 3h13.5a3 3 0 003-3M6.75 12l-.75.75-.75-.75M17.25 12l.75.75.75-.75M2.25 12.75a3 3 0 003 3h13.5a3 3 0 003-3M6.75 12l-.75.75-.75-.75M17.25 12l.75.75.75-.75M12 10.5h.008v.008H12V10.5zm0 3h.008v.008H12v-3zm0 3h.008v.008H12v-3z" />
-                        </svg>
-                        <span class="item-card-name">Loading Decks...</span>
-                    </div>
                 </div>
                 <!-- Deck Details Section -->
                 <section id="deckDetailsSection" class="details-section hidden">
@@ -395,7 +377,6 @@
                 </button>
             </div>
         </div>
-
     </div>
 
     <footer class="footer">
@@ -405,14 +386,13 @@
     <script type="module">
         import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-        // --- Supabase Configuration ---
+        // Supabase configuration passed from Flask
         const SUPABASE_URL = "{{ supabase_url }}";
         const SUPABASE_KEY = "{{ supabase_key }}";
 
         let supabase = null;
-        // --- FIX: Add explicit check for valid URL before creating client ---
         try {
-            if (SUPABASE_URL && SUPABASE_URL.startsWith('http')) { // Basic check for a valid URL string
+            if (SUPABASE_URL && SUPABASE_URL.startsWith('http')) {
                 supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
                 console.log("Supabase client initialized.");
             } else {
@@ -427,7 +407,6 @@
             document.getElementById('errorMessage').textContent = errorMessage;
             document.getElementById('errorDisplay').classList.remove('hidden');
         }
-
 
         // --- DOM Elements (Themes) ---
         const themeFoldersContainer = document.getElementById('themeFoldersContainer');
@@ -470,47 +449,35 @@
         const applyDeckToThemeErrorMessageSpan = document.getElementById('applyDeckToThemeErrorMessage');
         const applyDeckToThemeSuccessDisplay = document.getElementById('applyDeckToThemeSuccessDisplay');
 
-
-        let allThemes = []; // Stores all fetched themes
-        let allDecks = [];  // Stores all fetched decks
-        let selectedTheme = null; // Stores the currently selected theme object
-        let selectedDeck = null;  // Stores the currently selected deck object
+        let allThemes = [];
+        let allDecks = [];
+        let selectedTheme = null;
+        let selectedDeck = null;
 
         // --- Helper Functions ---
-
-        /**
-         * Generic loading indicator handler for different targets.
-         * @param {boolean} show - True to show, false to hide.
-         * @param {string} target - 'main', 'applyThemeToDeck', 'applyDeckToTheme'.
-         */
         function showLoading(show, target = 'main') {
             const indicator = {
                 'main': loadingIndicator,
                 'applyThemeToDeck': applyThemeToDeckLoadingIndicator,
                 'applyDeckToTheme': applyDeckToThemeLoadingIndicator
             }[target];
-
             const errorDiv = {
                 'main': errorDisplay,
                 'applyThemeToDeck': applyThemeToDeckErrorDisplay,
                 'applyDeckToTheme': applyDeckToThemeErrorDisplay
             }[target];
-
             const successDiv = {
                 'applyThemeToDeck': applyThemeToDeckSuccessDisplay,
                 'applyDeckToTheme': applyDeckToThemeSuccessDisplay
             }[target] || null;
-
             const confirmBtn = {
                 'applyThemeToDeck': confirmApplyThemeToDeckButton,
                 'applyDeckToTheme': confirmApplyDeckToThemeButton
             }[target] || null;
-
             const selectEl = {
                 'applyThemeToDeck': themeToDeckSelect,
                 'applyDeckToTheme': deckToThemeSelect
             }[target] || null;
-
 
             if (show) {
                 indicator.classList.remove('hidden');
@@ -518,8 +485,6 @@
                 if (successDiv) successDiv.classList.add('hidden');
                 if (confirmBtn) confirmBtn.disabled = true;
                 if (selectEl) selectEl.disabled = true;
-
-                // For initial load of themes/decks
                 if (target === 'main') {
                     themeFoldersContainer.innerHTML = '<div class="item-card"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-4.5-7.5l-2.25 2.25M9.75 4.5l-2.25 2.25M3.75 12l-.75.75-.75-.75M2.25 12.75a3 3 0 003 3h13.5a3 3 0 003-3M6.75 12l-.75.75-.75-.75M17.25 12l.75.75.75-.75M2.25 12.75a3 3 0 003 3h13.5a3 3 0 003-3M6.75 12l-.75.75-.75-.75M17.25 12l.75.75.75-.75M12 10.5h.008v.008H12V10.5zm0 3h.008v.008H12v-3zm0 3h.008v.008H12v-3z" /></svg><span class="item-card-name">Loading Themes...</span></div>';
                     deckFoldersContainer.innerHTML = '<div class="item-card"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-4.5-7.5l-2.25 2.25M9.75 4.5l-2.25 2.25M3.75 12l-.75.75-.75-.75M2.25 12.75a3 3 0 003 3h13.5a3 3 0 003-3M6.75 12l-.75.75-.75-.75M17.25 12l.75.75.75-.75M2.25 12.75a3 3 0 003 3h13.5a3 3 0 003-3M6.75 12l-.75.75-.75-.75M17.25 12l.75.75.75-.75M12 10.5h.008v.008H12V10.5zm0 3h.008v.008H12v-3zm0 3h.008v.008H12v-3z" /></svg><span class="item-card-name">Loading Decks...</span></div>';
@@ -531,34 +496,22 @@
             }
         }
 
-        /**
-         * Generic error display handler for different targets.
-         * @param {string} message - The error message.
-         * @param {string} target - 'main', 'applyThemeToDeck', 'applyDeckToTheme'.
-         */
         function showError(message, target = 'main') {
             const errorSpan = {
                 'main': errorMessageSpan,
                 'applyThemeToDeck': applyThemeToDeckErrorMessageSpan,
                 'applyDeckToTheme': applyDeckToThemeErrorMessageSpan
             }[target];
-
             const errorDiv = {
                 'main': errorDisplay,
                 'applyThemeToDeck': applyThemeToDeckErrorDisplay,
                 'applyDeckToTheme': applyDeckToThemeErrorDisplay
             }[target];
-
             errorSpan.textContent = message;
             errorDiv.classList.remove('hidden');
-            showLoading(false, target); // Hide loading if error occurs
+            showLoading(false, target);
         }
 
-        /**
-         * Generic success message handler for modals.
-         * @param {string} message - The success message.
-         * @param {string} target - 'applyThemeToDeck', 'applyDeckToTheme'.
-         */
         function showSuccess(message, target) {
             const successDiv = {
                 'applyThemeToDeck': applyThemeToDeckSuccessDisplay,
@@ -569,24 +522,14 @@
             showLoading(false, target);
         }
 
-        /**
-         * Fetches data from a Supabase table.
-         * @param {string} tableName - The name of the table to fetch from.
-         * @returns {Promise<Array>} A promise that resolves to an array of data.
-         */
         async function fetchDataFromSupabase(tableName) {
-            // Only attempt to fetch if supabase client is initialized
             if (!supabase) {
                 showError("Supabase client not initialized. Cannot fetch data.", 'main');
                 return [];
             }
             try {
-                const { data, error } = await supabase
-                    .from(tableName)
-                    .select('*');
-                if (error) {
-                    throw new Error(error.message);
-                }
+                const { data, error } = await supabase.from(tableName).select('*');
+                if (error) throw new Error(error.message);
                 return data;
             } catch (error) {
                 console.error(`Error fetching data from ${tableName}:`, error.message);
@@ -595,17 +538,12 @@
             }
         }
 
-        /**
-         * Populates the theme folders container.
-         * @param {Array} themes - Array of theme objects.
-         */
         function populateThemeFolders(themes) {
-            themeFoldersContainer.innerHTML = ''; // Clear previous cards
+            themeFoldersContainer.innerHTML = '';
             if (themes.length === 0) {
                 themeFoldersContainer.innerHTML = '<p class="text-center" style="color:#666;">No themes found.</p>';
                 return;
             }
-
             themes.forEach(theme => {
                 const themeCard = document.createElement('div');
                 themeCard.classList.add('item-card');
@@ -615,23 +553,18 @@
                     </svg>
                     <span class="item-card-name">${theme.name}</span>
                 `;
-                themeCard.dataset.themeId = theme.id; // Store theme ID for easy lookup
+                themeCard.dataset.themeId = theme.id;
                 themeCard.addEventListener('click', () => selectTheme(theme.id));
                 themeFoldersContainer.appendChild(themeCard);
             });
         }
 
-        /**
-         * Populates the deck folders container.
-         * @param {Array} decks - Array of deck objects.
-         */
         function populateDeckFolders(decks) {
-            deckFoldersContainer.innerHTML = ''; // Clear previous cards
+            deckFoldersContainer.innerHTML = '';
             if (decks.length === 0) {
                 deckFoldersContainer.innerHTML = '<p class="text-center" style="color:#666;">No decks found.</p>';
                 return;
             }
-
             decks.forEach(deck => {
                 const deckCard = document.createElement('div');
                 deckCard.classList.add('item-card');
@@ -641,28 +574,16 @@
                     </svg>
                     <span class="item-card-name">${deck.deck_name || `Deck ID: ${deck.id.substring(0, 8)}...`}</span>
                 `;
-                deckCard.dataset.deckId = deck.id; // Store deck ID for easy lookup
+                deckCard.dataset.deckId = deck.id;
                 deckCard.addEventListener('click', () => selectDeck(deck.id));
                 deckFoldersContainer.appendChild(deckCard);
             });
         }
 
-        /**
-         * Handles theme selection.
-         * @param {string} themeId - The ID of the selected theme.
-         */
         function selectTheme(themeId) {
-            // Remove 'selected' class from all theme cards
-            document.querySelectorAll('#themeFoldersContainer .item-card').forEach(card => {
-                card.classList.remove('selected');
-            });
-
-            // Add 'selected' class to the clicked theme card
+            document.querySelectorAll('#themeFoldersContainer .item-card').forEach(card => card.classList.remove('selected'));
             const selectedCard = document.querySelector(`#themeFoldersContainer .item-card[data-theme-id="${themeId}"]`);
-            if (selectedCard) {
-                selectedCard.classList.add('selected');
-            }
-
+            if (selectedCard) selectedCard.classList.add('selected');
             selectedTheme = allThemes.find(theme => theme.id === themeId);
             if (selectedTheme) {
                 selectedThemeNameSpan.textContent = selectedTheme.name;
@@ -674,22 +595,10 @@
             }
         }
 
-        /**
-         * Handles deck selection.
-         * @param {string} deckId - The ID of the selected deck.
-         */
         function selectDeck(deckId) {
-            // Remove 'selected' class from all deck cards
-            document.querySelectorAll('#deckFoldersContainer .item-card').forEach(card => {
-                card.classList.remove('selected');
-            });
-
-            // Add 'selected' class to the clicked deck card
+            document.querySelectorAll('#deckFoldersContainer .item-card').forEach(card => card.classList.remove('selected'));
             const selectedCard = document.querySelector(`#deckFoldersContainer .item-card[data-deck-id="${deckId}"]`);
-            if (selectedCard) {
-                selectedCard.classList.add('selected');
-            }
-
+            if (selectedCard) selectedCard.classList.add('selected');
             selectedDeck = allDecks.find(deck => deck.id === deckId);
             if (selectedDeck) {
                 selectedDeckNameSpan.textContent = selectedDeck.deck_name || `Deck ID: ${selectedDeck.id.substring(0, 8)}...`;
@@ -701,24 +610,18 @@
             }
         }
 
-        /**
-         * Populates the deck selection dropdown in the "Apply Theme to Deck" modal.
-         * @param {Array} decks - Array of deck objects.
-         */
         function populateThemeToDeckSelect(decks) {
-            themeToDeckSelect.innerHTML = ''; // Clear previous options
+            themeToDeckSelect.innerHTML = '';
             if (decks.length === 0) {
                 themeToDeckSelect.innerHTML = '<option value="">No decks found.</option>';
                 themeToDeckSelect.disabled = true;
                 confirmApplyThemeToDeckButton.disabled = true;
                 return;
             }
-
             const defaultOption = document.createElement('option');
             defaultOption.value = "";
             defaultOption.textContent = "--- Select a deck ---";
             themeToDeckSelect.appendChild(defaultOption);
-
             decks.forEach(deck => {
                 const option = document.createElement('option');
                 option.value = deck.id;
@@ -729,24 +632,18 @@
             confirmApplyThemeToDeckButton.disabled = false;
         }
 
-        /**
-         * Populates the theme selection dropdown in the "Apply Deck to Theme" modal.
-         * @param {Array} themes - Array of theme objects.
-         */
         function populateDeckToThemeSelect(themes) {
-            deckToThemeSelect.innerHTML = ''; // Clear previous options
+            deckToThemeSelect.innerHTML = '';
             if (themes.length === 0) {
                 deckToThemeSelect.innerHTML = '<option value="">No themes found.</option>';
                 deckToThemeSelect.disabled = true;
                 confirmApplyDeckToThemeButton.disabled = true;
                 return;
             }
-
             const defaultOption = document.createElement('option');
             defaultOption.value = "";
             defaultOption.textContent = "--- Select a theme ---";
             deckToThemeSelect.appendChild(defaultOption);
-
             themes.forEach(theme => {
                 const option = document.createElement('option');
                 option.value = theme.id;
@@ -757,10 +654,6 @@
             confirmApplyDeckToThemeButton.disabled = false;
         }
 
-
-        /**
-         * Opens the "Apply Theme to Deck" modal.
-         */
         async function openApplyThemeToDeckModal() {
             if (!selectedTheme) {
                 showError("Please select a theme first.", 'main');
@@ -770,26 +663,18 @@
             applyThemeToDeckModal.classList.remove('hidden');
             applyThemeToDeckErrorDisplay.classList.add('hidden');
             applyThemeToDeckSuccessDisplay.classList.add('hidden');
-
             showLoading(true, 'applyThemeToDeck');
-            allDecks = await fetchDataFromSupabase('decks'); // Fetch user's decks
+            allDecks = await fetchDataFromSupabase('decks');
             populateThemeToDeckSelect(allDecks);
             showLoading(false, 'applyThemeToDeck');
         }
 
-        /**
-         * Closes the "Apply Theme to Deck" modal.
-         */
         function closeApplyThemeToDeckModal() {
             applyThemeToDeckModal.classList.add('hidden');
         }
 
-        /**
-         * Handles the confirmation to apply theme to selected deck.
-         */
         async function confirmApplyThemeToDeck() {
             const selectedDeckId = themeToDeckSelect.value;
-
             if (!selectedDeckId) {
                 showError("Please select a deck.", 'applyThemeToDeck');
                 return;
@@ -798,45 +683,34 @@
                 showError("No theme selected. This should not happen.", 'applyThemeToDeck');
                 return;
             }
-
             showLoading(true, 'applyThemeToDeck');
             applyThemeToDeckErrorDisplay.classList.add('hidden');
             applyThemeToDeckSuccessDisplay.classList.add('hidden');
-
             try {
-                // Send data to Flask backend to apply theme
                 const response = await fetch('/apply_theme_to_deck', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         theme_id: selectedTheme.id,
                         deck_id: selectedDeckId,
                         theme_wrapper_url: selectedTheme.wrapper_url,
                         theme_landing_url: selectedTheme.landing_url
-                        // The backend will construct the QR code URL (go.html?id=...)
                     })
                 });
-
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
                 }
-
                 const result = await response.json();
                 if (result.success) {
                     showSuccess("Theme applied to deck successfully!", 'applyThemeToDeck');
-                    // Optionally, refresh deck data or close modal after a delay
                     setTimeout(closeApplyThemeToDeckModal, 2000);
-                    // Re-fetch decks to update the displayed deck data
                     allDecks = await fetchDataFromSupabase('decks');
-                    populateDeckFolders(allDecks); // Refresh deck cards
-                    selectDeck(selectedDeckId); // Re-select the updated deck to show new details
+                    populateDeckFolders(allDecks);
+                    selectDeck(selectedDeckId);
                 } else {
                     showError(result.error || "Failed to apply theme.", 'applyThemeToDeck');
                 }
-
             } catch (error) {
                 console.error("Error applying theme to deck:", error);
                 showError(`Error applying theme: ${error.message}`, 'applyThemeToDeck');
@@ -845,9 +719,6 @@
             }
         }
 
-        /**
-         * Opens the "Apply Deck to Theme" modal.
-         */
         async function openApplyDeckToThemeModal() {
             if (!selectedDeck) {
                 showError("Please select a deck first.", 'main');
@@ -857,26 +728,18 @@
             applyDeckToThemeModal.classList.remove('hidden');
             applyDeckToThemeErrorDisplay.classList.add('hidden');
             applyDeckToThemeSuccessDisplay.classList.add('hidden');
-
             showLoading(true, 'applyDeckToTheme');
-            allThemes = await fetchDataFromSupabase('themes'); // Re-fetch themes
+            allThemes = await fetchDataFromSupabase('themes');
             populateDeckToThemeSelect(allThemes);
             showLoading(false, 'applyDeckToTheme');
         }
 
-        /**
-         * Closes the "Apply Deck to Theme" modal.
-         */
         function closeApplyDeckToThemeModal() {
             applyDeckToThemeModal.classList.add('hidden');
         }
 
-        /**
-         * Handles the confirmation to apply deck content to selected theme.
-         */
         async function confirmApplyDeckToTheme() {
             const selectedThemeId = deckToThemeSelect.value;
-
             if (!selectedThemeId) {
                 showError("Please select a theme.", 'applyDeckToTheme');
                 return;
@@ -885,44 +748,34 @@
                 showError("No deck selected. This should not happen.", 'applyDeckToTheme');
                 return;
             }
-
             showLoading(true, 'applyDeckToTheme');
             applyDeckToThemeErrorDisplay.classList.add('hidden');
             applyDeckToThemeSuccessDisplay.classList.add('hidden');
-
             try {
-                // Send data to Flask backend to apply deck to theme
                 const response = await fetch('/apply_deck_to_theme', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         deck_id: selectedDeck.id,
                         theme_id: selectedThemeId,
-                        deck_wrapper_url: selectedDeck.wrapper, // Use 'wrapper' from decks table
-                        deck_landing_url: selectedDeck.landing_url // Use 'landing_url' from decks table
+                        deck_wrapper_url: selectedDeck.wrapper,
+                        deck_landing_url: selectedDeck.landing_url
                     })
                 });
-
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
                 }
-
                 const result = await response.json();
                 if (result.success) {
                     showSuccess("Deck applied to theme successfully!", 'applyDeckToTheme');
-                    // Optionally, refresh theme data or close modal after a delay
                     setTimeout(closeApplyDeckToThemeModal, 2000);
-                    // Re-fetch themes to update the displayed theme data
                     allThemes = await fetchDataFromSupabase('themes');
-                    populateThemeFolders(allThemes); // Refresh theme cards
-                    selectTheme(selectedThemeId); // Re-select the updated theme to show new details
+                    populateThemeFolders(allThemes);
+                    selectTheme(selectedThemeId);
                 } else {
                     showError(result.error || "Failed to apply deck to theme.", 'applyDeckToTheme');
                 }
-
             } catch (error) {
                 console.error("Error applying deck to theme:", error);
                 showError(`Error applying deck to theme: ${error.message}`, 'applyDeckToTheme');
@@ -931,10 +784,9 @@
             }
         }
 
-
         // --- Event Listeners ---
         applyThemeToDeckButton.addEventListener('click', openApplyThemeToDeckModal);
-        closeThemeToDeckModalButton.addEventListener('click', closeThemeToDeckModal);
+        closeThemeToDeckModalButton.addEventListener('click', closeApplyThemeToDeckModal);
         confirmApplyThemeToDeckButton.addEventListener('click', confirmApplyThemeToDeck);
 
         applyDeckToThemeButton.addEventListener('click', openApplyDeckToThemeModal);
@@ -946,12 +798,10 @@
             showLoading(true, 'main');
             allThemes = await fetchDataFromSupabase('themes');
             populateThemeFolders(allThemes);
-
             allDecks = await fetchDataFromSupabase('decks');
             populateDeckFolders(allDecks);
             showLoading(false, 'main');
         });
-
     </script>
 </body>
 </html>
