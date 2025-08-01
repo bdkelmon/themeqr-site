@@ -225,10 +225,7 @@ def apply_theme_to_deck():
         landing_url = data.get('theme_landing_url')
 
         # Update deck with theme data (example logic)
-        response = supabase.from('decks').update({
-            'theme_id': theme_id,
-            'wrapper_url': wrapper_url,
-            'landing_url': landing_url
+        response = supabase.from_('decks').update({'theme_id': theme_id,'wrapper_url': wrapper_url,'landing_url': landing_url
         }).eq('id', deck_id).execute()
         if response.error:
             raise Exception(response.error.message)
@@ -249,7 +246,7 @@ def apply_deck_to_theme():
         landing_url = data.get('deck_landing_url')
 
         # Update theme with deck data (example logic)
-        response = supabase.from('themes').update({
+        response = supabase.from_('themes').update({
             'deck_id': deck_id,
             'wrapper_url': wrapper_url,
             'landing_url': landing_url
