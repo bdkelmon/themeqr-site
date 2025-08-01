@@ -213,6 +213,55 @@ async def get_or_create_user_vault(user_id: str):
         print(f"❌ Exception in get_or_create_user_vault: {str(e)}")
         return None
 
+@app.route('/apply_theme_to_deck', methods=['POST'])
+def apply_theme_to_deck():
+    if not session.get('user'):
+        return {"success": False, "error": "Unauthorized"}, 401
+    try:
+        data = request.get_json()
+        theme_id = data.get('theme_id')
+        deck_id = data.get('deck_id')
+        wrapper_url = data.get('theme_wrapper_url')
+        landing_url = data.get('theme_landing_url')
+
+        # Update deck with theme data (example logic)
+        response = supabase.from('decks').update({
+            'theme_id': theme_id,
+            'wrapper_url': wrapper_url,
+            'landing_url': landing_url
+        }).eq('id', deck_id).execute()
+        if response.error:
+            raise Exception(response.error.message)
+
+        return {"success": True, "message": "Theme applied to deck"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}, 400
+
+@app.route('/apply_deck_to_theme', methods=['POST'])
+def apply_deck_to_theme():
+    if not session.get('user'):
+        return {"success": False, "error": "Unauthorized"}, 401
+    try:
+        data = request.get_json()
+        deck_id = data.get('deck_id')
+        theme_id = data.get('theme_id')
+        wrapper_url = data.get('deck_wrapper_url')
+        landing_url = data.get('deck_landing_url')
+
+        # Update theme with deck data (example logic)
+        response = supabase.from('themes').update({
+            'deck_id': deck_id,
+            'wrapper_url': wrapper_url,
+            'landing_url': landing_url
+        }).eq('id', theme_id).execute()
+        if response.error:
+            raise Exception(response.error.message)
+
+        return {"success": True, "message": "Deck applied to theme"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}, 400
+
+
 @app.route('/editor')
 def serve_qr_landing_editor():
     print(f"Serving qr_landing_editor.html. Supabase URL: {SUPABASE_URL}")
