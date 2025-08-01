@@ -44,11 +44,16 @@ if not os.path.exists(app.static_folder):
 
 @app.route("/")
 def index():
-   return redirect("https://themeqr.com", user=session.get("user"))
+    return render_template("index.html", user=session.get("user"))
 
 @app.route("/manager")
 def manager():
     return render_template("manager.html", user=session.get("user"))
+
+@app.route("/manager2")
+def manager():
+    return render_template("theme_applier.html", user=session.get("user"))
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
