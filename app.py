@@ -48,7 +48,7 @@ def index():
 
 @app.route("/manager")
 def manager():
-    return render_template("manager.html", user=session.get("user"))
+    return render_template("theme_applier.html", user=session.get("user"))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
