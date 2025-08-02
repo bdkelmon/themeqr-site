@@ -46,7 +46,7 @@ if not os.path.exists(app.static_folder):
 def index():
     return render_template("index.html", user=session.get("user"))
 
-async def get_or_create_user_vault(user_id):
+def get_or_create_user_vault(user_id):
     try:
         response = supabase.table('vaults').select('id').eq('user_id', user_id).single().execute()
         if response.data:
@@ -59,26 +59,28 @@ async def get_or_create_user_vault(user_id):
                 'updated_at': datetime.now(timezone.utc).isoformat()
             }).execute()
             if insert_response.error:
+                print(f"Error creating vault: {insert_response.error.message}")
                 return None
             return insert_response.data[0]['id']
         else:
+            print(f"Supabase error: {response.error.message}")
             return None
     except Exception as e:
         print(f"Error in get_or_create_user_vault: {str(e)}")
         return None
 
 @app.route("/manager")
-async def manager():
+def manager():
     print(f"Serving theme_applier.html via /manager. Supabase URL: {os.getenv('SUPABASE_URL')}")
     user = session.get('user')
     vault_id = None
     if user and 'id' in user:
-        vault_id = await get_or_create_user_vault(user['id'])
+        vault_id = get_or_create_user_vault(user['id'])
         print(f"Assigned vault_id: {vault_id}")
-    return render_template("theme_applier.html",
+    return render_template('theme_applier.html',
                           supabase_url=os.getenv('SUPABASE_URL'),
                           supabase_key=os.getenv('SUPABASE_KEY'),
-                          user=session.get("user"),
+                          user=user,
                           vault_id=vault_id)
 
 @app.route('/login', methods=['GET', 'POST'])
