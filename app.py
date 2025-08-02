@@ -1,471 +1,383 @@
-import os
-import shutil
-import uuid
-import cloudinary
-import cloudinary.uploader
-from moviepy.editor import VideoFileClip, CompositeVideoClip, ImageClip
-import qrcode
-import requests
-from flask import Flask, request, render_template, jsonify, make_response, send_from_directory, redirect, session, flash, url_for
-from flask_cors import CORS
-from datetime import datetime, timezone
-from supabase import create_client
-from dotenv import load_dotenv
-import json
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ThemeQR – Theme & Deck Manager</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme_applier.css') }}">
+  <link rel="icon" href="https://themeqr.com/images/TQR_Dude_Sm.png">
+</head>
+<body>
+<header>
+  <h1>ThemeQR: Theme & Deck Manager</h1>
+  <p>Manage your themes and decks effortlessly.</p>
+  {% if user %}
+      <div class="auth-controls">
+          <span>Hello, {{ user.email }}!</span>
+          <a href="{{ url_for('logout') }}" class="logout-btn">Log Out</a>
+      </div>
+  {% else %}
+      <div class="auth-controls">
+          <span>Please log in to manage themes and decks.</span>
+      </div>
+  {% endif %}
+</header>
 
-# Load environment variables
-load_dotenv()
+<div class="section">
+  <h2>Available Themes</h2>
+  <div id="themeFoldersContainer" class="grid"></div>
+  <div id="themeDetailsSection" class="details-section" style="display:none;">
+    <h3>Selected Theme Details: <span id="selectedThemeName"></span></h3>
+    <pre id="themeDetailsDisplay">Select a theme to see its details.</pre>
+    <button id="applyThemeToDeckButton" class="btn">Apply Theme to Deck</button>
+  </div>
+</div>
 
-# Supabase setup
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-if not SUPABASE_URL or not SUPABASE_KEY:
-    raise Exception("SUPABASE_URL or SUPABASE_KEY not set")
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+<div class="section">
+  <h2>Your Decks</h2>
+  <div id="deckFoldersContainer" class="grid"></div>
+  <div id="deckDetailsSection" class="details-section" style="display:none;">
+    <h3>Selected Deck Details: <span id="selectedDeckName"></span></h3>
+    <pre id="deckDetailsDisplay">Select a deck to see its details.</pre>
+  </div>
+</div>
 
-app = Flask(__name__, template_folder='themeqr-site/templates', static_folder='themeqr-site')
-app.secret_key = os.getenv("FLASK_SECRET_KEY")
+<div id="loadingIndicator" class="loading" style="display:none;">Loading data...</div>
+<div id="errorDisplay" class="error" style="display:none;">Error: <span id="errorMessage"></span></div>
 
-# Cloudinary setup
-cloudinary.config(
-    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
-    api_key=os.getenv('CLOUDINARY_API_KEY'),
-    api_secret=os.getenv('CLOUDINARY_API_SECRET')
-)
+<!-- Apply Theme to Deck Modal -->
+<div id="applyThemeToDeckModal" class="modal-overlay" style="display:none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Apply Theme "<span id="modalThemeToDeckName"></span>"</h3>
+      <button class="modal-close-button" id="closeThemeToDeckModalButton">&times;</button>
+    </div>
+    <div>
+      <label for="themeToDeckSelect">Select a Deck:</label>
+      <select id="themeToDeckSelect" style="width:100%;padding:0.5rem;"></select>
+    </div>
+    <button id="confirmApplyThemeToDeckButton" class="btn">Confirm Apply</button>
+    <div id="applyThemeToDeckLoadingIndicator" class="loading" style="display:none;">Applying theme to deck...</div>
+    <div id="applyThemeToDeckErrorDisplay" class="error" style="display:none;">Error: <span id="applyThemeToDeckErrorMessage"></span></div>
+  </div>
+</div>
 
-app = Flask(__name__, static_folder='static', template_folder='templates')
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "your-secret-key")
-CORS(app)
+<footer class="footer">
+  &copy; 2025 ThemeQR. All rights reserved.
+</footer>
 
-DEMO_DECK_ID = "71f42d9b-fe22-4085-87f0-944ab85ac07e"
-TEMPLATE_PATH = os.path.join(app.root_path, 'themeqr-site', 'index_template.html')
-if not os.path.exists(app.static_folder):
-    os.makedirs(app.static_folder)
+<script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-@app.route("/")
-def index():
-    return render_template("index.html", user=session.get("user"))
+  // Supabase configuration passed from Flask
+  const SUPABASE_URL = "{{ supabase_url }}";
+  const SUPABASE_KEY = "{{ supabase_key }}";
 
-@app.route("/manager")
-def manager():
-    return render_template("manager.html", user=session.get("user"))
+  let supabase = null;
+  try {
+      if (SUPABASE_URL && SUPABASE_URL.startsWith('http')) {
+          supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+          console.log("Supabase client initialized successfully. URL:", SUPABASE_URL);
+      } else {
+          const errorMessage = "Supabase URL is invalid or missing. Check Flask template variables.";
+          console.error(errorMessage, "URL:", SUPABASE_URL);
+          document.getElementById('errorMessage').textContent = errorMessage;
+          document.getElementById('errorDisplay').style.display = '';
+      }
+  } catch (e) {
+      const errorMessage = `Failed to initialize Supabase client: ${e.message}`;
+      console.error(errorMessage, e);
+      document.getElementById('errorMessage').textContent = errorMessage;
+      document.getElementById('errorDisplay').style.display = '';
+  }
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        response = supabase.auth.sign_in_with_password({"email": email, "password": password})
-        if response.user:
-            user_data = {'email': response.user.email, 'id': response.user.id}
-            response = make_response(redirect(url_for('serve_qr_landing_editor')))  # Redirect to editor after login
-            response.set_cookie('user', json.dumps(user_data), max_age=3600)  # 1-hour expiry
-            flash("Logged in successfully!", "success")
-            return response
-        else:
-            flash("Invalid email or password.", "error")
-            return redirect(url_for('login'))
-    return render_template('login.html')
-     
+  // --- DOM Elements (Themes) ---
+  const themeFoldersContainer = document.getElementById('themeFoldersContainer');
+  const themeDetailsSection = document.getElementById('themeDetailsSection');
+  const selectedThemeNameSpan = document.getElementById('selectedThemeName');
+  const themeDetailsDisplay = document.getElementById('themeDetailsDisplay');
+  const applyThemeToDeckButton = document.getElementById('applyThemeToDeckButton');
 
-@app.route("/signup", methods=["GET", "POST"])
-def signup():
-    if request.method == "POST":
-        email = request.form.get("email")
-        password = request.form.get("password")
-        try:
-            response = supabase.auth.sign_up({"email": email, "password": password})
-            user_data = response.user.__dict__
-            # Store only serializable user data
-            session["user"] = {
-                "id": user_data.get("id"),
-                "email": user_data.get("email"),
-                "created_at": user_data.get("created_at")
-            }
-            session["session"] = response.session.__dict__ if response.session else None
-            flash("Sign-up successful! Please check your email to confirm.", "success")
-            return redirect(url_for("index"))
-        except Exception as e:
-            flash(f"Sign-up failed: {str(e)}", "error")
-            return render_template("signup.html")
-    return render_template("signup.html")
+  // --- DOM Elements (Decks) ---
+  const deckFoldersContainer = document.getElementById('deckFoldersContainer');
+  const deckDetailsSection = document.getElementById('deckDetailsSection');
+  const selectedDeckNameSpan = document.getElementById('selectedDeckName');
+  const deckDetailsDisplay = document.getElementById('deckDetailsDisplay');
 
-@app.route("/logout")
-def logout():
-    try:
-        print(f"Signing out at {datetime.now()}")
-        if supabase.auth.get_session():
-            supabase.auth.sign_out()
-        print(f"Sign-out completed at {datetime.now()}")
-        response = make_response(redirect("https://www.themeqr.com/"))
-        response.set_cookie('user', '', expires=0, path='/')
-        return response
-    except Exception as e:
-        print(f"Sign-out error: {str(e)} at {datetime.now()}")
-        flash(f"Logout failed: {str(e)}", "error")
-        return redirect(url_for("index"))
-    
+  // --- General Indicators ---
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  const errorDisplay = document.getElementById('errorDisplay');
+  const errorMessageSpan = document.getElementById('errorMessage');
 
-@app.route("/reset-password", methods=["GET", "POST"])
-def reset_password():
-    if request.method == "POST":
-        email = request.form.get("email")
-        if not email:
-            flash("Email is required.", "error")
-            return render_template("reset_password.html")
-        try:
-            # Send password reset email via Supabase
-            supabase.auth.reset_password_for_email(email)
-            flash("Password reset email sent! Please check your email.", "success")
-            return redirect(url_for("index"))
-        except Exception as e:
-            flash(f"Failed to send password reset email: {str(e)}", "error")
-            return render_template("reset_password.html")
-    return render_template("reset_password.html")
+  // --- Theme to Deck Modal Elements ---
+  const applyThemeToDeckModal = document.getElementById('applyThemeToDeckModal');
+  const closeThemeToDeckModalButton = document.getElementById('closeThemeToDeckModalButton');
+  const modalThemeToDeckNameSpan = document.getElementById('modalThemeToDeckName');
+  const themeToDeckSelect = document.getElementById('themeToDeckSelect');
+  const confirmApplyThemeToDeckButton = document.getElementById('confirmApplyThemeToDeckButton');
+  const applyThemeToDeckLoadingIndicator = document.getElementById('applyThemeToDeckLoadingIndicator');
+  const applyThemeToDeckErrorDisplay = document.getElementById('applyThemeToDeckErrorDisplay');
+  const applyThemeToDeckErrorMessageSpan = document.getElementById('applyThemeToDeckErrorMessage');
 
-@app.route("/reset-password-confirm", methods=["GET", "POST"])
-def reset_password_confirm():
-    if request.method == "POST":
-        new_password = request.form.get("password")
-        if not new_password:
-            flash("Password is required.", "error")
-            return render_template("reset_password_confirm.html")
-        try:
-            supabase.auth.update_user({"password": new_password})
-            flash("Password updated successfully! Please log in.", "success")
-            return redirect(url_for("login"))
-        except Exception as e:
-            flash(f"Failed to update password: {str(e)}", "error")
-            return render_template("reset_password_confirm.html")
-    access_token = request.args.get("access_token")
-    token_type = request.args.get("type")
-    if not access_token or token_type != "recovery":
-        flash("Invalid or missing recovery token.", "error")
-        return redirect(url_for("login"))
-    try:
-        supabase.auth.verify_otp({"type": "recovery", "token": access_token})
-        return render_template("reset_password_confirm.html")
-    except Exception as e:
-        flash(f"Invalid or expired recovery token: {str(e)}", "error")
-        return redirect(url_for("login"))
-    
-@app.route("/google-login")
-def google_login():
-    try:
-        response = supabase.auth.sign_in_with_oauth({"provider": "google"})
-        return redirect(response.url)
-    except Exception as e:
-        flash(f"Google login failed: {str(e)}", "error")
-        return redirect(url_for("login"))
+  let allThemes = [];
+  let allDecks = [];
+  let selectedTheme = null;
+  let selectedDeck = null;
 
-@app.route("/auth/callback")
-def auth_callback():
-    try:
-        session_data = supabase.auth.get_session()
-        if session_data:
-            session["user"] = session_data.user.__dict__
-            session["session"] = session_data.__dict__
-            flash("Logged in with Google successfully!", "success")
-        else:
-            flash("Authentication failed.", "error")
-        return redirect(url_for("index"))
-    except Exception as e:
-        flash(f"Authentication failed: {str(e)}", "error")
-        return redirect(url_for("login"))
+  // --- Helper Functions ---
+  function showLoading(show, target = 'main') {
+      const indicator = {
+          'main': loadingIndicator,
+          'applyThemeToDeck': applyThemeToDeckLoadingIndicator
+      }[target];
+      const errorDiv = {
+          'main': errorDisplay,
+          'applyThemeToDeck': applyThemeToDeckErrorDisplay
+      }[target];
+      if (show) {
+          indicator.style.display = '';
+          if (errorDiv) errorDiv.style.display = 'none';
+      } else {
+          indicator.style.display = 'none';
+      }
+  }
 
-@app.route("/birthday")
-def birthday():
-    return app.send_static_file("birthday/video1.mp4")
+  function showError(message, target = 'main') {
+      const errorSpan = {
+          'main': errorMessageSpan,
+          'applyThemeToDeck': applyThemeToDeckErrorMessageSpan
+      }[target];
+      const errorDiv = {
+          'main': errorDisplay,
+          'applyThemeToDeck': applyThemeToDeckErrorDisplay
+      }[target];
+      if (errorSpan && errorDiv) {
+          errorSpan.textContent = message;
+          errorDiv.style.display = '';
+          showLoading(false, target);
+      } else {
+          console.error("Error display elements not found:", target);
+      }
+  }
 
-@app.route("/tech")
-def tech():
-    return app.send_static_file("tech/video2.mp4")
+  async function fetchDataFromSupabase(tableName, filter = {}) {
+      if (!supabase) {
+          showError("Supabase client not initialized. Cannot fetch data.", 'main');
+          return [];
+      }
+      try {
+          let query = supabase.from(tableName).select('*');
+          if (filter.vault_id) {
+              query = query.eq('vault_id', filter.vault_id);
+          }
+          const { data, error } = await query;
+          if (error) throw new Error(error.message);
+          console.log(`Fetched ${tableName}:`, data);
+          return data || [];
+      } catch (error) {
+          console.error(`Error fetching data from ${tableName}:`, error.message);
+          showError(`Failed to fetch ${tableName}: ${error.message}`, 'main');
+          return [];
+      }
+  }
 
-@app.route('/test_supabase')
-def test_supabase():
-    try:
-        response = supabase.table('decks').select('*').execute()
-        if response.error:
-            return jsonify({"error": response.error.message}), 500
-        return jsonify({"data": response.data}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+  function populateThemeFolders(themes) {
+      themeFoldersContainer.innerHTML = '';
+      if (themes.length === 0) {
+          themeFoldersContainer.innerHTML = '<p style="color:#666;">No themes found.</p>';
+          return;
+      }
+      themes.forEach(theme => {
+          const themeCard = document.createElement('div');
+          themeCard.classList.add('item-card');
+          themeCard.innerHTML = `
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-4.5-7.5l-2.25 2.25M9.75 4.5l-2.25 2.25M3.75 12l-.75.75-.75-.75M2.25 12.75a3 3 0 003 3h13.5a3 3 0 003-3M6.75 12l-.75.75-.75-.75M17.25 12l.75.75.75-.75M2.25 12.75a3 3 0 003 3h13.5a3 3 0 003-3M6.75 12l-.75.75-.75-.75M17.25 12l.75.75.75-.75M12 10.5h.008v.008H12V10.5zm0 3h.008v.008H12v-3zm0 3h.008v.008H12v-3z" />
+              </svg>
+              <span class="item-card-name">${theme.name}</span>
+          `;
+          themeCard.dataset.themeId = theme.id;
+          themeCard.addEventListener('click', () => selectTheme(theme.id));
+          themeFoldersContainer.appendChild(themeCard);
+      });
+  }
 
-async def get_or_create_user_vault(user_id: str):
-    try:
-        response = supabase.table('vaults').select('id').eq('user_id', user_id).single().execute()
-        if response.data:
-            print(f"✅ Found existing vault for user {user_id}: {response.data['id']}")
-            return response.data['id']
-        elif response.error and response.error.code == 'PGRST116':
-            print(f"ℹ️ No vault found for user {user_id}. Creating a new one...")
-            insert_response = supabase.table('vaults').insert({
-                'user_id': user_id,
-                'vault_name': f"Vault for {user_id[:8]}",
-                'created_at': datetime.now(timezone.utc).isoformat(),
-                'updated_at': datetime.now(timezone.utc).isoformat()
-            }).execute()
-            if insert_response.error:
-                print(f"❌ Error creating vault for user {user_id}: {insert_response.error.message}")
-                return None
-            print(f"✅ Created new vault for user {user_id}: {insert_response.data[0]['id']}")
-            return insert_response.data[0]['id']
-        else:
-            print(f"❌ Supabase error checking vault for user {user_id}: {response.error.message}")
-            return None
-    except Exception as e:
-        print(f"❌ Exception in get_or_create_user_vault: {str(e)}")
-        return None
+  function populateDeckFolders(decks) {
+      deckFoldersContainer.innerHTML = '';
+      if (decks.length === 0) {
+          deckFoldersContainer.innerHTML = '<p style="color:#666;">No decks found.</p>';
+          return;
+      }
+      decks.forEach(deck => {
+          const deckCard = document.createElement('div');
+          deckCard.classList.add('item-card');
+          deckCard.innerHTML = `
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-4.5-7.5l-2.25 2.25M9.75 4.5l-2.25 2.25M3.75 12l-.75.75-.75-.75M2.25 12.75a3 3 0 003 3h13.5a3 3 0 003-3M6.75 12l-.75.75-.75-.75M17.25 12l.75.75.75-.75M2.25 12.75a3 3 0 003 3h13.5a3 3 0 003-3M6.75 12l-.75.75-.75-.75M17.25 12l.75.75.75-.75M12 10.5h.008v.008H12V10.5zm0 3h.008v.008H12v-3zm0 3h.008v.008H12v-3z" />
+              </svg>
+              <span class="item-card-name">${deck.deck_name || `Deck ID: ${deck.id.substring(0, 8)}...`}</span>
+          `;
+          deckCard.dataset.deckId = deck.id;
+          deckCard.addEventListener('click', () => selectDeck(deck.id));
+          deckFoldersContainer.appendChild(deckCard);
+      });
+  }
 
-@app.route('/apply_theme_to_deck', methods=['POST'])
-def apply_theme_to_deck():
-    data = request.get_json()
-    theme_id = data.get('theme_id')
-    deck_id = data.get('deck_id')
-    wrapper_url = data.get('wrapper_url')
-    landing_url = data.get('landing_url')
+  function selectTheme(themeId) {
+      document.querySelectorAll('#themeFoldersContainer .item-card').forEach(card => card.classList.remove('selected'));
+      const selectedCard = document.querySelector(`#themeFoldersContainer .item-card[data-theme-id="${themeId}"]`);
+      if (selectedCard) selectedCard.classList.add('selected');
+      selectedTheme = allThemes.find(theme => theme.id === themeId);
+      if (selectedTheme) {
+          selectedThemeNameSpan.textContent = selectedTheme.name;
+          themeDetailsDisplay.textContent = JSON.stringify(selectedTheme, null, 2);
+          themeDetailsSection.style.display = '';
+      } else {
+          themeDetailsSection.style.display = 'none';
+          themeDetailsDisplay.textContent = 'Select a theme to see its details.';
+      }
+  }
 
-    try:
-        # Fetch the theme to ensure wrapper_url and landing_url exist
-        theme_response = supabase.table('themes').select('*').eq('id', theme_id).execute()
-        if not theme_response.data:
-            return jsonify({'success': False, 'error': 'Theme not found'}), 404
+  function selectDeck(deckId) {
+      document.querySelectorAll('#deckFoldersContainer .item-card').forEach(card => card.classList.remove('selected'));
+      const selectedCard = document.querySelector(`#deckFoldersContainer .item-card[data-deck-id="${deckId}"]`);
+      if (selectedCard) selectedCard.classList.add('selected');
+      selectedDeck = allDecks.find(deck => deck.id === deckId);
+      if (selectedDeck) {
+          selectedDeckNameSpan.textContent = selectedDeck.deck_name || `Deck ID: ${selectedDeck.id.substring(0, 8)}...`;
+          deckDetailsDisplay.textContent = JSON.stringify(selectedDeck, null, 2);
+          deckDetailsSection.style.display = '';
+      } else {
+          deckDetailsSection.style.display = 'none';
+          deckDetailsDisplay.textContent = 'Select a deck to see its details.';
+      }
+  }
 
-        theme = theme_response.data[0]
-        wrapper_url = wrapper_url or theme.get('wrapper_url')
-        landing_url = landing_url or theme.get('landing_url')
+  function populateThemeToDeckSelect(decks) {
+      themeToDeckSelect.innerHTML = '';
+      if (decks.length === 0) {
+          themeToDeckSelect.innerHTML = '<option value="">No decks found.</option>';
+          themeToDeckSelect.disabled = true;
+          confirmApplyThemeToDeckButton.disabled = true;
+          return;
+      }
+      const defaultOption = document.createElement('option');
+      defaultOption.value = "";
+      defaultOption.textContent = "--- Select a deck ---";
+      themeToDeckSelect.appendChild(defaultOption);
+      decks.forEach(deck => {
+          const option = document.createElement('option');
+          option.value = deck.id;
+          option.textContent = deck.deck_name || `Deck ID: ${deck.id.substring(0, 8)}...`;
+          themeToDeckSelect.appendChild(option);
+      });
+      themeToDeckSelect.disabled = false;
+      confirmApplyThemeToDeckButton.disabled = false;
+  }
 
-        # Update the deck with the theme's wrapper and landing URL
-        response = supabase.table('decks').update({
-            'wrapper': wrapper_url,
-            'landing_url': landing_url
-        }).eq('id', deck_id).execute()
+  async function openApplyThemeToDeckModal() {
+      if (!selectedTheme) {
+          showError("Please select a theme first.", 'main');
+          return;
+      }
+      modalThemeToDeckNameSpan.textContent = selectedTheme.name;
+      applyThemeToDeckModal.style.display = 'flex';
+      applyThemeToDeckErrorDisplay.style.display = 'none';
+      showLoading(true, 'applyThemeToDeck');
+      try {
+          allDecks = await fetchDataFromSupabase('decks', { vault_id: "{{ user.vault_id or user.id }}" });
+          populateThemeToDeckSelect(allDecks);
+      } catch (e) {
+          showError(`Failed to load decks: ${e.message}`, 'applyThemeToDeck');
+      } finally {
+          showLoading(false, 'applyThemeToDeck');
+      }
+  }
 
-        if response.data:
-            return jsonify({'success': True, 'message': 'Theme applied to deck successfully'})
-        else:
-            return jsonify({'success': False, 'error': 'Failed to update deck'}), 400
+  function closeApplyThemeToDeckModal() {
+      applyThemeToDeckModal.style.display = 'none';
+  }
 
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+  async function confirmApplyThemeToDeck() {
+      const selectedDeckId = themeToDeckSelect.value;
+      if (!selectedDeckId) {
+          showError("Please select a deck.", 'applyThemeToDeck');
+          return;
+      }
+      if (!selectedTheme) {
+          showError("No theme selected. This should not happen.", 'applyThemeToDeck');
+          return;
+      }
+      showLoading(true, 'applyThemeToDeck');
+      applyThemeToDeckErrorDisplay.style.display = 'none';
+      try {
+          const response = await fetch('/apply_theme_to_deck', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  theme_id: selectedTheme.id,
+                  deck_id: selectedDeckId,
+                  wrapper_url: selectedTheme.wrapper_url,
+                  landing_url: selectedTheme.landing_url
+              })
+          });
+          if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
+          }
+          const result = await response.json();
+          if (result.success) {
+              showError("Theme applied to deck successfully!", 'applyThemeToDeck');
+              setTimeout(closeApplyThemeToDeckModal, 2000);
+              allDecks = await fetchDataFromSupabase('decks', { vault_id: "{{ user.vault_id or user.id }}" });
+              populateDeckFolders(allDecks);
+              selectDeck(selectedDeckId);
+          } else {
+              showError(result.error || "Failed to apply theme.", 'applyThemeToDeck');
+          }
+      } catch (error) {
+          console.error("Error applying theme to deck:", error);
+          showError(`Error applying theme: ${error.message}`, 'applyThemeToDeck');
+      } finally {
+          showLoading(false, 'applyThemeToDeck');
+      }
+  }
 
+  // --- Event Listeners ---
+  if (applyThemeToDeckButton) {
+      applyThemeToDeckButton.addEventListener('click', openApplyThemeToDeckModal);
+  } else {
+      console.error("applyThemeToDeckButton not found in DOM");
+  }
+  if (closeThemeToDeckModalButton) {
+      closeThemeToDeckModalButton.addEventListener('click', closeApplyThemeToDeckModal);
+  } else {
+      console.error("closeThemeToDeckModalButton not found in DOM");
+  }
+  if (confirmApplyThemeToDeckButton) {
+      confirmApplyThemeToDeckButton.addEventListener('click', confirmApplyThemeToDeck);
+  } else {
+      console.error("confirmApplyThemeToDeckButton not found in DOM");
+  }
 
-@app.route('/editor')
-def serve_qr_landing_editor():
-    print(f"Serving qr_landing_editor.html. Supabase URL: {SUPABASE_URL}")
-    return render_template('qr_landing_editor.html', 
-                          supabase_url=os.getenv('SUPABASE_URL'),
-                          supabase_key=os.getenv('SUPABASE_KEY'))
-
-@app.route('/reset_index', methods=['POST'])
-def reset_index():
-    try:
-        shutil.copyfile(TEMPLATE_PATH, '/tmp/index.html')
-        print("✅ index.html reset to template.")
-        return jsonify(success=True)
-    except Exception as e:
-        print(f"❌ Error resetting index.html: {str(e)}")
-        return jsonify(success=False, error=str(e))
-
-@app.route('/index.html')
-def serve_updated_index():
-    return send_from_directory('/tmp', 'index.html')
-
-@app.route('/change_qr_landing', methods=['POST'])
-def change_qr_landing():
-    try:
-        print("📥 Incoming POST to /change_qr_landing")
-        data = request.get_json()
-        print(f"📦 Data received: {data}")
-        new_landing = data.get('landing')
-        if not new_landing or (not new_landing.startswith("http://") and not new_landing.startswith("https://")):
-            print("❌ Invalid landing URL format.")
-            return jsonify(success=False, error="Invalid URL format."), 400
-        response = supabase.table('decks').update({'landing_url': new_landing}).eq('id', DEMO_DECK_ID).execute()
-        if not response.data:
-            print(f"⚠️ No row found for ID: {DEMO_DECK_ID}.")
-            return jsonify(success=False, error="Deck ID not found."), 404
-        print(f"✅ Supabase updated for {DEMO_DECK_ID} to {new_landing}.")
-        return jsonify(success=True)
-    except Exception as e:
-        print(f"❌ Exception during /change_qr_landing: {str(e)}")
-        return jsonify(success=False, error=str(e)), 500
-
-@app.route('/generate_qr', methods=['POST'])
-def generate_qr():
-    try:
-        data = request.get_json()
-        link_to_encode = data.get('link')
-        if not link_to_encode:
-            return jsonify(success=False, error="Missing link to encode."), 400
-        temp_qr_filename = f"temp_qr_{uuid.uuid4()}.png"
-        temp_qr_path = os.path.join("/tmp", temp_qr_filename)
-        qr_img = qrcode.make(link_to_encode).convert("RGB")
-        qr_img.save(temp_qr_path)
-        print(f"✅ Temporary QR code generated at '{temp_qr_path}'")
-        cloud_result = cloudinary.uploader.upload(temp_qr_path, folder="themeqr/qrcodes_dynamic_demo")
-        cloud_url = cloud_result['secure_url']
-        print(f"🌐 Uploaded QR to Cloudinary: {cloud_url}")
-        os.remove(temp_qr_path)
-        print(f"🗑️ Cleaned up temporary file: {temp_qr_path}")
-        return jsonify(success=True, qr_url=cloud_url)
-    except Exception as e:
-        print(f"❌ Error generating QR code: {e}")
-        return jsonify(success=False, error=str(e)), 500
-
-@app.route('/update_index', methods=['POST'])
-def update_index():
-    data = request.get_json()
-    wrapper = data.get('wrapper')
-    landing = data.get('landing')
-    print(f"🔁 Received wrapper: {wrapper}")
-    print(f"🔁 Received landing: {landing}")
-    if not wrapper or not landing:
-        return jsonify(success=False, error="Missing wrapper or landing URL."), 400
-    try:
-        qr_path = "/tmp/themeqr_landing_qr_video_overlay.png"
-        qr_img = qrcode.make(landing).convert("RGB")
-        qr_img.save(qr_path)
-        print(f"✅ QR generated at {qr_path}")
-        wrapper_temp_path = f"/tmp/{uuid.uuid4()}.mp4"
-        print(f"Downloading wrapper to {wrapper_temp_path}")
-        with requests.get(wrapper, stream=True) as r:
-            r.raise_for_status()
-            with open(wrapper_temp_path, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    f.write(chunk)
-        print("✅ Wrapper video downloaded.")
-        video_clip = VideoFileClip(wrapper_temp_path).subclip(0, 10)
-        qr_clip = ImageClip(qr_path).set_duration(video_clip.duration).resize(height=150).set_pos(("right", "bottom"))
-        final_clip = CompositeVideoClip([video_clip, qr_clip])
-        final_output_path = "/tmp/final_themeqr_video.mp4"
-        print(f"Compositing video. Output to {final_output_path}")
-        final_clip.write_videofile(final_output_path, codec="libx264", audio_codec="aac")
-        print("✅ Final video created.")
-        cloud_result = cloudinary.uploader.upload_large(
-            final_output_path, resource_type="video", folder="themeqr/wrappers")
-        cloud_url = cloud_result['secure_url']
-        print(f"🌐 Uploaded to Cloudinary: {cloud_url}")
-        with open(TEMPLATE_PATH, "r") as template:
-            content = template.read()
-        updated_html = content.replace(
-            'src="https://res.cloudinary.com/themeqr-test/video/upload/v1752014993/themeqr/wrappers/obsg01o6dfzl6du5bsaa.mp4"',
-            f'src="{cloud_url}"'
-        )
-        with open("/tmp/index.html", "w") as f:
-            f.write(updated_html)
-        print("✅ index.html updated.")
-        return jsonify(success=True, video_url=cloud_url)
-    except Exception as e:
-        print(f"❌ Error in update_index: {str(e)}")
-        return jsonify(success=False, error=str(e))
-
-@app.route('/go')
-@app.route('/go.html')
-def redirect_to_landing():
-    try:
-        print(f"⚠️ Start of the /go.html route {datetime.now()}")
-        deck_id = request.args.get('id')
-        if not deck_id:
-            print("⚠️ No id parameter provided, using DEMO_DECK_ID")
-            deck_id = "71f42d9b-fe22-4085-87f0-944ab85ac07e"  # Fallback to DEMO_DECK_ID
-        response = supabase.table('decks').select("landing_url").eq("id", deck_id).single().execute()
-        if response.error:
-            print(f"❌ Supabase fetch error: {response.error.message}")
-            return redirect("https://themeqr.com", code=302)
-        landing_url = response.data["landing_url"]
-        print(f"✅ Redirecting /go to: {landing_url} for deck_id {deck_id} at {datetime.now()}")
-        return redirect(landing_url, code=302)
-    except Exception as e:
-        print(f"❌ Exception in /go: {e} at {datetime.now()}")
-        return redirect("https://themeqr.com", code=302)
-
-@app.route('/api/vaults/<string:user_id>', methods=['GET'])
-async def get_user_vault_and_decks(user_id):
-    try:
-        vault_id = await get_or_create_user_vault(user_id)
-        if not vault_id:
-            return jsonify({"error": "Could not retrieve or create vault."}), 500
-        response = supabase.table('decks').select('*').eq('vault_id', vault_id).order('created_at', desc=True).execute()
-        if response.error:
-            print(f"❌ Supabase error fetching decks: {response.error.message}")
-            return jsonify({"error": response.error.message}), 500
-        decks = response.data
-        return jsonify({"vault_id": vault_id, "decks": decks}), 200
-    except Exception as e:
-        print(f"❌ Exception in get_user_vault_and_decks: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/vaults/<string:vault_id>/decks', methods=['POST'])
-def create_deck_in_vault(vault_id):
-    data = request.get_json()
-    user_id = data.get('user_id')
-    deck_name = data.get('deck_name')
-    landing_url = data.get('landing_url')
-    if not user_id or not deck_name or not landing_url:
-        return jsonify({"error": "User ID, deck name, and landing page required"}), 400
-    if not landing_url.startswith('http://') and not landing_url.startswith('https://'):
-        return jsonify({"error": "Landing page must be a valid URL starting with http:// or https://"}), 400
-    try:
-        vault_check_response = supabase.table('vaults').select('id').eq('id', vault_id).eq('user_id', user_id).single().execute()
-        if not vault_check_response.data:
-            return jsonify({"error": "Vault not found or does not belong to this user."}), 403
-        response = supabase.table('decks').insert({
-            'vault_id': vault_id,
-            'deck_name': deck_name,
-            'landing_url': landing_url,
-            'qr_code': '',
-            'wrapper': '',
-            'created_at': datetime.now(timezone.utc).isoformat(),
-            'updated_at': datetime.now(timezone.utc).isoformat()
-        }).execute()
-        if response.error:
-            print(f"❌ Supabase error creating deck: {response.error.message}")
-            return jsonify({"error": response.error.message}), 500
-        new_deck = response.data[0]
-        return jsonify(new_deck), 201
-    except Exception as e:
-        print(f"❌ Exception in create_deck_in_vault: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/decks/<string:deck_id>', methods=['PUT'])
-def update_deck(deck_id):
-    data = request.get_json()
-    user_id = data.get('user_id')
-    landing_url = data.get('landing_url')
-    deck_name = data.get('deck_name')
-    if not user_id or not landing_url:
-        return jsonify({"error": "User ID and landing page required"}), 400
-    if not landing_url.startswith('http://') and not landing_url.startswith('https://'):
-        return jsonify({"error": "Landing page must be a valid URL starting with http:// or https://"}), 400
-    try:
-        deck_response = supabase.table('decks').select('vault_id').eq('id', deck_id).single().execute()
-        if not deck_response.data:
-            return jsonify({"error": "Deck not found."}), 404
-        deck_vault_id = deck_response.data['vault_id']
-        vault_check_response = supabase.table('vaults').select('id').eq('id', deck_vault_id).eq('user_id', user_id).single().execute()
-        if not vault_check_response.data:
-            return jsonify({"error": "You do not have permission to update this deck."}), 403
-        update_data = {
-            'landing_url': landing_url,
-            'updated_at': datetime.now(timezone.utc).isoformat()
-        }
-        if deck_name:
-            update_data['deck_name'] = deck_name
-        response = supabase.table('decks').update(update_data).eq('id', deck_id).execute()
-        if response.error:
-            print(f"❌ Supabase error updating deck: {response.error.message}")
-            return jsonify({"error": response.error.message}), 500
-        if not response.data:
-            return jsonify({"error": "Deck not found or nothing to update."}), 404
-        return jsonify({"message": "Deck updated successfully", "deck": response.data[0]}), 200
-    except Exception as e:
-        print(f"❌ Exception in update_deck: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-#if __name__ == '__main__':
-   # port = int(os.environ.get('PORT', 5000))
-   # app.run(host='0.0.0.0', port=port, debug=True)
-  
-   # from dotenv import load_dotenv 
-   # load_dotenv()  # Load environment variables from .env file 
+  // --- Initial Load ---
+  document.addEventListener('DOMContentLoaded', async () => {
+      showLoading(true, 'main');
+      try {
+          allThemes = await fetchDataFromSupabase('themes');
+          populateThemeFolders(allThemes);
+          if ("{{ user }}" !== "None") {
+              allDecks = await fetchDataFromSupabase('decks', { vault_id: "{{ user.vault_id or user.id }}" });
+              populateDeckFolders(allDecks);
+          } else {
+              deckFoldersContainer.innerHTML = '<p style="color:#666;">Please log in to see your decks.</p>';
+          }
+      } catch (e) {
+          showError(`Failed to load initial data: ${e.message}`, 'main');
+      } finally {
+          showLoading(false, 'main');
+      }
+  });
+</script>
+</body>
+</html>
