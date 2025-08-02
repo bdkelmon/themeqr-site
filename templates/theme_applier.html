@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -62,21 +62,24 @@
 
   const SUPABASE_URL = "{{ supabase_url }}";
   const SUPABASE_KEY = "{{ supabase_key }}";
-  
+  const VAULT_ID = "{{ vault_id }}";
+
   console.log("Supabase URL:", SUPABASE_URL);
   console.log("Supabase Key:", SUPABASE_KEY ? "Set" : "Not set");
+  console.log("Vault ID:", VAULT_ID);
 
   let supabase = null;
   try {
       if (SUPABASE_URL && SUPABASE_URL.startsWith('http') && SUPABASE_KEY) {
           supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-          console.log("Supabase client initialized.");
+          console.log("Supabase client initialized successfully.");
       } else {
-          throw new Error("Supabase URL is invalid or missing.");
+          throw new Error("Supabase URL or Key is invalid or missing. URL:", SUPABASE_URL, "Key:", SUPABASE_KEY);
       }
   } catch (e) {
       document.getElementById('errorMessage').textContent = `Failed to initialize Supabase: ${e.message}`;
       document.getElementById('errorDisplay').style.display = '';
+      console.error("Supabase initialization failed:", e);
   }
 
   const themeContainer = document.getElementById('themeContainer');
@@ -114,9 +117,13 @@
       }
       try {
           let query = supabase.from(tableName).select('*');
-          if (filter.vault_id) query = query.eq('vault_id', filter.vault_id);
+          if (filter.vault_id) {
+              console.log("Fetching with vault_id:", filter.vault_id);
+              query = query.eq('vault_id', filter.vault_id);
+          }
           const { data, error } = await query;
           if (error) throw new Error(error.message);
+          console.log(`Fetched ${tableName}:`, data);
           return data || [];
       } catch (error) {
           showError(`Failed to fetch ${tableName}: ${error.message}`);
@@ -140,7 +147,7 @@
           themeContainer.appendChild(themeDiv);
       });
       document.querySelectorAll('.apply-btn').forEach(btn =>
-          btn.addEventListener('click', () => openSelectDeckModal(theme.id))
+          btn.addEventListener('click', () => openSelectDeckModal(btn.dataset.themeId))
       );
   }
 
@@ -179,6 +186,7 @@
           return;
       }
       modalThemeNameSpan.textContent = theme.name;
+      modalThemeNameSpan.dataset.themeId = themeId;
       selectDeckModal.style.display = 'flex';
       selectDeckErrorDisplay.style.display = 'none';
       populateDeckSelect(allDecks);
@@ -211,7 +219,7 @@
           if (result.success) {
               showError("Theme applied to deck successfully!");
               setTimeout(closeSelectDeckModal, 2000);
-              allDecks = await fetchDataFromSupabase('decks', { vault_id: "{{ user.vault_id or user.id }}" });
+              allDecks = await fetchDataFromSupabase('decks', { vault_id: VAULT_ID });
               populateDecks(allDecks);
           } else {
               showError(result.error || "Failed to apply theme.");
@@ -228,11 +236,12 @@
       try {
           allThemes = await fetchDataFromSupabase('themes');
           populateThemes(allThemes);
-          if ("{{ user }}" !== "None") {
-              allDecks = await fetchDataFromSupabase('decks', { vault_id: "{{ user.vault_id or user.id }}" });
+          if (VAULT_ID) {
+              console.log("Using vault_id:", VAULT_ID);
+              allDecks = await fetchDataFromSupabase('decks', { vault_id: VAULT_ID });
               populateDecks(allDecks);
           } else {
-              deckContainer.innerHTML = '<p style="color:#666;">Please log in to see your decks.</p>';
+              deckContainer.innerHTML = '<p style="color:#666;">No vault assigned. Please contact support.</p>';
           }
       } catch (e) {
           showError(`Failed to load initial data: ${e.message}`);
