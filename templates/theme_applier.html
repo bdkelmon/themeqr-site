@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/theme_applier.css') }}">
   <link rel="icon" href="https://themeqr.com/images/TQR_Dude_Sm.png">
 </head>
-<body> 
+<body>
 <header>
   <h1>ThemeQR: Theme & Deck Manager</h1>
   <p>Manage your themes and decks effortlessly.</p>
@@ -46,7 +46,7 @@
 <div id="errorDisplay" class="error" style="display:none;">Error: <span id="errorMessage"></span></div>
 
 <!-- Apply Theme to Deck Modal -->
-<div id="applyThemeToDeckModal" class="modal-overlay">
+<div id="applyThemeToDeckModal" class="modal-overlay" style="display:none;">
   <div class="modal-content">
     <div class="modal-header">
       <h3>Apply Theme "<span id="modalThemeToDeckName"></span>"</h3>
@@ -77,18 +77,18 @@
   try {
       if (SUPABASE_URL && SUPABASE_URL.startsWith('http')) {
           supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-          console.log("Supabase client initialized.");
+          console.log("Supabase client initialized successfully. URL:", SUPABASE_URL);
       } else {
-          const errorMessage = "Supabase URL is invalid or missing. Please ensure Flask passes a valid URL.";
+          const errorMessage = "Supabase URL is invalid or missing. Check Flask template variables.";
           console.error(errorMessage, "URL:", SUPABASE_URL);
           document.getElementById('errorMessage').textContent = errorMessage;
-          document.getElementById('errorDisplay').classList.remove('hidden');
+          document.getElementById('errorDisplay').style.display = '';
       }
   } catch (e) {
       const errorMessage = `Failed to initialize Supabase client: ${e.message}`;
       console.error(errorMessage, e);
       document.getElementById('errorMessage').textContent = errorMessage;
-      document.getElementById('errorDisplay').classList.remove('hidden');
+      document.getElementById('errorDisplay').style.display = '';
   }
 
   // --- DOM Elements (Themes) ---
@@ -136,7 +136,7 @@
       }[target];
       if (show) {
           indicator.style.display = '';
-          errorDiv.style.display = 'none';
+          if (errorDiv) errorDiv.style.display = 'none';
       } else {
           indicator.style.display = 'none';
       }
@@ -151,9 +151,13 @@
           'main': errorDisplay,
           'applyThemeToDeck': applyThemeToDeckErrorDisplay
       }[target];
-      errorSpan.textContent = message;
-      errorDiv.style.display = '';
-      showLoading(false, target);
+      if (errorSpan && errorDiv) {
+          errorSpan.textContent = message;
+          errorDiv.style.display = '';
+          showLoading(false, target);
+      } else {
+          console.error("Error display elements not found:", target);
+      }
   }
 
   async function fetchDataFromSupabase(tableName, filter = {}) {
@@ -168,6 +172,7 @@
           }
           const { data, error } = await query;
           if (error) throw new Error(error.message);
+          console.log(`Fetched ${tableName}:`, data);
           return data || [];
       } catch (error) {
           console.error(`Error fetching data from ${tableName}:`, error.message);
@@ -279,9 +284,14 @@
       applyThemeToDeckModal.style.display = 'flex';
       applyThemeToDeckErrorDisplay.style.display = 'none';
       showLoading(true, 'applyThemeToDeck');
-      allDecks = await fetchDataFromSupabase('decks', { vault_id: "{{ user.vault_id or user.id }}" });
-      populateThemeToDeckSelect(allDecks);
-      showLoading(false, 'applyThemeToDeck');
+      try {
+          allDecks = await fetchDataFromSupabase('decks', { vault_id: "{{ user.vault_id or user.id }}" });
+          populateThemeToDeckSelect(allDecks);
+      } catch (e) {
+          showError(`Failed to load decks: ${e.message}`, 'applyThemeToDeck');
+      } finally {
+          showLoading(false, 'applyThemeToDeck');
+      }
   }
 
   function closeApplyThemeToDeckModal() {
@@ -307,8 +317,8 @@
               body: JSON.stringify({
                   theme_id: selectedTheme.id,
                   deck_id: selectedDeckId,
-                  wrapper_url: selectedTheme.wrapper_url, // Replace deck's wrapper
-                  landing_url: selectedTheme.landing_url  // Replace deck's landing_url
+                  wrapper_url: selectedTheme.wrapper_url,
+                  landing_url: selectedTheme.landing_url
               })
           });
           if (!response.ok) {
@@ -334,22 +344,39 @@
   }
 
   // --- Event Listeners ---
-  applyThemeToDeckButton.addEventListener('click', openApplyThemeToDeckModal);
-  closeThemeToDeckModalButton.addEventListener('click', closeApplyThemeToDeckModal);
-  confirmApplyThemeToDeckButton.addEventListener('click', confirmApplyThemeToDeck);
+  if (applyThemeToDeckButton) {
+      applyThemeToDeckButton.addEventListener('click', openApplyThemeToDeckModal);
+  } else {
+      console.error("applyThemeToDeckButton not found in DOM");
+  }
+  if (closeThemeToDeckModalButton) {
+      closeThemeToDeckModalButton.addEventListener('click', closeApplyThemeToDeckModal);
+  } else {
+      console.error("closeThemeToDeckModalButton not found in DOM");
+  }
+  if (confirmApplyThemeToDeckButton) {
+      confirmApplyThemeToDeckButton.addEventListener('click', confirmApplyThemeToDeck);
+  } else {
+      console.error("confirmApplyThemeToDeckButton not found in DOM");
+  }
 
   // --- Initial Load ---
   document.addEventListener('DOMContentLoaded', async () => {
       showLoading(true, 'main');
-      allThemes = await fetchDataFromSupabase('themes');
-      populateThemeFolders(allThemes);
-      if ("{{ user }}" !== "None") {
-          allDecks = await fetchDataFromSupabase('decks', { vault_id: "{{ user.vault_id or user.id }}" });
-          populateDeckFolders(allDecks);
-      } else {
-          deckFoldersContainer.innerHTML = '<p style="color:#666;">Please log in to see your decks.</p>';
+      try {
+          allThemes = await fetchDataFromSupabase('themes');
+          populateThemeFolders(allThemes);
+          if ("{{ user }}" !== "None") {
+              allDecks = await fetchDataFromSupabase('decks', { vault_id: "{{ user.vault_id or user.id }}" });
+              populateDeckFolders(allDecks);
+          } else {
+              deckFoldersContainer.innerHTML = '<p style="color:#666;">Please log in to see your decks.</p>';
+          }
+      } catch (e) {
+          showError(`Failed to load initial data: ${e.message}`, 'main');
+      } finally {
+          showLoading(false, 'main');
       }
-      showLoading(false, 'main');
   });
 </script>
 </body>
