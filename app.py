@@ -58,7 +58,7 @@ def login():
         response = supabase.auth.sign_in_with_password({"email": email, "password": password})
         if response.user:
             user_data = {'email': response.user.email, 'id': response.user.id}
-            response = make_response(redirect(url_for('editor')))  # Redirect to editor after login
+            response = make_response(redirect(url_for('serve_qr_landing_editor')))  # Redirect to editor after login
             response.set_cookie('user', json.dumps(user_data), max_age=3600)  # 1-hour expiry
             flash("Logged in successfully!", "success")
             return response
