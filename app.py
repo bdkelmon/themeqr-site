@@ -219,24 +219,16 @@ async def get_or_create_user_vault(user_id: str):
 
 @app.route('/apply_theme_to_deck', methods=['POST'])
 def apply_theme_to_deck():
-    if not session.get('user'):
-        return {"success": False, "error": "Unauthorized"}, 401
+    data = request.get_json()
+    theme_id = data.get('theme_id')
+    deck_id = data.get('deck_id')
+    wrapper_url = data.get('wrapper_url')
+    landing_url = data.get('landing_url')
     try:
-        data = request.get_json()
-        theme_id = data.get('theme_id')
-        deck_id = data.get('deck_id')
-        wrapper_url = data.get('theme_wrapper_url')
-        landing_url = data.get('theme_landing_url')
-
-        # Update deck with theme data (example logic)
-        response = supabase.from_('decks').update({'theme_id': theme_id,'wrapper_url': wrapper_url,'landing_url': landing_url
-        }).eq('id', deck_id).execute()
-        if response.error:
-            raise Exception(response.error.message)
-
-        return {"success": True, "message": "Theme applied to deck"}
+        supabase.from('decks').update({'wrapper': wrapper_url, 'landing_url': landing_url}).eq('id', deck_id).execute()
+        return jsonify({'success': True})
     except Exception as e:
-        return {"success": False, "error": str(e)}, 400
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/apply_deck_to_theme', methods=['POST'])
 def apply_deck_to_theme():
