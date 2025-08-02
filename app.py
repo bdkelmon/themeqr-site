@@ -224,35 +224,30 @@ def apply_theme_to_deck():
     deck_id = data.get('deck_id')
     wrapper_url = data.get('wrapper_url')
     landing_url = data.get('landing_url')
+
     try:
-        supabase.from('decks').update({'wrapper': wrapper_url, 'landing_url': landing_url}).eq('id', deck_id).execute()
-        return jsonify({'success': True})
+        # Fetch the theme to ensure wrapper_url and landing_url exist
+        theme_response = supabase.table('themes').select('*').eq('id', theme_id).execute()
+        if not theme_response.data:
+            return jsonify({'success': False, 'error': 'Theme not found'}), 404
+
+        theme = theme_response.data[0]
+        wrapper_url = wrapper_url or theme.get('wrapper_url')
+        landing_url = landing_url or theme.get('landing_url')
+
+        # Update the deck with the theme's wrapper and landing URL
+        response = supabase.table('decks').update({
+            'wrapper': wrapper_url,
+            'landing_url': landing_url
+        }).eq('id', deck_id).execute()
+
+        if response.data:
+            return jsonify({'success': True, 'message': 'Theme applied to deck successfully'})
+        else:
+            return jsonify({'success': False, 'error': 'Failed to update deck'}), 400
+
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/apply_deck_to_theme', methods=['POST'])
-def apply_deck_to_theme():
-    if not session.get('user'):
-        return {"success": False, "error": "Unauthorized"}, 401
-    try:
-        data = request.get_json()
-        deck_id = data.get('deck_id')
-        theme_id = data.get('theme_id')
-        wrapper_url = data.get('deck_wrapper_url')
-        landing_url = data.get('deck_landing_url')
-
-        # Update theme with deck data (example logic)
-        response = supabase.from_('themes').update({
-            'deck_id': deck_id,
-            'wrapper_url': wrapper_url,
-            'landing_url': landing_url
-        }).eq('id', theme_id).execute()
-        if response.error:
-            raise Exception(response.error.message)
-
-        return {"success": True, "message": "Deck applied to theme"}
-    except Exception as e:
-        return {"success": False, "error": str(e)}, 400
 
 
 @app.route('/editor')
