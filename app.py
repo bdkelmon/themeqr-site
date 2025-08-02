@@ -68,7 +68,7 @@ async def get_or_create_user_vault(user_id):
         return None
 
 @app.route("/manager")
-def manager():
+async def manager():
     print(f"Serving theme_applier.html via /manager. Supabase URL: {os.getenv('SUPABASE_URL')}")
     user = session.get('user')
     vault_id = None
