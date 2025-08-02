@@ -49,10 +49,37 @@ h2 {
 
 .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1.5rem;
-    margin-top: 1rem;
+    gap: 10px;
+    margin-top: 10px;
 }
+
+.theme-item, .deck-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.theme-item span {
+    flex-grow: 1;
+}
+
+
+.apply-btn {
+    padding: 5px 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.apply-btn:hover {
+    background-color: #0056b3;
+}
+
+
 .item-card {
     background: #f0f9ff;
     border: 1px solid #bfdbfe;
@@ -116,6 +143,7 @@ pre {
     text-align: left;
 }
 .modal-overlay {
+    display: none;
     position: fixed;
     top: 0;
     left: 0;
@@ -127,7 +155,7 @@ pre {
 }
 .modal-content {
     background: #fff; border-radius: 5px; padding: 20px;
-    max-width: 500px; width: 90%;
+    max-width: 500px; width: 400px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.2);
     animation: slideIn 0.2s ease;
 }
@@ -145,4 +173,17 @@ pre {
 @media (max-width: 700px) {
     .section { padding: 1.2rem 0.2rem; }
     .details-section { padding: 1rem; }
+}
+
+.loading, .error {
+    padding: 10px;
+    margin: 10px 0;
+}
+
+.loading {
+    color: #666;
+}
+
+.error {
+    color: #dc3545;
 }

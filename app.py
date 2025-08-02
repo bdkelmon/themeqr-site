@@ -222,23 +222,16 @@ def apply_theme_to_deck():
     data = request.get_json()
     theme_id = data.get('theme_id')
     deck_id = data.get('deck_id')
-    wrapper_url = data.get('wrapper_url')
-    landing_url = data.get('landing_url')
 
     try:
-        # Fetch the theme to ensure wrapper_url and landing_url exist
+        # Fetch the theme to ensure it exists
         theme_response = supabase.table('themes').select('*').eq('id', theme_id).execute()
         if not theme_response.data:
             return jsonify({'success': False, 'error': 'Theme not found'}), 404
 
-        theme = theme_response.data[0]
-        wrapper_url = wrapper_url or theme.get('wrapper_url')
-        landing_url = landing_url or theme.get('landing_url')
-
-        # Update the deck with the theme's wrapper and landing URL
+        # Update the deck with the theme_id
         response = supabase.table('decks').update({
-            'wrapper': wrapper_url,
-            'landing_url': landing_url
+            'theme_id': theme_id
         }).eq('id', deck_id).execute()
 
         if response.data:
@@ -248,7 +241,6 @@ def apply_theme_to_deck():
 
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
-
 
 @app.route('/editor')
 def serve_qr_landing_editor():
