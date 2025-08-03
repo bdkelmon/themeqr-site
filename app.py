@@ -128,7 +128,8 @@ def logout():
     try:
         print(f"Signing out at {datetime.now()}")
         if supabase.auth.get_session():
-            supabase.auth.sign_out()
+            supabase.auth.sign_out(),
+            session.pop('user', None)
         print(f"Sign-out completed at {datetime.now()}")
         response = make_response(redirect("https://www.themeqr.com/"))
         response.set_cookie('user', '', expires=0, path='/')
