@@ -63,12 +63,12 @@
       // Fetch vault_id from vaults table using user_id
       const { data: vaultData, error: vaultError } = await supabase
         .from('vaults')
-        .select('vault_id')
+        .select('id')
         .eq('user_id', userId)
         .single();
       if (vaultError || !vaultData) throw new Error('Vault not found: ' + (vaultError?.message || 'No data'));
 
-      const vaultId = vaultData.vault_id;
+      const vaultId = vaultData.id;
 
       // Fetch deck names from decks table using vault_id
       const { data: deckData, error: deckError } = await supabase
