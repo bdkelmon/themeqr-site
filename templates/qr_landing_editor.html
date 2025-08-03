@@ -106,7 +106,7 @@
   }
 
   function selectDeck(deckId, deckName) {
-    window.currentDeckId = deckId; // Updated to use window scope
+    window.currentDeckId = deckId;
     const vaultId = '{{ vault_id }}';
     if (vaultId) {
       const qrImageName = `${vaultId}_${deckName}_qr.png`;
