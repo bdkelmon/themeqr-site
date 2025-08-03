@@ -275,13 +275,19 @@ def apply_theme_to_deck():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/editor')
+@app.route("/editor")
 def serve_qr_landing_editor():
-    print(f"Serving qr_landing_editor.html. Supabase URL: {SUPABASE_URL}")
-    return render_template('qr_landing_editor.html', 
+    print(f"Serving qr_landing_editor.html. Supabase URL: {os.getenv('SUPABASE_URL')}")
+    user = session.get('user')
+    vault_id = None
+    if user and 'id' in user:
+        vault_id = get_or_create_user_vault(user['id'])
+        print(f"Assigned vault_id: {vault_id}")
+    return render_template('qr_landing_editor.html',
                           supabase_url=os.getenv('SUPABASE_URL'),
                           supabase_key=os.getenv('SUPABASE_KEY'),
-                          user=session.get('user'))
+                          user=user,
+                          vault_id=vault_id)
 
 @app.route('/reset_index', methods=['POST'])
 def reset_index():

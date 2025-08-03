@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head> 
+<head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ThemeQR - Dynamic Redirect QR</title>
@@ -8,21 +8,24 @@
   <link rel="stylesheet" href="https://themeqr.com/static/css/styles.css">
 </head>
 <body>
-
 <header>
   <h1>ThemeQR Dynamic Redirect</h1>
   <p>This QR code always points to <strong>https://themeqr.com/go.html</strong></p>
-  <div class="auth-controls" id="user-nav"></div>
-  </header>
+  <div class="auth-controls" id="user-nav">
+    {% if user %}
+      <span>Hello, {{ user.email }}!</span>
+      <a href="{{ url_for('logout') }}" class="logout-btn">Log Out</a>
+    {% else %}
+      <span>Please log in to manage QR codes.</span>
+    {% endif %}
+  </div>
 </header>
 
 <section class="section">
   <h2>🔗 Choose or Enter a New Destination</h2>
-
   <button class="btn" onclick="changeQrLanding('https://www.amazon.com')">Amazon</button>
   <button class="btn" onclick="changeQrLanding('https://www.walmart.com')">Walmart</button>
   <button class="btn" onclick="changeQrLanding('https://themeqr.com')">Reset to ThemeQR</button>
-
   <p style="margin-top:2rem;"><strong>Or enter a custom URL:</strong></p>
   <input type="url" id="customUrl" placeholder="https://example.com" />
   <br/>
@@ -30,128 +33,168 @@
 </section>
 
 <section class="section">
-   <div>
-     <h2>🌐 Curious about how our Themes?</h2>
-     <a href="https://themeqr-backend.onrender.com/manager" class="btn">Click Here!</a>
-   </div>
+  <div>
+    <h2>🌐 Curious about how our Themes?</h2>
+    <a href="https://themeqr-backend.onrender.com/manager" class="btn">Click Here!</a>
+  </div>
   <h2>📷 Scan Here!</h2>
-   <img class="qr" id="qrImg" src="https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png" alt="QR Code">
+  <div id="deckButtons"></div>
+  <img class="qr" id="qrImg" src="https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png" alt="QR Code">
   <p id="status"></p>
 </section>
 
 <footer class="footer">
   © 2025 ThemeQR. All rights reserved.
-</footer> 
+</footer>
 
-<script type ="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
- 
-    const SUPABASE_URL = "{{ supabase_url }}";
-    const SUPABASE_KEY = "{{ supabase_key }}";
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-    
-    console.log("Using Supabase URL:", SUPABASE_URL);
-    // Be careful logging sensitive keys in production browser consoles.
-    // console.log("Using Anon Key:", SUPABASE_KEY); 
+<script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-    async function changeQrLanding(landingUrl) {
-        try {
-            const response = await fetch('https://themeqr-backend.onrender.com/change_qr_landing', {
-            // Uncomment the line below for local testing, comment out the Render URL:
-            // const response = await fetch('http://127.0.0.1:5000/change_qr_landing', {  
-                method: 'POST',
-                // table:'decks', // REMOVED: This is NOT a valid fetch option
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ landing: landingUrl })
-            });
-            if (!response.ok) {
-                // Read response text even on error to get detailed Flask/Supabase message
-                const errorText = await response.text();
-                console.error(`HTTP error ${response.status}: ${errorText}`);
-                throw new Error(`HTTP error ${response.status}: ${errorText}`);
-            }
-            const data = await response.json();
-            console.log('Success:', data);
-            // After successful update, also generate the QR to reflect the new URL
-            // This assumes your /generate_qr endpoint pulls the latest landing_url from DB
-          //  generateQr(); 
-            return data;
-        } catch (error) {
-            console.error('Fetch error:', error);
-            updateStatus("❌ Failed to update URL: " + error.message, true); // Show error in UI
-            throw error;
-        }
+  const SUPABASE_URL = "{{ supabase_url }}";
+  const SUPABASE_KEY = "{{ supabase_key }}";
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  console.log("Using Supabase URL:", SUPABASE_URL);
+
+  let currentDeckId = null;
+
+  async function fetchUserVaultAndDecks(userId) {
+    try {
+      // Fetch vault_id from vaults table using user_id
+      const { data: vaultData, error: vaultError } = await supabase
+        .from('vaults')
+        .select('vault_id')
+        .eq('user_id', userId)
+        .single();
+      if (vaultError || !vaultData) throw new Error('Vault not found: ' + (vaultError?.message || 'No data'));
+
+      const vaultId = vaultData.vault_id;
+
+      // Fetch deck names from decks table using vault_id
+      const { data: deckData, error: deckError } = await supabase
+        .from('decks')
+        .select('id, deck_name')
+        .eq('vault_id', vaultId);
+      if (deckError || !deckData.length) throw new Error('No decks found: ' + (deckError?.message || 'No data'));
+
+      return { vaultId, decks: deckData };
+    } catch (error) {
+      console.error('Error fetching user vault and decks:', error);
+      updateStatus(`❌ ${error.message}`, true);
+      return { vaultId: null, decks: [] };
     }
-    window.changeQrLanding = changeQrLanding;
-    
-    // This event listener for 'qr-form' is currently unused because your HTML has no element with id="qr-form".
-    // Your buttons use direct onclick="changeQrLanding(...)".
-    // Your custom URL input uses onclick="customSubmit()".
-    // You can remove this block if you don't plan to add a form with this ID.
-    document.getElementById('qr-form')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const landingUrl = document.getElementById('landing-url').value;
-        await changeQrLanding(landingUrl);
+  }
+
+  function populateDeckButtons(decks) {
+    const deckButtonsDiv = document.getElementById('deckButtons');
+    deckButtonsDiv.innerHTML = '';
+    decks.forEach(deck => {
+      const button = document.createElement('button');
+      button.className = 'btn deck-btn';
+      button.textContent = deck.deck_name;
+      button.dataset.deckId = deck.id;
+      button.onclick = () => selectDeck(deck.id, deck.deck_name);
+      deckButtonsDiv.appendChild(button);
     });
+    if (decks.length > 0) selectDeck(decks[0].id, decks[0].deck_name);
+  }
 
-    // Function to handle custom URL submission
-    function customSubmit() {
-        const customUrlInput = document.getElementById('customUrl');
-        if (customUrlInput && customUrlInput.value) {
-            const landingUrl = customUrlInput.value;
-            updateStatus("Updating URL...", false); // Provide immediate feedback
-            changeQrLanding(landingUrl)
-                .then(() => {
-                    // Success is handled within changeQrLanding now (including generateQr)
-                    // If you want more specific success messages, you can add them here
-                })
-                .catch(error => {
-                    // Error is already handled by changeQrLanding's catch block and updateStatus
-                    // No need to re-throw or re-log here unless different handling is needed
-                });
-        } else {
-            updateStatus("Please enter a custom URL.", true);
-        }
+  function selectDeck(deckId, deckName) {
+    currentDeckId = deckId;
+    const vaultId = '{{ vault_id }}'; // Passed from app.py
+    if (vaultId) {
+      const qrImageName = `${vaultId}_${deckName}_qr.png`;
+      const qrImg = document.getElementById('qrImg');
+      qrImg.src = `https://themeqr-backend.onrender.com/static/${qrImageName}?t=${new Date().getTime()}`;
+      updateStatus(`✅ QR code updated for ${deckName}`, false);
+    } else {
+      updateStatus('❌ No vault ID available', true);
     }
-    window.customSubmit = customSubmit;
+  }
 
-    function generateQr() {
-        // IMPORTANT: For the QR code to reflect the *updated* landing_url in Supabase,
-        // your backend's /generate_qr endpoint must fetch the current landing_url from the DB
-        // using DEMO_DECK_ID, instead of hardcoding 'https://themeqr.com/go'.
-        fetch('https://themeqr-backend.onrender.com/generate_qr', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ link: 'https://themeqr.com/go' }) // This `link` should ideally come from Supabase
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                const qrImg = document.getElementById('qrImg');
-                // Append unique timestamp to force browser to reload image from server, not cache
-                qrImg.src = data.qr_url + '?t=' + new Date().getTime(); 
-                updateStatus("✅ Courious? Scan Here!!!.", false);
-            } else {
-                updateStatus("❌ " + data.error, true);
-            }
-        })
-        .catch(err => updateStatus("❌ Network error: " + err.message, true));
+  async function changeQrLanding(landingUrl) {
+    try {
+      const response = await fetch('https://themeqr-backend.onrender.com/change_qr_landing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ landing: landingUrl, deck_id: currentDeckId })
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`HTTP error ${response.status}: ${errorText}`);
+        throw new Error(`HTTP error ${response.status}: ${errorText}`);
+      }
+      const data = await response.json();
+      console.log('Success:', data);
+      generateQr();
+      return data;
+    } catch (error) {
+      console.error('Fetch error:', error);
+      updateStatus("❌ Failed to update URL: " + error.message, true);
+      throw error;
     }
+  }
+  window.changeQrLanding = changeQrLanding;
 
-    function updateStatus(msg, isError = false) {
-        const el = document.getElementById('status');
-        el.innerText = msg;
-        el.style.color = isError ? 'red' : 'green';
+  document.getElementById('qr-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const landingUrl = document.getElementById('landing-url').value;
+    await changeQrLanding(landingUrl);
+  });
+
+  function customSubmit() {
+    const customUrlInput = document.getElementById('customUrl');
+    if (customUrlInput && customUrlInput.value) {
+      const landingUrl = customUrlInput.value;
+      updateStatus("Updating URL...", false);
+      changeQrLanding(landingUrl)
+        .catch(error => {});
+    } else {
+      updateStatus("Please enter a custom URL.", true);
     }
+  }
+  window.customSubmit = customSubmit;
 
-    // Initial QR code generation when the page loads
-    //document.addEventListener('DOMContentLoaded', () => {
-        // You might want to modify generateQr() to fetch the current
-        // landing_url for DEMO_DECK_ID from your backend's API
-        // if you want the QR code to always show the current DB state.
-       // generateQr(); 
-   // });
+  function generateQr() {
+    if (!currentDeckId) {
+      updateStatus('❌ No deck selected', true);
+      return;
+    }
+    fetch('https://themeqr-backend.onrender.com/generate_qr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ link: 'https://themeqr.com/go', deck_id: currentDeckId })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        const qrImg = document.getElementById('qrImg');
+        qrImg.src = data.qr_url + '?t=' + new Date().getTime();
+        updateStatus("✅ Curious? Scan Here!!!", false);
+      } else {
+        updateStatus("❌ " + data.error, true);
+      }
+    })
+    .catch(err => updateStatus("❌ Network error: " + err.message, true));
+  }
 
+  function updateStatus(msg, isError = false) {
+    const el = document.getElementById('status');
+    el.innerText = msg;
+    el.style.color = isError ? 'red' : 'green';
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    const currentUser = {{ user | tojson }}; // Renamed to avoid redeclaration
+    if (currentUser && currentUser.id) {
+      const { vaultId, decks } = await fetchUserVaultAndDecks(currentUser.id);
+      if (vaultId) {
+        populateDeckButtons(decks);
+      }
+    } else {
+      updateStatus('❌ Please log in to view decks and QR codes', true);
+    }
+  });
 </script>
 </body>
 </html>
