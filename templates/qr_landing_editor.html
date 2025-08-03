@@ -88,15 +88,18 @@
   function populateDeckButtons(decks) {
     const deckButtonsDiv = document.getElementById('deckButtons');
     deckButtonsDiv.innerHTML = '';
-    decks.forEach(deck => {
-      const button = document.createElement('button');
-      button.className = 'btn deck-btn';
-      button.textContent = deck.deck_name;
-      button.dataset.deckId = deck.id;
-      button.onclick = () => selectDeck(deck.id, deck.deck_name);
-      deckButtonsDiv.appendChild(button);
-    });
-    if (decks.length > 0) selectDeck(decks[0].id, decks[0].deck_name);
+    if (decks.length > 0) {
+      decks.forEach(deck => {
+        const button = document.createElement('button');
+        button.className = 'btn deck-btn';
+        button.textContent = deck.deck_name;
+        button.dataset.deckId = deck.id;
+        button.onclick = () => selectDeck(deck.id, deck.deck_name);
+        deckButtonsDiv.appendChild(button);
+      });
+    } else {
+      deckButtonsDiv.innerHTML = '<p>No decks available.</p>';
+    }
   }
 
   function selectDeck(deckId, deckName) {
@@ -105,8 +108,18 @@
     if (vaultId) {
       const qrImageName = `${vaultId}_${deckName}_qr.png`;
       const qrImg = document.getElementById('qrImg');
-      qrImg.src = `https://themeqr-backend.onrender.com/static/${qrImageName}?t=${new Date().getTime()}`;
-      updateStatus(`✅ QR code updated for ${deckName}`, false);
+      const qrUrl = `https://themeqr-backend.onrender.com/static/${qrImageName}?t=${new Date().getTime()}`;
+      // Check if the image exists by creating an Image object
+      const img = new Image();
+      img.onload = () => {
+        qrImg.src = qrUrl;
+        updateStatus(`✅ QR code updated for ${deckName}`, false);
+      };
+      img.onerror = () => {
+        qrImg.src = 'https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png';
+        updateStatus(`❌ QR code for ${deckName} not found, using default`, true);
+      };
+      img.src = qrUrl; // Trigger the load check
     } else {
       updateStatus('❌ No vault ID available', true);
     }
@@ -190,6 +203,10 @@
       const { vaultId, decks } = await fetchUserVaultAndDecks(currentUser.id);
       if (vaultId) {
         populateDeckButtons(decks);
+        // Set default QR image without selecting a deck
+        const qrImg = document.getElementById('qrImg');
+        qrImg.src = 'https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png';
+        updateStatus('✅ Select a deck to update the QR code', false);
       }
     } else {
       updateStatus('❌ Please log in to view decks and QR codes', true);
