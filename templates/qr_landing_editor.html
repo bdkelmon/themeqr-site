@@ -6,7 +6,7 @@
   <title>ThemeQR - Dynamic Redirect QR</title>
   <link rel="icon" href="https://themeqr.com/images/TQR_Dude_Sm.png">
   <link rel="stylesheet" href="https://themeqr.com/static/css/styles.css">
-  currentDeckId = null; // This will be set when a deck is selected
+  <mark style="background-color: #ffff99">&lt;!-- Removed: currentDeckId = null; // This will be set when a deck is selected --&gt;</mark>
 </head>
 <body>
 <header>
@@ -59,7 +59,7 @@
 
   console.log("Using Supabase URL:", SUPABASE_URL);
 
-  let currentDeckId = null; // Initialized to null, will be set when a deck is selected
+  <mark style="background-color: #ffff99">let currentDeckId = null; // Initialized to null, will be set when a deck is selected</mark> // Moved and corrected from head section
 
   async function fetchUserVaultAndDecks(userId) {
     try {
