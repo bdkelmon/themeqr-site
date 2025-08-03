@@ -182,7 +182,7 @@
     .then(data => {
       if (data.success) {
         const qrImg = document.getElementById('qrImg');
-        qrImg.src = data.qr_url + '?t=' + new Date().getTime();
+        qrImg.src = data.qr_url;
         updateStatus("✅ Curious? Scan Here!!!", false);
       } else {
         updateStatus("❌ " + data.error, true);
