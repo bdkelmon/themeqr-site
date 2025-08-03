@@ -224,14 +224,12 @@ def test_supabase():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-async def get_or_create_user_vault(user_id: str):
+def get_or_create_user_vault(user_id):
     try:
         response = supabase.table('vaults').select('id').eq('user_id', user_id).single().execute()
         if response.data:
-            print(f"✅ Found existing vault for user {user_id}: {response.data['id']}")
             return response.data['id']
         elif response.error and response.error.code == 'PGRST116':
-            print(f"ℹ️ No vault found for user {user_id}. Creating a new one...")
             insert_response = supabase.table('vaults').insert({
                 'user_id': user_id,
                 'vault_name': f"Vault for {user_id[:8]}",
@@ -239,15 +237,14 @@ async def get_or_create_user_vault(user_id: str):
                 'updated_at': datetime.now(timezone.utc).isoformat()
             }).execute()
             if insert_response.error:
-                print(f"❌ Error creating vault for user {user_id}: {insert_response.error.message}")
+                print(f"Error creating vault: {insert_response.error.message}")
                 return None
-            print(f"✅ Created new vault for user {user_id}: {insert_response.data[0]['id']}")
             return insert_response.data[0]['id']
         else:
-            print(f"❌ Supabase error checking vault for user {user_id}: {response.error.message}")
+            print(f"Supabase error: {response.error.message}")
             return None
     except Exception as e:
-        print(f"❌ Exception in get_or_create_user_vault: {str(e)}")
+        print(f"Error in get_or_create_user_vault: {str(e)}")
         return None
 
 @app.route('/apply_theme_to_deck', methods=['POST'])
