@@ -158,6 +158,7 @@
   function resetQrToDefault() {
     const qrImg = document.getElementById('qrImg');
     qrImg.src = 'https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png'; // Reset QR image to default
+    window.currentDeckId = 'demo_deck_id'; // Switch to Demo_Deck_ID (replace with actual ID)
     changeQrLanding('https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png')
       .catch(error => console.error('Reset error:', error));
   }
@@ -206,7 +207,7 @@
   }
 
   function updateStatus(msg, isError = false) {
-    const el = document.getElementById('status'); // Corrected to target status element
+    const el = document.getElementById('status');
     el.innerText = msg;
     el.style.color = isError ? 'red' : 'green';
   }
