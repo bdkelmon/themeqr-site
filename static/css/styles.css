@@ -51,6 +51,7 @@ h2 {
     text-align: center;
     margin: auto; /* Added from new style */
 }
+ 
 .features {
     display: grid;
     gap: 1.5rem;
@@ -87,7 +88,7 @@ input[type="email"] {
 }
 input[type="url"] { /* Added from new style */
     padding: 0.75rem;
-    width: 80%;
+    width: 40%;
     border: 1px solid #ccc;
     border-radius: 4px;
     margin-top: 1rem;

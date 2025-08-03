@@ -308,15 +308,23 @@ def change_qr_landing():
         data = request.get_json()
         print(f"📦 Data received: {data}")
         new_landing = data.get('landing')
+        deck_id = data.get('deck_id')
+
         if not new_landing or (not new_landing.startswith("http://") and not new_landing.startswith("https://")):
             print("❌ Invalid landing URL format.")
             return jsonify(success=False, error="Invalid URL format."), 400
-        response = supabase.table('decks').update({'landing_url': new_landing}).eq('id', DEMO_DECK_ID).execute()
+
+        # Determine the deck_id to use
+        target_deck_id = deck_id if deck_id else DEMO_DECK_ID
+        print(f"🔧 Updating deck_id: {target_deck_id} with landing_url: {new_landing}")
+
+        response = supabase.table('decks').update({'landing_url': new_landing}).eq('id', target_deck_id).execute()
         if not response.data:
-            print(f"⚠️ No row found for ID: {DEMO_DECK_ID}.")
+            print(f"⚠️ No row found for ID: {target_deck_id}.")
             return jsonify(success=False, error="Deck ID not found."), 404
-        print(f"✅ Supabase updated for {DEMO_DECK_ID} to {new_landing}.")
-        return jsonify(success=True)
+
+        print(f"✅ Supabase updated for {target_deck_id} to {new_landing}.")
+        return jsonify(success=True, qr_url=f"https://themeqr-backend.onrender.com/static/{target_deck_id}_qr.png")
     except Exception as e:
         print(f"❌ Exception during /change_qr_landing: {str(e)}")
         return jsonify(success=False, error=str(e)), 500
