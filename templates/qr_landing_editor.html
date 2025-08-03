@@ -159,16 +159,11 @@
     const qrImg = document.getElementById('qrImg');
     qrImg.src = 'https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png'; // Reset QR image to default
     window.currentDeckId = '71f42d9b-fe22-4085-87f0-944ab85ac07e'; // Switch to Demo_Deck_ID (replace with actual ID)
-    changeQrLanding('https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png')
-      .catch(error => console.error('Reset error:', error));
+    .catch(error => console.error('Reset error:', error));
   }
   window.resetQrToDefault = resetQrToDefault; // Make function globally accessible
 
-  document.getElementById('qr-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const landingUrl = document.getElementById('landing-url').value;
-    await changeQrLanding(landingUrl).catch(error => console.error('Form submit error:', error));
-  });
+
 
   function customSubmit() {
     const customUrlInput = document.getElementById('customUrl');
