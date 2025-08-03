@@ -23,9 +23,9 @@
 
 <section class="section">
   <h2>🔗 Choose or Enter a New Destination</h2>
-  <button class="btn" onclick="changeQrLanding('https://www.amazon.com', currentDeckId)">Amazon</button>
-  <button class="btn" onclick="changeQrLanding('https://www.walmart.com', currentDeckId)">Walmart</button>
-  <button class="btn" onclick="changeQrLanding('https://themeqr.com', currentDeckId)">Reset to ThemeQR</button>
+  <button class="btn" id="amazonBtn" disabled onclick="changeQrLanding('https://www.amazon.com', currentDeckId)">Amazon</button>
+  <button class="btn" id="walmartBtn" disabled onclick="changeQrLanding('https://www.walmart.com', currentDeckId)">Walmart</button>
+  <button class="btn" id="themeQrBtn" disabled onclick="changeQrLanding('https://themeqr.com', currentDeckId)">Reset to ThemeQR</button>
   <button class="btn" onclick="resetQrToDefault()">Reset to Default QR</button>
   <p style="margin-top:2rem;"><strong>Or enter a custom URL:</strong></p>
   <input type="url" id="customUrl" placeholder="https://example.com" />
@@ -57,7 +57,7 @@
 
   console.log("Using Supabase URL:", SUPABASE_URL);
 
-  let currentDeckId = null;
+  let currentDeckId = null; // Initialized to null, will be set when a deck is selected
 
   async function fetchUserVaultAndDecks(userId) {
     try {
@@ -96,6 +96,10 @@
         button.onclick = () => selectDeck(deck.id, deck.deck_name);
         deckButtonsDiv.appendChild(button);
       });
+      // Enable destination buttons only after decks are loaded
+      document.getElementById('amazonBtn').disabled = false;
+      document.getElementById('walmartBtn').disabled = false;
+      document.getElementById('themeQrBtn').disabled = false;
     } else {
       deckButtonsDiv.innerHTML = '<p>No decks available.</p>';
     }
@@ -128,7 +132,7 @@
       const response = await fetch('/change_qr_landing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ landing: landingUrl, deck_id: deckId })
+        body: JSON.stringify({ landing: landingUrl, deck_id: deckId || currentDeckId })
       });
       if (!response.ok) {
         const errorText = await response.text();
