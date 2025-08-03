@@ -6,6 +6,7 @@
   <title>ThemeQR - Dynamic Redirect QR</title>
   <link rel="icon" href="https://themeqr.com/images/TQR_Dude_Sm.png">
   <link rel="stylesheet" href="https://themeqr.com/static/css/styles.css">
+  currentDeckId = null; // This will be set when a deck is selected
 </head>
 <body>
 <header>
@@ -26,7 +27,7 @@
   <button class="btn" id="amazonBtn" disabled onclick="changeQrLanding('https://www.amazon.com', currentDeckId)">Amazon</button>
   <button class="btn" id="walmartBtn" disabled onclick="changeQrLanding('https://www.walmart.com', currentDeckId)">Walmart</button>
   <button class="btn" id="themeQrBtn" disabled onclick="changeQrLanding('https://themeqr.com', currentDeckId)">Reset to ThemeQR</button>
-  <button class="btn" onclick="resetQrToDefault()">Reset to Default QR</button>
+ 
   <p style="margin-top:2rem;"><strong>Or enter a custom URL:</strong></p>
   <input type="url" id="customUrl" placeholder="https://example.com" />
   <br/>
@@ -42,6 +43,7 @@
   <div id="deckButtons"></div>
   <img class="qr" id="qrImg" src="https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png" alt="QR Code">
   <p id="status"></p>
+  <button class="btn" onclick="resetQrToDefault()">Reset to Default QR</button>
 </section>
 
 <footer class="footer">
