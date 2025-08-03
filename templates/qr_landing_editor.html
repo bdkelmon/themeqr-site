@@ -108,7 +108,7 @@
     if (vaultId) {
       const qrImageName = `${vaultId}_${deckName}_qr.png`;
       const qrImg = document.getElementById('qrImg');
-      const qrUrl = `https://themeqr-backend.onrender.com/static/${qrImageName}?t=${new Date().getTime()}`;
+      const qrUrl = `https://themeqr-backend.onrender.com/static/${qrImageName}`;
       // Check if the image exists by creating an Image object
       const img = new Image();
       img.onload = () => {
