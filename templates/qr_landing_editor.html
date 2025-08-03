@@ -156,9 +156,12 @@
   window.changeQrLanding = changeQrLanding;
 
   function resetQrToDefault() {
+    const qrImg = document.getElementById('qrImg');
+    qrImg.src = 'https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png'; // Reset QR image to default
     changeQrLanding('https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png')
       .catch(error => console.error('Reset error:', error));
   }
+  window.resetQrToDefault = resetQrToDefault; // Make function globally accessible
 
   document.getElementById('qr-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -203,7 +206,7 @@
   }
 
   function updateStatus(msg, isError = false) {
-    const el = document.getElementById('status');
+    const el = document.getElementById('status'); // Corrected to target status element
     el.innerText = msg;
     el.style.color = isError ? 'red' : 'green';
   }
