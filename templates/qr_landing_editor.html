@@ -6,7 +6,6 @@
   <title>ThemeQR - Dynamic Redirect QR</title>
   <link rel="icon" href="https://themeqr.com/images/TQR_Dude_Sm.png">
   <link rel="stylesheet" href="https://themeqr.com/static/css/styles.css">
-  <mark style="background-color: #ffff99">&lt;!-- Removed: currentDeckId = null; // This will be set when a deck is selected --&gt;</mark>
 </head>
 <body>
 <header>
@@ -59,6 +58,8 @@
 
   console.log("Using Supabase URL:", SUPABASE_URL);
 
+  let currentDeckId = null; // Initialized to null, will be set when a deck is selected
+
   async function fetchUserVaultAndDecks(userId) {
     try {
       const { data: vaultData, error: vaultError } = await supabase
@@ -96,17 +97,16 @@
         button.onclick = () => selectDeck(deck.id, deck.deck_name);
         deckButtonsDiv.appendChild(button);
       });
-      // Enable destination buttons only after decks are loaded
       document.getElementById('amazonBtn').disabled = false;
       document.getElementById('walmartBtn').disabled = false;
       document.getElementById('themeQrBtn').disabled = false;
     } else {
-      deckButtonsDiv.innerHTML = '<p>No decks available.</p>';
+      deckButtonsDiv.innerHTML = '<p>No decks available. Please create a deck or contact support.</p>';
     }
   }
 
   function selectDeck(deckId, deckName) {
-    currentDeckId = deckId;
+    currentDeckId = deckId; // Assigning deckId to currentDeckId
     const vaultId = '{{ vault_id }}';
     if (vaultId) {
       const qrImageName = `${vaultId}_${deckName}_qr.png`;
