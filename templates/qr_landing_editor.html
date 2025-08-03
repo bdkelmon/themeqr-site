@@ -59,8 +59,6 @@
 
   console.log("Using Supabase URL:", SUPABASE_URL);
 
-  <mark style="background-color: #ffff99">let currentDeckId = null; // Initialized to null, will be set when a deck is selected</mark> // Moved and corrected from head section
-
   async function fetchUserVaultAndDecks(userId) {
     try {
       const { data: vaultData, error: vaultError } = await supabase
