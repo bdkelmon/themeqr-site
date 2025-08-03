@@ -23,9 +23,9 @@
 
 <section class="section">
   <h2>🔗 Choose or Enter a New Destination</h2>
-  <button class="btn" id="amazonBtn" disabled onclick="changeQrLanding('https://www.amazon.com', currentDeckId)">Amazon</button>
-  <button class="btn" id="walmartBtn" disabled onclick="changeQrLanding('https://www.walmart.com', currentDeckId)">Walmart</button>
-  <button class="btn" id="themeQrBtn" disabled onclick="changeQrLanding('https://themeqr.com', currentDeckId)">Reset to ThemeQR</button>
+  <button class="btn" id="amazonBtn" disabled onclick="changeQrLanding('https://www.amazon.com', window.currentDeckId)">Amazon</button>
+  <button class="btn" id="walmartBtn" disabled onclick="changeQrLanding('https://www.walmart.com', window.currentDeckId)">Walmart</button>
+  <button class="btn" id="themeQrBtn" disabled onclick="changeQrLanding('https://themeqr.com', window.currentDeckId)">Reset to ThemeQR</button>
  
   <p style="margin-top:2rem;"><strong>Or enter a custom URL:</strong></p>
   <input type="url" id="customUrl" placeholder="https://example.com" />
@@ -58,7 +58,7 @@
 
   console.log("Using Supabase URL:", SUPABASE_URL);
 
-  let currentDeckId = null; // Initialized to null, will be set when a deck is selected
+  window.currentDeckId = null; // Moved to global window object for onclick access
 
   async function fetchUserVaultAndDecks(userId) {
     try {
@@ -106,7 +106,7 @@
   }
 
   function selectDeck(deckId, deckName) {
-    currentDeckId = deckId; // Assigning deckId to currentDeckId
+    window.currentDeckId = deckId; // Updated to use window scope
     const vaultId = '{{ vault_id }}';
     if (vaultId) {
       const qrImageName = `${vaultId}_${deckName}_qr.png`;
@@ -132,7 +132,7 @@
       const response = await fetch('/change_qr_landing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ landing: landingUrl, deck_id: deckId || currentDeckId })
+        body: JSON.stringify({ landing: landingUrl, deck_id: deckId || window.currentDeckId })
       });
       if (!response.ok) {
         const errorText = await response.text();
@@ -149,21 +149,20 @@
       return data;
     } catch (error) {
       console.error('Fetch error:', error);
-      updateStatus("❌ Failed to update URL: " + error.message, true);
-      throw error;
+      updateStatus(`❌ Failed to update URL: ${error.message}`, true);
     }
   }
   window.changeQrLanding = changeQrLanding;
 
   function resetQrToDefault() {
     changeQrLanding('https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png', null)
-      .catch(error => {});
+      .catch(error => console.error('Reset error:', error));
   }
 
   document.getElementById('qr-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const landingUrl = document.getElementById('landing-url').value;
-    await changeQrLanding(landingUrl, currentDeckId);
+    await changeQrLanding(landingUrl, window.currentDeckId).catch(error => console.error('Form submit error:', error));
   });
 
   function customSubmit() {
@@ -171,8 +170,8 @@
     if (customUrlInput && customUrlInput.value) {
       const landingUrl = customUrlInput.value;
       updateStatus("Updating URL...", false);
-      changeQrLanding(landingUrl, currentDeckId)
-        .catch(error => {});
+      changeQrLanding(landingUrl, window.currentDeckId)
+        .catch(error => console.error('Custom submit error:', error));
     } else {
       updateStatus("Please enter a custom URL.", true);
     }
@@ -180,14 +179,14 @@
   window.customSubmit = customSubmit;
 
   function generateQr() {
-    if (!currentDeckId) {
+    if (!window.currentDeckId) {
       updateStatus('❌ No deck selected', true);
       return;
     }
     fetch('/generate_qr', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ link: 'https://themeqr.com/go', deck_id: currentDeckId })
+      body: JSON.stringify({ link: 'https://themeqr.com/go', deck_id: window.currentDeckId })
     })
     .then(res => res.json())
     .then(data => {
@@ -196,10 +195,10 @@
         qrImg.src = data.qr_url + '?t=' + new Date().getTime();
         updateStatus("✅ Curious? Scan Here!!!", false);
       } else {
-        updateStatus("❌ " + data.error, true);
+        updateStatus(`❌ ${data.error}`, true);
       }
     })
-    .catch(err => updateStatus("❌ Network error: " + err.message, true));
+    .catch(err => updateStatus(`❌ Network error: ${err.message}`, true));
   }
 
   function updateStatus(msg, isError = false) {
@@ -211,7 +210,7 @@
   document.addEventListener('DOMContentLoaded', async () => {
     const currentUser = {{ user | tojson }};
     if (currentUser && currentUser.id) {
-      const { vaultId, decks } = await fetchUserVaultAndDecks(currentUser.id);
+      const { vaultId, decks } = await fetchUserVaultAndDecks(currentUser.id).catch(error => console.error('Vault fetch error:', error));
       if (vaultId) {
         populateDeckButtons(decks);
         const qrImg = document.getElementById('qrImg');
