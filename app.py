@@ -44,7 +44,8 @@ if not os.path.exists(app.static_folder):
 
 @app.route("/")
 def index():
-    return render_template("index.html", user=session.get("user"))
+   # return render_template("index.html", user=session.get("user"))
+   response = make_response(redirect("https://www.themeqr.com/"), user=session.get("user"))
 
 def get_or_create_user_vault(user_id):
     try:
