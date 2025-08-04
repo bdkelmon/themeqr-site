@@ -229,11 +229,24 @@
         }
       } else {
         updateStatus('❌ Session invalid, please log in', true);
-        // Optional: Redirect to login if no session
-        // window.location.href = "{{ url_for('login') }}";
       }
     } else {
-      updateStatus('❌ Please log in to view decks and QR codes', true);
+      // Fallback to client-side session if template user is missing
+      const { data: session, error: sessionError } = await supabase.auth.getSession();
+      console.log('Fallback Session:', session);
+      if (sessionError) console.error('Fallback Session error:', sessionError);
+      if (session?.session) {
+        const user = session.session.user;
+        const { vaultId, decks } = await fetchUserVaultAndDecks(user.id).catch(error => console.error('Vault fetch error:', error));
+        if (vaultId) {
+          populateDeckButtons(decks);
+          const qrImg = document.getElementById('qrImg');
+          qrImg.src = 'https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png';
+          updateStatus('✅ Select a deck to update the QR code', false);
+        }
+      } else {
+        updateStatus('❌ Please log in to view decks and QR codes', true);
+      }
     }
   });
 </script>

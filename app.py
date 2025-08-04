@@ -6,7 +6,7 @@ import cloudinary.uploader
 from moviepy.editor import VideoFileClip, CompositeVideoClip, ImageClip
 import qrcode
 import requests
-from flask import Flask, request, render_template, jsonify, make_response, send_from_directory, redirect, session, flash, url_for
+from flask import Flask, request, render_template, g, jsonify, make_response, send_from_directory, redirect, session, flash, url_for
 from flask_cors import CORS
 from datetime import datetime, timezone
 from supabase import create_client
@@ -88,10 +88,13 @@ def manager():
 
 @app.before_request
 def load_user():
-    g.user = None
+    g.user = None  # Now g is defined due to import
     if 'access_token' in session:
-        response = supabase.auth.get_user(session['access_token'])
-        g.user = response.user if response else None
+        try:
+            response = supabase.auth.get_user(session['access_token'])
+            g.user = response.user if response else None
+        except Exception as e:
+            print(f"Error loading user: {e}")
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -101,10 +104,8 @@ def login():
         try:
             response = supabase.auth.sign_in_with_password({"email": email, "password": password})
             if response.user:
-                # Store the access token in the Flask session
                 session['access_token'] = response.session.access_token
-                session.permanent = True  # Enable session persistence
-                app.permanent_session_lifetime = timedelta(hours=1)  # 1-hour expiry
+                session.permanent = True
                 flash("Logged in successfully!", "success")
                 return redirect(url_for('serve_qr_landing_editor'))
             else:
@@ -291,7 +292,7 @@ def apply_theme_to_deck():
 @app.route("/editor")
 def serve_qr_landing_editor():
     print(f"Serving qr_landing_editor.html. Supabase URL: {os.getenv('SUPABASE_URL')}")
-    user = session.get('user')
+   # user = session.get('user')
     vault_id = None
     if user and 'id' in user:
         vault_id = get_or_create_user_vault(user['id'])
@@ -299,7 +300,7 @@ def serve_qr_landing_editor():
     return render_template('qr_landing_editor.html',
                           supabase_url=os.getenv('SUPABASE_URL'),
                           supabase_key=os.getenv('SUPABASE_KEY'),
-                          user=user,
+                          user=g.user,
                           vault_id=vault_id)
 
 @app.route('/reset_index', methods=['POST'])
