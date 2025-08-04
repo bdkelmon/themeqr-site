@@ -293,18 +293,22 @@ def apply_theme_to_deck():
 def serve_qr_landing_editor():
     print(f"Serving qr_landing_editor.html. Supabase URL: {SUPABASE_URL}")
     vault_id = None
-    if g.user and g.user.id:
-        vault_id = get_or_create_user_vault(g.user.id)
-        print(f"Assigned vault_id for user {g.user.id}: {vault_id}")
-    else:
-        print("No user or user ID found in g.user")
-    return render_template(
-        'qr_landing_editor.html',
-        user=g.user,
-        supabase_url=SUPABASE_URL,
-        supabase_key=SUPABASE_KEY,
-        vault_id=vault_id
-    )
+    try:
+        if g.user and g.user.id:
+            vault_id = get_or_create_user_vault(g.user.id)
+            print(f"Assigned vault_id for user {g.user.id}: {vault_id}")
+        else:
+            print("No user or user ID found in g.user")
+        return render_template(
+            'qr_landing_editor.html',
+            user=g.user,
+            supabase_url=SUPABASE_URL,
+            supabase_key=SUPABASE_KEY,
+            vault_id=vault_id
+        )
+    except Exception as e:
+        print(f"Error in serve_qr_landing_editor: {str(e)}")
+        return "An internal error occurred. Please try again later.", 500
 
 @app.route('/reset_index', methods=['POST'])
 def reset_index():

@@ -57,11 +57,14 @@
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
   console.log("Using Supabase URL:", SUPABASE_URL);
+  console.log("Template User:", {{ user | tojson }});
+  console.log("Template Vault ID:", "{{ vault_id }}" || "None");
 
-  window.currentDeckId = null; // Moved to global window object for onclick access
+  window.currentDeckId = null;
 
   async function fetchUserVaultAndDecks(userId) {
     try {
+      console.log("Fetching vaults and decks for user:", userId);
       const { data: vaultData, error: vaultError } = await supabase
         .from('vaults')
         .select('id')
@@ -70,6 +73,7 @@
       if (vaultError || !vaultData) throw new Error('Vault not found: ' + (vaultError?.message || 'No data'));
 
       const vaultId = vaultData.id;
+      console.log("Fetched vault ID:", vaultId);
 
       const { data: deckData, error: deckError } = await supabase
         .from('decks')
@@ -108,6 +112,7 @@
   function selectDeck(deckId, deckName) {
     window.currentDeckId = deckId;
     const vaultId = '{{ vault_id }}';
+    console.log("Selected deck:", deckId, "with vaultId:", vaultId);
     if (vaultId) {
       const qrImageName = `${vaultId}_${deckName}_qr.png`;
       const qrImg = document.getElementById('qrImg');
@@ -133,6 +138,7 @@
       return;
     }
     try {
+      console.log("Changing landing URL to:", landingUrl, "for deck:", window.currentDeckId);
       const response = await fetch('/change_qr_landing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -157,12 +163,13 @@
 
   function resetQrToDefault() {
     const qrImg = document.getElementById('qrImg');
-    qrImg.src = 'https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png'; // Reset QR image to default
-    window.currentDeckId = 'demo_deck_id'; // Switch to Demo_Deck_ID (replace with actual ID)
+    qrImg.src = 'https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png';
+    window.currentDeckId = '{{ DEMO_DECK_ID }}'; // Use the defined constant
+    console.log("Reset to default deck:", window.currentDeckId);
     changeQrLanding('https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png')
       .catch(error => console.error('Reset error:', error));
   }
-  window.resetQrToDefault = resetQrToDefault; // Make function globally accessible
+  window.resetQrToDefault = resetQrToDefault;
 
   document.getElementById('qr-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -188,6 +195,7 @@
       updateStatus('❌ No deck selected', true);
       return;
     }
+    console.log("Generating QR for deck:", window.currentDeckId);
     fetch('/generate_qr', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -213,11 +221,13 @@
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
-    console.log('Template User:', {{ user | tojson }}); // Debug template user
+    console.log('DOM Loaded, starting authentication check');
+    console.log('Template User:', {{ user | tojson }});
     const currentUser = {{ user | tojson }};
     if (currentUser && currentUser.id) {
+      console.log('User found, checking session:', currentUser.id);
       const { data: session, error: sessionError } = await supabase.auth.getSession();
-      console.log('Client Session:', session); // Debug client session
+      console.log('Client Session:', session);
       if (sessionError) console.error('Session error:', sessionError);
       if (session?.session) {
         const { vaultId, decks } = await fetchUserVaultAndDecks(currentUser.id).catch(error => console.error('Vault fetch error:', error));
@@ -226,23 +236,30 @@
           const qrImg = document.getElementById('qrImg');
           qrImg.src = 'https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png';
           updateStatus('✅ Select a deck to update the QR code', false);
+        } else {
+          console.log('No vaultId, using demo deck');
+          resetQrToDefault();
         }
       } else {
         updateStatus('❌ Session invalid, please log in', true);
       }
     } else {
-      // Fallback to client-side session if template user is missing
+      console.log('No template user, falling back to client session');
       const { data: session, error: sessionError } = await supabase.auth.getSession();
       console.log('Fallback Session:', session);
       if (sessionError) console.error('Fallback Session error:', sessionError);
       if (session?.session) {
         const user = session.session.user;
+        console.log('Fallback user found:', user.id);
         const { vaultId, decks } = await fetchUserVaultAndDecks(user.id).catch(error => console.error('Vault fetch error:', error));
         if (vaultId) {
           populateDeckButtons(decks);
           const qrImg = document.getElementById('qrImg');
           qrImg.src = 'https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png';
           updateStatus('✅ Select a deck to update the QR code', false);
+        } else {
+          console.log('No vaultId in fallback, using demo deck');
+          resetQrToDefault();
         }
       } else {
         updateStatus('❌ Please log in to view decks and QR codes', true);
