@@ -57,8 +57,9 @@
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
   console.log("Using Supabase URL:", SUPABASE_URL);
-  console.log("Template User:", {{ user | tojson }});
-  console.log("Template Vault ID:", "{{ vault_id }}" || "None");
+  console.log("Template User (raw):", "{{ user | tojson | safe }}");
+  let currentUser = {{ user | tojson | safe }};
+  console.log("Parsed currentUser:", currentUser);
 
   window.currentDeckId = null;
 
@@ -164,7 +165,7 @@
   function resetQrToDefault() {
     const qrImg = document.getElementById('qrImg');
     qrImg.src = 'https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png';
-    window.currentDeckId = '{{ DEMO_DECK_ID }}'; // Use the defined constant
+    window.currentDeckId = '{{ DEMO_DECK_ID }}';
     console.log("Reset to default deck:", window.currentDeckId);
     changeQrLanding('https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png')
       .catch(error => console.error('Reset error:', error));
@@ -222,14 +223,18 @@
 
   document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOM Loaded, starting authentication check');
-    console.log('Template User:', {{ user | tojson }});
-    const currentUser = {{ user | tojson }};
+    console.log('Template User (raw):', "{{ user | tojson | safe }}");
+    console.log('Template Vault ID:', "{{ vault_id }}" || "None");
+    let currentUser = {{ user | tojson | safe }};
+    console.log('Parsed currentUser:', currentUser);
+
     if (currentUser && currentUser.id) {
       console.log('User found, checking session:', currentUser.id);
       const { data: session, error: sessionError } = await supabase.auth.getSession();
       console.log('Client Session:', session);
       if (sessionError) console.error('Session error:', sessionError);
       if (session?.session) {
+        console.log('Session valid, fetching vaults and decks');
         const { vaultId, decks } = await fetchUserVaultAndDecks(currentUser.id).catch(error => console.error('Vault fetch error:', error));
         if (vaultId) {
           populateDeckButtons(decks);
@@ -241,6 +246,7 @@
           resetQrToDefault();
         }
       } else {
+        console.log('No valid session despite user, forcing login');
         updateStatus('❌ Session invalid, please log in', true);
       }
     } else {
@@ -262,6 +268,7 @@
           resetQrToDefault();
         }
       } else {
+        console.log('No fallback session, requiring login');
         updateStatus('❌ Please log in to view decks and QR codes', true);
       }
     }
