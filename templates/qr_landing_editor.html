@@ -93,6 +93,7 @@
   function populateDeckButtons(decks) {
     const deckButtonsDiv = document.getElementById('deckButtons');
     deckButtonsDiv.innerHTML = '';
+    console.log("Decks received:", decks);
     if (decks.length > 0) {
       decks.forEach(deck => {
         const button = document.createElement('button');
