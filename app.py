@@ -251,22 +251,27 @@ def test_supabase():
 
 def get_or_create_user_vault(user_id):
     try:
-        response = supabase.table('vaults').select('id').eq('user_id', user_id).single().execute()
-        if response.data:
-            return response.data['id']
-        elif response.error and response.error.code == 'PGRST116':
-            insert_response = supabase.table('vaults').insert({
-                'user_id': user_id,
-                'vault_name': f"Vault for {user_id[:8]}",
-                'created_at': datetime.now(timezone.utc).isoformat(),
-                'updated_at': datetime.now(timezone.utc).isoformat()
-            }).execute()
-            if insert_response.error:
-                print(f"Error creating vault: {insert_response.error.message}")
-                return None
+        # Check if vault exists
+        response = supabase.table('vaults').select('id').eq('user_id', user_id).execute()
+        if response.data and len(response.data) > 0:
+            print(f"Found existing vault: {response.data[0]['id']}")
+            return response.data[0]['id']
+        
+        # If no vault found, create a new one
+        insert_response = supabase.table('vaults').insert({
+            'user_id': user_id,
+            'vault_name': f"Vault for {user_id[:8]}",
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        }).execute()
+        if insert_response.data and len(insert_response.data) > 0:
+            print(f"Created new vault: {insert_response.data[0]['id']}")
             return insert_response.data[0]['id']
+        elif insert_response.error:
+            print(f"Error creating vault: {insert_response.error.message}")
+            return None
         else:
-            print(f"Supabase error: {response.error.message}")
+            print("Unexpected insert response: No data or error")
             return None
     except Exception as e:
         print(f"Error in get_or_create_user_vault: {str(e)}")
@@ -312,7 +317,7 @@ def serve_qr_landing_editor():
             user=g.user,
             supabase_url=SUPABASE_URL,
             supabase_key=SUPABASE_KEY,
-            vault_id=vault_id  # Ensure this is a string or None
+            vault_id=vault_id
         )
     except Exception as e:
         print(f"Error in serve_qr_landing_editor: {str(e)}")
