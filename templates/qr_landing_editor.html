@@ -67,6 +67,9 @@
     currentUser = null;
   }
 
+  const vaultId = "{{ vault_id | default('') | safe }}";
+  console.log("Template Vault ID:", vaultId || "None");
+
   window.currentDeckId = null;
 
   async function fetchUserVaultAndDecks(userId) {
@@ -119,7 +122,6 @@
 
   function selectDeck(deckId, deckName) {
     window.currentDeckId = deckId;
-    const vaultId = "{{ vault_id | default('') | safe }}";
     console.log("Selected deck:", deckId, "with vaultId:", vaultId);
     if (vaultId) {
       const qrImageName = `${vaultId}_${deckName}_qr.png`;
@@ -231,7 +233,7 @@
   document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOM Loaded, starting authentication check');
     console.log('Template User (raw):', "{{ user | tojson | safe }}");
-    console.log('Template Vault ID:', "{{ vault_id | default('') | safe }}" || "None");
+    console.log('Template Vault ID:', vaultId || "None");
     try {
       let currentUser = {{ user | tojson | safe }} || null;
       console.log('Parsed currentUser:', currentUser);
@@ -243,8 +245,8 @@
         if (sessionError) console.error('Session error:', sessionError);
         if (session?.session) {
           console.log('Session valid, fetching vaults and decks');
-          const { vaultId, decks } = await fetchUserVaultAndDecks(currentUser.id).catch(error => console.error('Vault fetch error:', error));
-          if (vaultId) {
+          const { vaultId: fetchedVaultId, decks } = await fetchUserVaultAndDecks(currentUser.id).catch(error => console.error('Vault fetch error:', error));
+          if (fetchedVaultId) {
             populateDeckButtons(decks);
             const qrImg = document.getElementById('qrImg');
             qrImg.src = 'https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png';
@@ -265,8 +267,8 @@
         if (session?.session) {
           const user = session.session.user;
           console.log('Fallback user found:', user.id);
-          const { vaultId, decks } = await fetchUserVaultAndDecks(user.id).catch(error => console.error('Vault fetch error:', error));
-          if (vaultId) {
+          const { vaultId: fetchedVaultId, decks } = await fetchUserVaultAndDecks(user.id).catch(error => console.error('Vault fetch error:', error));
+          if (fetchedVaultId) {
             populateDeckButtons(decks);
             const qrImg = document.getElementById('qrImg');
             qrImg.src = 'https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png';
