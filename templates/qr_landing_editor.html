@@ -119,7 +119,7 @@
 
   function selectDeck(deckId, deckName) {
     window.currentDeckId = deckId;
-    const vaultId = '{{ vault_id }}';
+    const vaultId = "{{ vault_id | default('') | safe }}";
     console.log("Selected deck:", deckId, "with vaultId:", vaultId);
     if (vaultId) {
       const qrImageName = `${vaultId}_${deckName}_qr.png`;
@@ -172,7 +172,7 @@
   function resetQrToDefault() {
     const qrImg = document.getElementById('qrImg');
     qrImg.src = 'https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png';
-    window.currentDeckId = '{{ DEMO_DECK_ID | default("71f42d9b-fe22-4085-87f0-944ab85ac07e") }}';
+    window.currentDeckId = '{{ DEMO_DECK_ID | default("71f42d9b-fe22-4085-87f0-944ab85ac07e") | safe }}';
     console.log("Reset to default deck:", window.currentDeckId);
     changeQrLanding('https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png')
       .catch(error => console.error('Reset error:', error));
@@ -231,7 +231,7 @@
   document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOM Loaded, starting authentication check');
     console.log('Template User (raw):', "{{ user | tojson | safe }}");
-    console.log('Template Vault ID:', "{{ vault_id }}" || "None");
+    console.log('Template Vault ID:', "{{ vault_id | default('') | safe }}" || "None");
     try {
       let currentUser = {{ user | tojson | safe }} || null;
       console.log('Parsed currentUser:', currentUser);

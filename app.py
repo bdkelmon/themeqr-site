@@ -302,7 +302,7 @@ def serve_qr_landing_editor():
     print(f"Serving qr_landing_editor.html. Supabase URL: {SUPABASE_URL}")
     vault_id = None
     try:
-        if g.user and g.user.get('id'):  # Check for serialized user ID
+        if g.user and g.user.get('id'):
             vault_id = get_or_create_user_vault(g.user['id'])
             print(f"Assigned vault_id for user {g.user['id']}: {vault_id}")
         else:
@@ -312,7 +312,7 @@ def serve_qr_landing_editor():
             user=g.user,
             supabase_url=SUPABASE_URL,
             supabase_key=SUPABASE_KEY,
-            vault_id=vault_id
+            vault_id=vault_id  # Ensure this is a string or None
         )
     except Exception as e:
         print(f"Error in serve_qr_landing_editor: {str(e)}")
@@ -532,9 +532,9 @@ def update_deck(deck_id):
         print(f"❌ Exception in update_deck: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-#if __name__ == '__main__':
-   # port = int(os.environ.get('PORT', 5000))
-   # app.run(host='0.0.0.0', port=port, debug=True)
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT',10000))
+    app.run(host='0.0.0.0', port=port, debug=True)
   
    # from dotenv import load_dotenv 
    # load_dotenv()  # Load environment variables from .env file 
