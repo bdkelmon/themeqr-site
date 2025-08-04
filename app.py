@@ -88,11 +88,19 @@ def manager():
 
 @app.before_request
 def load_user():
-    g.user = None  # Now g is defined due to import
+    g.user = None  # Initialize g.user
     if 'access_token' in session:
         try:
             response = supabase.auth.get_user(session['access_token'])
-            g.user = response.user if response else None
+            if response and response.user:
+                g.user = {
+                    'id': response.user.id,
+                    'email': response.user.email,
+                    'created_at': response.user.created_at
+                    # Add other fields as needed
+                }
+            else:
+                print("No user data in response")
         except Exception as e:
             print(f"Error loading user: {e}")
 
@@ -294,9 +302,9 @@ def serve_qr_landing_editor():
     print(f"Serving qr_landing_editor.html. Supabase URL: {SUPABASE_URL}")
     vault_id = None
     try:
-        if g.user and g.user.id:
-            vault_id = get_or_create_user_vault(g.user.id)
-            print(f"Assigned vault_id for user {g.user.id}: {vault_id}")
+        if g.user and g.user.get('id'):  # Check for serialized user ID
+            vault_id = get_or_create_user_vault(g.user['id'])
+            print(f"Assigned vault_id for user {g.user['id']}: {vault_id}")
         else:
             print("No user or user ID found in g.user")
         return render_template(
