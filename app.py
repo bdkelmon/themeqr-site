@@ -33,6 +33,7 @@ cloudinary.config(
     api_secret=os.getenv('CLOUDINARY_API_SECRET')
 )
 
+
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "your-secret-key")
 CORS(app)
@@ -41,6 +42,8 @@ DEMO_DECK_ID = "71f42d9b-fe22-4085-87f0-944ab85ac07e"
 TEMPLATE_PATH = os.path.join(app.root_path, 'themeqr-site', 'index_template.html')
 if not os.path.exists(app.static_folder):
     os.makedirs(app.static_folder)
+
+ 
 
 @app.route("/")
 def index():
@@ -83,20 +86,32 @@ def manager():
                           user=user,
                           vault_id=vault_id)
 
+@app.before_request
+def load_user():
+    g.user = None
+    if 'access_token' in session:
+        response = supabase.auth.get_user(session['access_token'])
+        g.user = response.user if response else None
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
-        response = supabase.auth.sign_in_with_password({"email": email, "password": password})
-        if response.user:
-            user_data = {'email': response.user.email, 'id': response.user.id}
-            response = make_response(redirect(url_for('serve_qr_landing_editor')))  # Redirect to editor after login
-            response.set_cookie('user', json.dumps(user_data), max_age=3600)  # 1-hour expiry
-            flash("Logged in successfully!", "success")
-            return response
-        else:
-            flash("Invalid email or password.", "error")
+        try:
+            response = supabase.auth.sign_in_with_password({"email": email, "password": password})
+            if response.user:
+                # Store the access token in the Flask session
+                session['access_token'] = response.session.access_token
+                session.permanent = True  # Enable session persistence
+                app.permanent_session_lifetime = timedelta(hours=1)  # 1-hour expiry
+                flash("Logged in successfully!", "success")
+                return redirect(url_for('serve_qr_landing_editor'))
+            else:
+                flash("Invalid email or password.", "error")
+                return redirect(url_for('login'))
+        except Exception as e:
+            flash(f"Login failed: {str(e)}", "error")
             return redirect(url_for('login'))
     return render_template('login.html')
      

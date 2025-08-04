@@ -158,11 +158,17 @@
   function resetQrToDefault() {
     const qrImg = document.getElementById('qrImg');
     qrImg.src = 'https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png'; // Reset QR image to default
-    window.currentDeckId = '71f42d9b-fe22-4085-87f0-944ab85ac07e'; // Switch to Demo_Deck_ID
+    window.currentDeckId = 'demo_deck_id'; // Switch to Demo_Deck_ID (replace with actual ID)
     changeQrLanding('https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png')
       .catch(error => console.error('Reset error:', error));
   }
   window.resetQrToDefault = resetQrToDefault; // Make function globally accessible
+
+  document.getElementById('qr-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const landingUrl = document.getElementById('landing-url').value;
+    await changeQrLanding(landingUrl).catch(error => console.error('Form submit error:', error));
+  });
 
   function customSubmit() {
     const customUrlInput = document.getElementById('customUrl');
@@ -207,11 +213,11 @@
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
-    console.log('Current User:', {{ user | tojson }}); // Debug user object
+    console.log('Template User:', {{ user | tojson }}); // Debug template user
     const currentUser = {{ user | tojson }};
     if (currentUser && currentUser.id) {
       const { data: session, error: sessionError } = await supabase.auth.getSession();
-      console.log('Session:', session); // Debug session
+      console.log('Client Session:', session); // Debug client session
       if (sessionError) console.error('Session error:', sessionError);
       if (session?.session) {
         const { vaultId, decks } = await fetchUserVaultAndDecks(currentUser.id).catch(error => console.error('Vault fetch error:', error));
@@ -223,6 +229,8 @@
         }
       } else {
         updateStatus('❌ Session invalid, please log in', true);
+        // Optional: Redirect to login if no session
+        // window.location.href = "{{ url_for('login') }}";
       }
     } else {
       updateStatus('❌ Please log in to view decks and QR codes', true);
