@@ -57,7 +57,7 @@
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
   console.log("Using Supabase URL:", SUPABASE_URL);
-  const rawUser = "{{ user | tojson | safe }}";
+  const rawUser = '{{ user | tojson | safe }}';
   console.log("Template User (raw):", rawUser);
   let currentUser;
   try {
