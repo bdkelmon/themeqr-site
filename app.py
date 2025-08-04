@@ -113,9 +113,10 @@ def login():
             response = supabase.auth.sign_in_with_password({"email": email, "password": password})
             if response.user:
                 session['access_token'] = response.session.access_token
+                session['refresh_token'] = response.session.refresh_token  # Store refresh token
                 session.permanent = True
                 flash("Logged in successfully!", "success")
-                return redirect(url_for('serve_qr_landing_editor'))
+                return redirect(url_for('serve_qr_landing_editor'))  # Redirect to editor
             else:
                 flash("Invalid email or password.", "error")
                 return redirect(url_for('login'))
@@ -312,12 +313,17 @@ def serve_qr_landing_editor():
             print(f"Assigned vault_id for user {g.user['id']}: {vault_id}")
         else:
             print("No user or user ID found in g.user")
+        # Get tokens from session
+        access_token = session.get('access_token', '')
+        refresh_token = session.get('refresh_token', '')
         return render_template(
             'qr_landing_editor.html',
             user=g.user,
             supabase_url=SUPABASE_URL,
             supabase_key=SUPABASE_KEY,
-            vault_id=vault_id
+            vault_id=vault_id,
+            access_token=access_token,  # Pass access token
+            refresh_token=refresh_token  # Pass refresh token
         )
     except Exception as e:
         print(f"Error in serve_qr_landing_editor: {str(e)}")
