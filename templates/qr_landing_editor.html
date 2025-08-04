@@ -57,17 +57,18 @@
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
   console.log("Using Supabase URL:", SUPABASE_URL);
-  console.log("Template User (raw):", "{{ user | tojson | safe }}");
+  const rawUser = "{{ user | tojson | safe }}";
+  console.log("Template User (raw):", rawUser);
   let currentUser;
   try {
-    currentUser = {{ user | tojson | safe }} || null;
+    currentUser = JSON.parse(rawUser) || null;
     console.log("Parsed currentUser:", currentUser);
   } catch (e) {
     console.error("Error parsing currentUser:", e);
     currentUser = null;
   }
 
-  const vaultId = "{{ vault_id | default('') | safe }}";
+  const vaultId = "{{ vault_id | default('') | safe }}".trim();
   console.log("Template Vault ID:", vaultId || "None");
 
   window.currentDeckId = null;
@@ -232,12 +233,8 @@
 
   document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOM Loaded, starting authentication check');
-    console.log('Template User (raw):', "{{ user | tojson | safe }}");
     console.log('Template Vault ID:', vaultId || "None");
     try {
-      let currentUser = {{ user | tojson | safe }} || null;
-      console.log('Parsed currentUser:', currentUser);
-
       if (currentUser && currentUser.id) {
         console.log('User found, checking session:', currentUser.id);
         const { data: session, error: sessionError } = await supabase.auth.getSession();
