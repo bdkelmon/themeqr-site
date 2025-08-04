@@ -233,14 +233,18 @@
     el.style.color = isError ? 'red' : 'green';
   }
 
-  document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', async () => {
   console.log('DOM Loaded, starting authentication check');
   console.log('Template Vault ID:', vaultId || "None");
 
   try {
-    // Attempt to parse the template user
     const rawUser = '{{ user | tojson | safe }}';
-    console.log("Template User (raw):", rawUser);
+    const accessToken = '{{ access_token | default("") | safe }}';
+    const refreshToken = '{{ refresh_token | default("") | safe }}';
+    console.log("Raw User:", rawUser);
+    console.log("Access Token:", accessToken);
+    console.log("Refresh Token:", refreshToken);
+
     let currentUser;
     try {
       currentUser = JSON.parse(rawUser) || null;
@@ -252,7 +256,6 @@
 
     if (currentUser && currentUser.id) {
       console.log('User found from template, checking session:', currentUser.id);
-      // Try to set the session manually if the backend provides a token
       const { data: session, error: sessionError } = await supabase.auth.getSession();
       console.log('Client Session:', session);
 
@@ -262,7 +265,6 @@
 
       if (session?.session) {
         console.log('Valid session found, proceeding with user:', session.session.user.id);
-        // Use the session user if available, fallback to template user
         const user = session.session.user || currentUser;
         const { vaultId: fetchedVaultId, decks } = await fetchUserVaultAndDecks(user.id).catch(error => console.error('Vault fetch error:', error));
         if (fetchedVaultId) {
@@ -271,19 +273,19 @@
           qrImg.src = 'https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png';
           updateStatus('✅ Select a deck to update the QR code', false);
         } else {
-          console.log('No vaultId, using demo deck');
           resetQrToDefault();
         }
-      } else if (currentUser) {
-        // Fallback: Attempt to restore session with template user (requires backend token)
-        console.log('No valid session, attempting to restore with template user');
+      } else if (accessToken && refreshToken) {
+        // Attempt to restore session only if tokens are present
+        console.log('No valid session, attempting to restore with tokens');
         const { error } = await supabase.auth.setSession({
-          access_token: 'YOUR_ACCESS_TOKEN_FROM_BACKEND', // Replace with actual token
-          refresh_token: 'YOUR_REFRESH_TOKEN_FROM_BACKEND' // Replace with actual token
+          access_token: accessToken,
+          refresh_token: refreshToken
         });
         if (error) {
           console.error('Session restore error:', error);
-          updateStatus('❌ Session invalid, please log in', true);
+          // Fallback to login if tokens are invalid
+          updateStatus('❌ Invalid session, please log in', true);
         } else {
           const { data: newSession } = await supabase.auth.getSession();
           if (newSession?.session) {
@@ -301,6 +303,7 @@
           }
         }
       } else {
+        console.log('No tokens or session, requiring login');
         updateStatus('❌ Please log in to view decks and QR codes', true);
       }
     } else {
