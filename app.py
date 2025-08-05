@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from supabase import create_client
 from dotenv import load_dotenv
 import json
+import tempfile
 
 # Load environment variables
 load_dotenv()
@@ -283,6 +284,87 @@ def get_or_create_user_vault(user_id):
     except Exception as e:
         print(f"Error in get_or_create_user_vault: {str(e)}")
         return None
+
+@app.route('/apply_theme', methods=['POST'])
+def apply_theme():
+    data = request.get_json()
+    deck_id = data.get('deck_id')
+    theme_id = data.get('theme_id')
+    qr_url = data.get('qr_url')
+
+    if not deck_id or not theme_id or not qr_url:
+        return jsonify({'success': False, 'error': 'Missing deck_id, theme_id, or qr_url'}), 400
+
+    try:
+        # Fetch theme details
+        theme_response = supabase.table('themes').select('wrapper_url, landing_url').eq('id', theme_id).single().execute()
+        if not theme_response.data:
+            return jsonify({'success': False, 'error': 'Theme not found'}), 404
+        theme = theme_response.data
+
+        # Fetch deck details
+        deck_response = supabase.table('decks').select('vault_id, deck_name').eq('id', deck_id).single().execute()
+        if not deck_response.data:
+            return jsonify({'success': False, 'error': 'Deck not found'}), 404
+        deck = deck_response.data
+
+        # Download QR image
+        qr_img_path = os.path.join(tempfile.gettempdir(), f'{deck_id}_qr.png')
+        response = requests.get(qr_url, stream=True)
+        response.raise_for_status()
+        with open(qr_img_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+
+        # Generate new wrapper with QR overlay
+        wrapper_url = theme['wrapper_url']  # Confirmed as Cloudinary URL
+        output_path = os.path.join(tempfile.gettempdir(), f'{deck_id}_new_wrapper.mp4')
+
+        def generate_qr_video(wrapper, qr_img_path, landing_url, output_path, duration=10):
+            # Load wrapper (video or image) directly from Cloudinary URL
+            image_extensions = ['.png', '.jpg', '.jpeg', '.bmp', '.gif']
+            file_ext = os.path.splitext(wrapper)[1].lower()
+
+            if file_ext in image_extensions:
+                base_clip = ImageClip(wrapper).set_duration(duration)
+                base_width, base_height = base_clip.size
+            else:
+                base_clip = VideoFileClip(wrapper)
+                base_clip = base_clip.subclip(0, min(duration, base_clip.duration))
+                base_width, base_height = base_clip.size
+
+            # Calculate QR size (1/12th of the smaller dimension)
+            max_qr_height = min(base_width, base_height) / 12
+            qr_clip = ImageClip(qr_img_path).set_duration(base_clip.duration)
+            qr_clip = qr_clip.resize(height=max_qr_height).set_pos(("right", "bottom"))
+
+            # Overlay QR on base clip
+            final_clip = CompositeVideoClip([base_clip, qr_clip])
+            final_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
+            print(f"[DONE] Final video with QR saved to: {output_path}")
+
+        generate_qr_video(wrapper_url, qr_img_path, theme['landing_url'], output_path)
+
+        # Upload to Cloudinary
+        cloud_result = cloudinary.uploader.upload(output_path, folder="themeqr/wrappers")
+        new_wrapper_url = cloud_result['secure_url']
+
+        # Update deck
+        update_response = supabase.table('decks').update({
+            'wrapper': new_wrapper_url,
+            'landing_url': theme['landing_url'],
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        }).eq('id', deck_id).execute()
+        if not update_response.data:
+            return jsonify({'success': False, 'error': 'Failed to update deck'}), 500
+
+        os.remove(qr_img_path)
+        os.remove(output_path)
+
+        return jsonify({'success': True, 'new_wrapper_url': new_wrapper_url})
+    except Exception as e:
+        print(f"Error in apply_theme: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500)
 
 @app.route('/apply_theme_to_deck', methods=['POST'])
 def apply_theme_to_deck():

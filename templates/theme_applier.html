@@ -23,35 +23,25 @@
   {% endif %}
 </header>
 
-<div class="section">
-  <h2>Available Themes</h2>
-  <div id="themeContainer" class="grid"></div>
-</div>
-
-<div class="section">
-  <h2>Your Decks</h2>
-  <div id="deckContainer" class="grid"></div>
+<div class="container">
+  <div class="left-panel">
+    <h2>Your Decks</h2>
+    <div id="deckContainer" class="grid"></div>
+  </div>
+  <div class="main-panel">
+    <h2>QR Code Preview</h2>
+    <div id="qrPreview" style="text-align: center; margin-bottom: 2rem;">
+      <img id="qrImg" class="qr" src="" alt="QR Code" style="display: none;">
+    </div>
+  </div>
+  <div class="right-panel">
+    <h2>Available Themes</h2>
+    <div id="themeContainer" class="grid"></div>
+  </div>
 </div>
 
 <div id="loadingIndicator" class="loading" style="display:none;">Loading data...</div>
 <div id="errorDisplay" class="error" style="display:none;">Error: <span id="errorMessage"></span></div>
-
-<!-- Select Deck Modal -->
-<div id="selectDeckModal" class="modal-overlay" style="display:none;">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3>Apply Theme "<span id="modalThemeName"></span>" to Deck</h3>
-      <button class="modal-close-button" id="closeSelectDeckModalButton">&times;</button>
-    </div>
-    <div>
-      <label for="deckSelect">Select a Deck:</label>
-      <select id="deckSelect" style="width:100%;padding:0.5rem;"></select>
-    </div>
-    <button id="confirmDeckSelectionButton" class="btn">Confirm</button>
-    <div id="selectDeckLoadingIndicator" class="loading" style="display:none;">Applying theme...</div>
-    <div id="selectDeckErrorDisplay" class="error" style="display:none;">Error: <span id="selectDeckErrorMessage"></span></div>
-  </div>
-</div>
 
 <footer class="footer">
   &copy; 2025 ThemeQR. All rights reserved.
@@ -74,7 +64,7 @@
           supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
           console.log("Supabase client initialized successfully.");
       } else {
-          throw new Error("Supabase URL or Key is invalid or missing. URL:", SUPABASE_URL, "Key:", SUPABASE_KEY);
+          throw new Error("Supabase URL or Key is invalid or missing.");
       }
   } catch (e) {
       document.getElementById('errorMessage').textContent = `Failed to initialize Supabase: ${e.message}`;
@@ -82,22 +72,16 @@
       console.error("Supabase initialization failed:", e);
   }
 
-  const themeContainer = document.getElementById('themeContainer');
   const deckContainer = document.getElementById('deckContainer');
+  const themeContainer = document.getElementById('themeContainer');
+  const qrImg = document.getElementById('qrImg');
   const loadingIndicator = document.getElementById('loadingIndicator');
   const errorDisplay = document.getElementById('errorDisplay');
   const errorMessageSpan = document.getElementById('errorMessage');
-  const selectDeckModal = document.getElementById('selectDeckModal');
-  const closeSelectDeckModalButton = document.getElementById('closeSelectDeckModalButton');
-  const modalThemeNameSpan = document.getElementById('modalThemeName');
-  const deckSelect = document.getElementById('deckSelect');
-  const confirmDeckSelectionButton = document.getElementById('confirmDeckSelectionButton');
-  const selectDeckLoadingIndicator = document.getElementById('selectDeckLoadingIndicator');
-  const selectDeckErrorDisplay = document.getElementById('selectDeckErrorDisplay');
-  const selectDeckErrorMessageSpan = document.getElementById('selectDeckErrorMessage');
 
   let allThemes = [];
   let allDecks = [];
+  let selectedDeckId = null;
 
   function showLoading(show) {
       loadingIndicator.style.display = show ? '' : 'none';
@@ -117,7 +101,7 @@
       }
       try {
           let query = supabase.from(tableName).select('*');
-          if (filter.vault_id) {
+          if (filter.vault_id && filter.vault_id !== "None") {
               console.log("Fetching with vault_id:", filter.vault_id);
               query = query.eq('vault_id', filter.vault_id);
           }
@@ -131,26 +115,6 @@
       }
   }
 
-  function populateThemes(themes) {
-      themeContainer.innerHTML = '';
-      if (themes.length === 0) {
-          themeContainer.innerHTML = '<p style="color:#666;">No themes found.</p>';
-          return;
-      }
-      themes.forEach(theme => {
-          const themeDiv = document.createElement('div');
-          themeDiv.classList.add('theme-item');
-          themeDiv.innerHTML = `
-              <span>${theme.name}</span>
-              <button class="apply-btn" data-theme-id="${theme.id}">Apply</button>
-          `;
-          themeContainer.appendChild(themeDiv);
-      });
-      document.querySelectorAll('.apply-btn').forEach(btn =>
-          btn.addEventListener('click', () => openSelectDeckModal(btn.dataset.themeId))
-      );
-  }
-
   function populateDecks(decks) {
       deckContainer.innerHTML = '';
       if (decks.length === 0) {
@@ -161,55 +125,65 @@
           const deckDiv = document.createElement('div');
           deckDiv.classList.add('deck-item');
           deckDiv.textContent = deck.deck_name || `Deck ID: ${deck.id.substring(0, 8)}...`;
+          deckDiv.dataset.deckId = deck.id;
+          deckDiv.addEventListener('click', () => selectDeck(deck.id));
           deckContainer.appendChild(deckDiv);
       });
   }
 
-  function populateDeckSelect(decks) {
-      deckSelect.innerHTML = '';
-      const defaultOption = document.createElement('option');
-      defaultOption.value = "";
-      defaultOption.textContent = "--- Select a deck ---";
-      deckSelect.appendChild(defaultOption);
-      decks.forEach(deck => {
-          const option = document.createElement('option');
-          option.value = deck.id;
-          option.textContent = deck.deck_name || `Deck ID: ${deck.id.substring(0, 8)}...`;
-          deckSelect.appendChild(option);
+  function populateThemes(themes) {
+      themeContainer.innerHTML = '';
+      if (themes.length === 0) {
+          themeContainer.innerHTML = '<p style="color:#666;">No themes found.</p>';
+          return;
+      }
+      themes.forEach(theme => {
+          const themeDiv = document.createElement('div');
+          themeDiv.classList.add('theme-item');
+          themeDiv.innerHTML = `
+              <video controls width="200" height="150">
+                  <source src="${theme.wrapper_url}" type="video/mp4">
+                  Your browser does not support the video tag.
+              </video>
+              <span>${theme.name}</span>
+              <button class="apply-btn" data-theme-id="${theme.id}">Apply</button>
+          `;
+          themeDiv.querySelector('.apply-btn').addEventListener('click', () => applyTheme(theme.id));
+          themeContainer.appendChild(themeDiv);
       });
   }
 
-  function openSelectDeckModal(themeId) {
-      const theme = allThemes.find(t => t.id === themeId);
-      if (!theme) {
-          showError("Theme not found.");
-          return;
+  function selectDeck(deckId) {
+      selectedDeckId = deckId;
+      const selectedDeck = allDecks.find(d => d.id === deckId);
+      if (selectedDeck) {
+          const qrImageName = `${VAULT_ID}_${selectedDeck.deck_name}_qr.png`;
+          qrImg.src = `https://themeqr-backend.onrender.com/static/${qrImageName}?t=${new Date().getTime()}`;
+          qrImg.style.display = 'block';
+          console.log("Selected deck:", deckId, "QR displayed:", qrImg.src);
       }
-      modalThemeNameSpan.textContent = theme.name;
-      modalThemeNameSpan.dataset.themeId = themeId;
-      selectDeckModal.style.display = 'flex';
-      selectDeckErrorDisplay.style.display = 'none';
-      populateDeckSelect(allDecks);
   }
 
-  function closeSelectDeckModal() {
-      selectDeckModal.style.display = 'none';
-  }
-
-  async function confirmDeckSelection() {
-      const selectedDeckId = deckSelect.value;
-      const themeId = modalThemeNameSpan.dataset.themeId;
-      if (!selectedDeckId || !themeId) {
-          showError("Please select a deck and ensure a theme is chosen.");
+  async function applyTheme(themeId) {
+      if (!selectedDeckId) {
+          showError("Please select a deck first.");
           return;
       }
       showLoading(true);
-      selectDeckErrorDisplay.style.display = 'none';
       try {
-          const response = await fetch('/apply_theme_to_deck', {
+          const theme = allThemes.find(t => t.id === themeId);
+          if (!theme) throw new Error("Theme not found.");
+
+          // Fetch the deck's current QR image URL
+          const selectedDeck = allDecks.find(d => d.id === selectedDeckId);
+          const qrImageName = `${VAULT_ID}_${selectedDeck.deck_name}_qr.png`;
+          const qrUrl = `https://themeqr-backend.onrender.com/static/${qrImageName}`;
+
+          // Call backend to process and update
+          const response = await fetch('/apply_theme', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ theme_id: themeId, deck_id: selectedDeckId })
+              body: JSON.stringify({ deck_id: selectedDeckId, theme_id: themeId, qr_url: qrUrl })
           });
           if (!response.ok) {
               const errorData = await response.json();
@@ -217,10 +191,12 @@
           }
           const result = await response.json();
           if (result.success) {
-              showError("Theme applied to deck successfully!");
-              setTimeout(closeSelectDeckModal, 2000);
-              allDecks = await fetchDataFromSupabase('decks', { vault_id: VAULT_ID });
-              populateDecks(allDecks);
+              showError("Theme applied successfully!");
+              // Update local deck data
+              const updatedDeck = allDecks.find(d => d.id === selectedDeckId);
+              updatedDeck.wrapper = result.new_wrapper_url;
+              updatedDeck.landing_url = theme.landing_url;
+              selectDeck(selectedDeckId); // Refresh QR to reflect new state
           } else {
               showError(result.error || "Failed to apply theme.");
           }
@@ -241,7 +217,7 @@
               allDecks = await fetchDataFromSupabase('decks', { vault_id: VAULT_ID });
               populateDecks(allDecks);
           } else {
-              deckContainer.innerHTML = '<p style="color:#666;">No vault assigned. Please ensure you are logged in and contact support if the issue persists.</p>';
+              deckContainer.innerHTML = '<p style="color:#666;">No vault assigned. Please ensure you are logged in and contact support.</p>';
               console.warn("VAULT_ID is invalid or missing:", VAULT_ID);
           }
       } catch (e) {
@@ -250,9 +226,6 @@
           showLoading(false);
       }
   });
-
-  closeSelectDeckModalButton.addEventListener('click', closeSelectDeckModal);
-  confirmDeckSelectionButton.addEventListener('click', confirmDeckSelection);
 </script>
 </body>
 </html>
