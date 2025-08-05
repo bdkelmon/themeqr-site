@@ -3,10 +3,11 @@
   <title>Redirecting...</title>
   <script type="module">
 
+    
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-    const SUPABASE_URL = "{{ supabase_url }}";
-    const SUPABASE_KEY = "{{ supabase_key }}";  
+    const SUPABASE_URL = "https://hvfqdrfdefgfqbfdikpn.supabase.co";  
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9zOUjFu7fi-4oRVY-D61NCJU";  
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // Get ID from URL query string
