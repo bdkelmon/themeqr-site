@@ -364,7 +364,7 @@ def apply_theme():
         return jsonify({'success': True, 'new_wrapper_url': new_wrapper_url})
     except Exception as e:
         print(f"Error in apply_theme: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)}), 500)
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/apply_theme_to_deck', methods=['POST'])
 def apply_theme_to_deck():
