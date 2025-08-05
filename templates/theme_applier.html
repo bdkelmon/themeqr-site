@@ -236,12 +236,13 @@
       try {
           allThemes = await fetchDataFromSupabase('themes');
           populateThemes(allThemes);
-          if (VAULT_ID) {
+          if (VAULT_ID && VAULT_ID !== "None") {
               console.log("Using vault_id:", VAULT_ID);
               allDecks = await fetchDataFromSupabase('decks', { vault_id: VAULT_ID });
               populateDecks(allDecks);
           } else {
-              deckContainer.innerHTML = '<p style="color:#666;">No vault assigned. Please contact support.</p>';
+              deckContainer.innerHTML = '<p style="color:#666;">No vault assigned. Please ensure you are logged in and contact support if the issue persists.</p>';
+              console.warn("VAULT_ID is invalid or missing:", VAULT_ID);
           }
       } catch (e) {
           showError(`Failed to load initial data: ${e.message}`);

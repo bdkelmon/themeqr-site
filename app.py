@@ -75,11 +75,17 @@ def get_or_create_user_vault(user_id):
 @app.route("/manager")
 def manager():
     print(f"Serving theme_applier.html via /manager. Supabase URL: {os.getenv('SUPABASE_URL')}")
-    user = session.get('user')
-    vault_id = None
-    if user and 'id' in user:
-        vault_id = get_or_create_user_vault(user['id'])
-        print(f"Assigned vault_id: {vault_id}")
+    if not g.user or not g.user.get('id'):
+        flash("Please log in to manage themes and decks.", "warning")
+        return redirect(url_for('login'))
+    
+    user = g.user
+    vault_id = get_or_create_user_vault(user['id'])
+    if not vault_id:
+        flash("Could not retrieve or create a vault. Please contact support.", "error")
+        return redirect(url_for('index'))
+    
+    print(f"Assigned vault_id: {vault_id}")
     return render_template('theme_applier.html',
                           supabase_url=os.getenv('SUPABASE_URL'),
                           supabase_key=os.getenv('SUPABASE_KEY'),
