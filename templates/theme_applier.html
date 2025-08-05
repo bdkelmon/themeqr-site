@@ -4,23 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ThemeQR – Theme & Deck Manager</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme_applier.css') }}">
+  <link rel="stylesheet" href="/static/css/theme_applier.css">
   <link rel="icon" href="https://themeqr.com/images/TQR_Dude_Sm.png">
 </head>
 <body>
 <header>
   <h1>ThemeQR: Theme & Deck Manager</h1>
   <p>Manage your themes and decks effortlessly.</p>
-  {% if user %}
+  
       <div class="auth-controls">
-          <span>Hello, {{ user.email }}!</span>
-          <a href="{{ url_for('logout') }}" class="logout-btn">Log Out</a>
+          <span>Hello, mrsbdkelmon@gmail.com!</span>
+          <a href="/logout" class="logout-btn">Log Out</a>
       </div>
-  {% else %}
-      <div class="auth-controls">
-          <span>Please log in to manage themes and decks.</span>
-      </div>
-  {% endif %}
+  
 </header>
 
 <div class="main-panel">
@@ -51,9 +47,9 @@
 <script type="module">
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-  const SUPABASE_URL = "{{ supabase_url }}";
-  const SUPABASE_KEY = "{{ supabase_key }}";
-  const VAULT_ID = "{{ vault_id }}";
+  const SUPABASE_URL = "https://hvfqdrfdefgfqbfdikpn.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9zOUjFu7fi-4oRVY-D61NCJU";
+  const VAULT_ID = "6d570fa1-9ae3-4ecb-82d5-e1494ae3e404";
 
   console.log("Supabase URL:", SUPABASE_URL);
   console.log("Supabase Key:", SUPABASE_KEY ? "Set" : "Not set");
@@ -141,34 +137,56 @@
       themes.forEach(theme => {
           const themeDiv = document.createElement('div');
           themeDiv.classList.add('theme-item');
+          let videoContent = '';
+          if (theme.wrapper_url && theme.wrapper_url.includes('player.cloudinary.com')) {
+              // Use iframe for Cloudinary embed
+              videoContent = `
+                  <div class="video-wrapper">
+                      <iframe id="video-${theme.id}" class="theme-video" width="200" height="150" 
+                              src="${theme.wrapper_url}" 
+                              frameborder="0" 
+                              allow="autoplay; encrypted-media" 
+                              allowfullscreen 
+                              style="display:block;">
+                      </iframe>
+                  </div>
+              `;
+          } else {
+              // Use video tag for direct MP4 URLs
+              videoContent = `
+                  <div class="video-wrapper">
+                      <video id="video-${theme.id}" class="theme-video" width="200" height="150" style="display:none;" muted>
+                          <source src="${theme.wrapper_url}" type="video/mp4">
+                          Your browser does not support the video tag.
+                      </video>
+                      <div id="no-video-${theme.id}" class="no-video" style="display:none; color:red;">No Video</div>
+                  </div>
+              `;
+          }
           themeDiv.innerHTML = `
-              <div class="video-wrapper">
-                  <video id="video-${theme.id}" class="theme-video" width="200" height="150" style="display:none;">
-                      <source src="${theme.wrapper_url}" type="video/mp4">
-                      Your browser does not support the video tag.
-                  </video>
-                  <div id="no-video-${theme.id}" class="no-video" style="display:none; color:red;">No Video</div>
-              </div>
+              ${videoContent}
               <span>${theme.name}</span>
               <button class="apply-btn" data-theme-id="${theme.id}">Apply</button>
           `;
           themeContainer.appendChild(themeDiv);
 
-          // Check if video loads, otherwise show "No Video"
-          const video = document.getElementById(`video-${theme.id}`);
-          const noVideo = document.getElementById(`no-video-${theme.id}`);
-          video.addEventListener('error', () => {
-              video.style.display = 'none';
-              noVideo.style.display = 'block';
-          });
-          video.addEventListener('loadeddata', () => {
-              video.style.display = 'block';
-              noVideo.style.display = 'none';
-              video.autoplay = true;
-              video.controls = true;
-              video.load();
-          });
-          video.src = theme.wrapper_url;
+          if (!theme.wrapper_url.includes('player.cloudinary.com')) {
+              // Handle video tag events
+              const video = document.getElementById(`video-${theme.id}`);
+              const noVideo = document.getElementById(`no-video-${theme.id}`);
+              video.addEventListener('error', () => {
+                  video.style.display = 'none';
+                  noVideo.style.display = 'block';
+              });
+              video.addEventListener('loadeddata', () => {
+                  video.style.display = 'block';
+                  noVideo.style.display = 'none';
+                  video.autoplay = true;
+                  video.controls = true;
+                  video.load();
+              });
+              video.src = theme.wrapper_url;
+          }
       });
   }
 
