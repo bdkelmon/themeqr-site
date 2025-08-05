@@ -179,7 +179,7 @@
     qrImg.src = 'https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png';
     window.currentDeckId = '{{ DEMO_DECK_ID | default("71f42d9b-fe22-4085-87f0-944ab85ac07e") | safe }}';
     console.log("Reset to default deck:", window.currentDeckId);
-    changeQrLanding('https://themeqr-backend.onrender.com/static/themeqr_go_html_qr.png')
+    changeQrLanding('https://themeqr.com')
       .catch(error => console.error('Reset error:', error));
   }
   window.resetQrToDefault = resetQrToDefault;
