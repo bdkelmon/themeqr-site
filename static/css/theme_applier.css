@@ -194,6 +194,7 @@ pre {
   max-width: 1200px;
   margin: 0 auto;
   padding: 1rem;
+  position: relative;
 }
 
 .left-panel, .right-panel {
@@ -202,8 +203,9 @@ pre {
 }
 
 .main-panel {
-  flex: 2;
   text-align: center;
+  padding: 1rem 0;
+  background-color: #f9f9f9;
 }
 
 .grid {
@@ -239,4 +241,21 @@ pre {
 .qr {
   max-width: 200px;
   max-height: 200px;
+}
+.qr-preview {
+  margin: 0 auto;
+  display: inline-block;
+}
+
+.video-wrapper {
+  position: relative;
+}
+
+.theme-video {
+  display: none;
+}
+
+.no-video {
+  display: none;
+  color: red;
 }

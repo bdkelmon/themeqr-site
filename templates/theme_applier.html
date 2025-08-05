@@ -23,16 +23,17 @@
   {% endif %}
 </header>
 
+<div class="main-panel">
+  <h2>QR Code Preview</h2>
+  <div id="qrPreview" class="qr-preview">
+    <img id="qrImg" class="qr" src="" alt="QR Code" style="display: none;">
+  </div>
+</div>
+
 <div class="container">
   <div class="left-panel">
     <h2>Your Decks</h2>
     <div id="deckContainer" class="grid"></div>
-  </div>
-  <div class="main-panel">
-    <h2>QR Code Preview</h2>
-    <div id="qrPreview" style="text-align: center; margin-bottom: 2rem;">
-      <img id="qrImg" class="qr" src="" alt="QR Code" style="display: none;">
-    </div>
   </div>
   <div class="right-panel">
     <h2>Available Themes</h2>
@@ -141,15 +142,33 @@
           const themeDiv = document.createElement('div');
           themeDiv.classList.add('theme-item');
           themeDiv.innerHTML = `
-              <video controls width="200" height="150">
-                  <source src="${theme.wrapper_url}" type="video/mp4">
-                  Your browser does not support the video tag.
-              </video>
+              <div class="video-wrapper">
+                  <video id="video-${theme.id}" class="theme-video" width="200" height="150" style="display:none;">
+                      <source src="${theme.wrapper_url}" type="video/mp4">
+                      Your browser does not support the video tag.
+                  </video>
+                  <div id="no-video-${theme.id}" class="no-video" style="display:none; color:red;">No Video</div>
+              </div>
               <span>${theme.name}</span>
               <button class="apply-btn" data-theme-id="${theme.id}">Apply</button>
           `;
-          themeDiv.querySelector('.apply-btn').addEventListener('click', () => applyTheme(theme.id));
           themeContainer.appendChild(themeDiv);
+
+          // Check if video loads, otherwise show "No Video"
+          const video = document.getElementById(`video-${theme.id}`);
+          const noVideo = document.getElementById(`no-video-${theme.id}`);
+          video.addEventListener('error', () => {
+              video.style.display = 'none';
+              noVideo.style.display = 'block';
+          });
+          video.addEventListener('loadeddata', () => {
+              video.style.display = 'block';
+              noVideo.style.display = 'none';
+              video.autoplay = true;
+              video.controls = true;
+              video.load();
+          });
+          video.src = theme.wrapper_url;
       });
   }
 
@@ -174,16 +193,10 @@
           const theme = allThemes.find(t => t.id === themeId);
           if (!theme) throw new Error("Theme not found.");
 
-          // Fetch the deck's current QR image URL
-          const selectedDeck = allDecks.find(d => d.id === selectedDeckId);
-          const qrImageName = `${VAULT_ID}_${selectedDeck.deck_name}_qr.png`;
-          const qrUrl = `https://themeqr-backend.onrender.com/static/${qrImageName}`;
-
-          // Call backend to process and update
           const response = await fetch('/apply_theme', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ deck_id: selectedDeckId, theme_id: themeId, qr_url: qrUrl })
+              body: JSON.stringify({ deck_id: selectedDeckId, theme_id: themeId, qr_url: qrImg.src })
           });
           if (!response.ok) {
               const errorData = await response.json();
@@ -192,11 +205,10 @@
           const result = await response.json();
           if (result.success) {
               showError("Theme applied successfully!");
-              // Update local deck data
               const updatedDeck = allDecks.find(d => d.id === selectedDeckId);
-              updatedDeck.wrapper = result.new_wrapper_url;
+              updatedDeck.wrapper = theme.wrapper_url;
               updatedDeck.landing_url = theme.landing_url;
-              selectDeck(selectedDeckId); // Refresh QR to reflect new state
+              selectDeck(selectedDeckId);
           } else {
               showError(result.error || "Failed to apply theme.");
           }
