@@ -1,0 +1,44 @@
+<head>
+  <meta charset="UTF-8" />
+  <title>Redirecting...</title>
+  <script type="module">
+
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+    const SUPABASE_URL = "{{ supabase_url }}";
+    const SUPABASE_KEY = "{{ supabase_key }}";  
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Get ID from URL query string
+    const urlParams = new URLSearchParams(window.location.search);
+    const deckId = urlParams.get("id");
+
+    async function redirectToLanding() {
+      if (!deckId) {
+        document.body.innerText = "Missing Deck ID.";
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("decks")
+        .select("landing_url")
+        .eq("id", deckid)
+        .single();
+
+      if (error || !data) {
+        console.error("❌ Supabase error:", error);
+        document.body.innerText = "Could not find destination for this QR code.";
+        return;
+      }
+
+      // ✅ Redirect
+      window.location.href = data.landing_url;
+    }
+
+    redirectToLanding();
+  </script>
+</head>
+<body>
+  <p>Redirecting...</p>
+</body>
+</html>
