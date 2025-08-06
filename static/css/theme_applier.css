@@ -47,6 +47,30 @@ h2 {
     cursor: not-allowed;
 }
 
+.button-section {
+    margin-left: 15px; /* Space between the video player and the button */
+    /* No need for flex properties here unless you want to center text within the button-section */
+}
+
+/* The Apply button itself */
+.apply-btn {
+    /* Remove previous auto margins and display block if they conflict with flex */
+    margin-top: 0; /* Reset margin-top from previous styles */
+    padding: 0.5rem 1rem;
+    background-color: #00b894;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100px; /* Keep fixed width for consistency */
+    display: inline-block; /* Ensure it respects margin-left from button-section */
+    text-align: center; /* Center text within the button */
+}
+
+.apply-btn:hover {
+    background-color: #009d7b;
+}
+
 .grid {
     display: grid;
     gap: 10px;
@@ -209,10 +233,13 @@ pre {
     border-radius: 4px;
     cursor: pointer;
     display: flex;
-    flex-direction: column;
-    align-items: center; /* Center all content vertically */
-    justify-content: center; /* Center vertically within the flex container */
-    text-align: center; 
+    flex-direction: column; /* Stack children vertically */
+    align-items: center; /* Keep this to center the .theme-header (name) */
+    justify-content: flex-start; /* Align content to the top */
+    text-align: center; /* Default text alignment */
+    /* Ensure theme-item has enough width for right alignment to be visible */
+    width: auto; /* Allow it to size based on grid */
+    min-height: 180px; /* Give some minimum height for better visual consistency */
 }
 
 .deck-item:hover, .theme-item:hover {
@@ -247,11 +274,9 @@ pre {
     display: inline-block;
 }
 
-.video-wrapper {
-    position: relative;
-    margin-top: 1rem; /* Space between name and video */
-    width: 200px; /* Match video/iframe width */
-    text-align: center; /* Center the video/iframe */
+.video-section {
+    width: 100%; /* Make video section fill its wrapper */
+    height: 100%; /* Make video section fill its wrapper */
 }
 
 .video-section {
@@ -262,21 +287,36 @@ pre {
 .theme-video {
     border: 1px solid #ccc;
     border-radius: 4px;
-    width: 100%;  
-    height: auto;
+    width: 100%;
+    height: 100%; /* Make video fill its container */
+    object-fit: cover; /* Ensures video covers the area without distortion */
 }
 
 .no-video {
-    display: none;
+    display: flex; /* Use flex to center text */
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%; /* Fill the video space */
     color: red;
-    margin-top: 0.5rem;
-    margin-bottom: 1rem;
+    font-weight: bold;
+    background-color: #f0f0f0; /* Light background for no video */
+    border: 1px solid #ccc;
+    border-radius: 4px;
 }
 
 .theme-header {
   width: 100%;
   text-align: center;
   margin-bottom: 1rem; /* Space below the header */
+}
+
+.video-and-button-layout {
+    display: flex;
+    justify-content: flex-end; /* Pushes content to the right */
+    align-items: center; /* Vertically aligns video and button */
+    width: 100%; /* Ensures this container spans the full width of .theme-item */
+    margin-top: 1rem; /* Space between name and this section */
 }
 
 .theme-name {
@@ -289,7 +329,6 @@ header {
   position: relative;
   padding: 1rem 0;
 }
-
 
 .header-bottom {
   display: flex;
