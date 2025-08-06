@@ -164,8 +164,8 @@
               `;
           }
           themeDiv.innerHTML = `
+              <span class="theme-name">${theme.name}</span>
               ${videoContent}
-              <span>${theme.name}</span>
               <button class="apply-btn" data-theme-id="${theme.id}">Apply</button>
           `;
           themeContainer.appendChild(themeDiv);
