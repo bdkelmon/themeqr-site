@@ -220,21 +220,32 @@ pre {
   border: 1px solid #ccc;
   border-radius: 4px;
   cursor: pointer;
-  text-align: center
+  align-items: center; /* Center all content vertically */
+  justify-content: center; /* Center vertically within the flex container */
 }
 
 .deck-item:hover, .theme-item:hover {
   background-color: #f0f0f0;
 }
 
+.theme-header {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 1rem; /* Space below the header */
+}
+
 .apply-btn {
-  margin-top: 0.5rem;
+  margin-top: 1rem; /* Space between video and button */
   padding: 0.5rem 1rem;
   background-color: #00b894;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100px; /* Fixed width for consistency */
 }
 
 .apply-btn:hover {
@@ -252,22 +263,37 @@ pre {
 
 .video-wrapper {
   position: relative;
-  margin-top: 1rem;
+  margin-top: 1rem; /* Space between name and video */
+  width: 200px; /* Match video/iframe width */
+  text-align: center; /* Center the video/iframe */
 }
 
 .theme-video {
   border: 1px solid #ccc;
   border-radius: 4px;
+  width: 100%;  
+  height: auto;
 }
 
 .no-video {
   display: none;
   color: red;
   margin-top: 0.5rem;
+  margin-bottom: 1rem;
 }
 .theme-name {
   display: block; /* Ensure it behaves as a block for centering */
   font-size: 1.2rem;
   font-weight: bold;
   margin-bottom: 1rem; /* Space below the name */
+}
+
+.auth-controls .logout-btn {
+    background: #ff4d4f;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+}
+.auth-controls .logout-btn:hover {
+    background: #e6393b;
+    text-decoration: none;
 }
