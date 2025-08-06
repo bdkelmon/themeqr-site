@@ -11,14 +11,16 @@
 <header>
   <h1>ThemeQR: Theme & Deck Manager</h1>
   <p>Manage your themes and decks effortlessly.</p>
-  <nav class="header-nav">
+  <div class="header-bottom">
+    <nav class="header-nav">
       <a href="/manager">Manager</a> |
       <a href="/themes">Themes</a> |
       <a href="/decks">Decks</a>
-  </nav>
-  <div class="auth-controls">
+    </nav>
+    <div class="auth-controls">
       <span>Hello, mrsbdkelmon@gmail.com!</span>
       <a href="/logout" class="logout-btn">Log Out</a>
+    </div>
   </div>
 </header>
 
@@ -144,23 +146,33 @@
           if (theme.wrapper_url && theme.wrapper_url.includes('player.cloudinary.com')) {
               videoContent = `
                   <div class="video-wrapper">
-                      <iframe id="video-${theme.id}" class="theme-video" width="200" height="150" 
-                              src="${theme.wrapper_url}" 
-                              frameborder="0" 
-                              allow="autoplay; encrypted-media" 
-                              allowfullscreen 
-                              style="display:block;">
-                      </iframe>
+                      <div class="video-section">
+                          <iframe id="video-${theme.id}" class="theme-video" width="200" height="150" 
+                                  src="${theme.wrapper_url}" 
+                                  frameborder="0" 
+                                  allow="autoplay; encrypted-media" 
+                                  allowfullscreen 
+                                  style="display:block;">
+                          </iframe>
+                      </div>
+                      <div class="button-section">
+                          <button class="apply-btn" data-theme-id="${theme.id}">Apply</button>
+                      </div>
                   </div>
               `;
           } else {
               videoContent = `
                   <div class="video-wrapper">
-                      <video id="video-${theme.id}" class="theme-video" width="200" height="150" style="display:none;" muted>
-                          <source src="${theme.wrapper_url}" type="video/mp4">
-                          Your browser does not support the video tag.
-                      </video>
-                      <div id="no-video-${theme.id}" class="no-video" style="display:none; color:red;">No Video</div>
+                      <div class="video-section">
+                          <video id="video-${theme.id}" class="theme-video" width="200" height="150" style="display:none;" muted>
+                              <source src="${theme.wrapper_url}" type="video/mp4">
+                              Your browser does not support the video tag.
+                          </video>
+                          <div id="no-video-${theme.id}" class="no-video" style="display:none; color:red;">No Video</div>
+                      </div>
+                      <div class="button-section">
+                          <button class="apply-btn" data-theme-id="${theme.id}">Apply</button>
+                      </div>
                   </div>
               `;
           }
@@ -169,7 +181,6 @@
                   <span class="theme-name">${theme.name}</span>
               </div>
               ${videoContent}
-              <button class="apply-btn" data-theme-id="${theme.id}">Apply</button>
           `;
           themeContainer.appendChild(themeDiv);
 

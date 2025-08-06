@@ -53,32 +53,20 @@ h2 {
     margin-top: 10px;
 }
 
-.theme-item, .deck-item {
-    display: flex;
-    align-items: center;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    text-align: center;
+.container {
+  display: flex;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+  position: relative;
 }
+
+
+
 
 .theme-item span {
     flex-grow: 1;
-}
-
-
-.apply-btn {
-    padding: 5px 10px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    display: block;
-    cursor: pointer;
-}
-
-.apply-btn:hover {
-    background-color: #0056b3;
 }
 
 
@@ -266,6 +254,11 @@ pre {
     text-align: center; /* Center the video/iframe */
 }
 
+.video-section {
+  flex: 1;
+  text-align: center;
+}
+
 .theme-video {
     border: 1px solid #ccc;
     border-radius: 4px;
@@ -279,16 +272,17 @@ pre {
     margin-top: 0.5rem;
     margin-bottom: 1rem;
 }
+
 .theme-header {
   width: 100%;
   text-align: center;
   margin-bottom: 1rem; /* Space below the header */
 }
+
 .theme-name {
   display: block; /* Ensure it behaves as a block for centering */
   font-size: 1.2rem;
   font-weight: bold;
-  margin-bottom: 1rem; /* Space below the name */
 }
 
 header {
@@ -296,29 +290,39 @@ header {
   padding: 1rem 0;
 }
 
-.auth-controls {
+
+.header-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   position: absolute;
   bottom: 0;
+  left: 0;
   right: 0;
-  margin: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #333; /* Dark background for contrast */
 }
 
 .header-nav {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  padding: 1rem 0; /* Lower the navigation links */
-  border-top: 1px solid #ccc;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
 }
 
 .header-nav a {
-  color: #fff; /* White links */
-  text-decoration: none;
+    color: #fff; /* White links */
+    text-decoration: none;
 }
 
 .header-nav a:hover {
-  text-decoration: underline;
+    text-decoration: underline;
 }
+
+.auth-controls {
+  display: flex;
+  align-items: center;
+}
+
 .auth-controls .logout-btn {
     background: #ff4d4f;
     padding: 0.5rem 1rem;
@@ -326,5 +330,5 @@ header {
 }
 .auth-controls .logout-btn:hover {
     background: #e6393b;
-    text-decoration: none;
+    text-decoration: underline;
 }
