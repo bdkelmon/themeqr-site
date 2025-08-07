@@ -214,7 +214,18 @@ def reset_password_confirm():
     except Exception as e:
         flash(f"Invalid or expired recovery token: {str(e)}", "error")
         return redirect(url_for("login"))
-    
+
+@app.route('/login/apple', methods=['POST'])
+def apple_login():
+    token = request.json.get('token')
+    # Validate Apple token (requires client secret from Apple Developer)
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.get('https://appleid.apple.com/auth/token', headers=headers)
+    if response.status_code == 200:
+        session['user'] = {'email': response.json().get('email')}
+        return jsonify({'success': True})
+    return jsonify({'success': False})
+
 @app.route("/google-login")
 def google_login():
     try:
