@@ -184,6 +184,13 @@
           `;
           themeContainer.appendChild(themeDiv);
 
+          // Find the newly created button and add a click event listener
+          const applyButton = themeDiv.querySelector('.apply-btn');
+        if (applyButton) {
+            applyButton.addEventListener('click', () => {
+                applyTheme(theme.id);
+            });
+
           if (!theme.wrapper_url.includes('player.cloudinary.com')) {
               const video = document.getElementById(`video-${theme.id}`);
               const noVideo = document.getElementById(`no-video-${theme.id}`);
