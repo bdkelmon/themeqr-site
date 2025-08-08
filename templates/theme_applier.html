@@ -133,82 +133,88 @@
       });
   }
 
-  function populateThemes(themes) {
-      themeContainer.innerHTML = '';
-      if (themes.length === 0) {
-          themeContainer.innerHTML = '<p style="color:#666;">No themes found.</p>';
-          return;
-      }
-      themes.forEach(theme => {
-          const themeDiv = document.createElement('div');
-          themeDiv.classList.add('theme-item');
-          let videoContent = '';
-          if (theme.wrapper_url && theme.wrapper_url.includes('player.cloudinary.com')) {
-              videoContent = `
-                  <div class="video-wrapper">
-                      <div class="video-section">
-                          <iframe id="video-${theme.id}" class="theme-video" width="200" height="150" 
-                                  src="${theme.wrapper_url}" 
-                                  frameborder="0" 
-                                  allow="autoplay; encrypted-media" 
-                                  allowfullscreen 
-                                  style="display:block;">
-                          </iframe>
-                      </div>
-                      <div class="button-section">
-                          <button class="apply-btn" data-theme-id="${theme.id}">Apply</button>
-                      </div>
-                  </div>
-              `;
-          } else {
-              videoContent = `
-                  <div class="video-wrapper">
-                      <div class="video-section">
-                          <video id="video-${theme.id}" class="theme-video" width="200" height="150" style="display:none;" muted>
-                              <source src="${theme.wrapper_url}" type="video/mp4">
-                              Your browser does not support the video tag.
-                          </video>
-                          <div id="no-video-${theme.id}" class="no-video" style="display:none; color:red;">No Video</div>
-                      </div>
-                      <div class="button-section">
-                          <button class="apply-btn" data-theme-id="${theme.id}">Apply</button>
-                      </div>
-                  </div>
-              `;
-          }
-          themeDiv.innerHTML = `
-              <div class="theme-header">
-                  <span class="theme-name">${theme.name}</span>
-              </div>
-              ${videoContent}
-          `;
-          themeContainer.appendChild(themeDiv);
-
-          // Find the newly created button and add a click event listener
-          const applyButton = themeDiv.querySelector('.apply-btn');
-        if (applyButton) {
-            applyButton.addEventListener('click', () => {
-                applyTheme(theme.id);
-            });
-         }  
-          if (!theme.wrapper_url.includes('player.cloudinary.com')) {
-              const video = document.getElementById(`video-${theme.id}`);
-              const noVideo = document.getElementById(`no-video-${theme.id}`);
-              video.addEventListener('error', () => {
-                  video.style.display = 'none';
-                  noVideo.style.display = 'block';
-              });
-              video.addEventListener('loadeddata', () => {
-                  video.style.display = 'block';
-                  noVideo.style.display = 'none';
-                  video.autoplay = true;
-                  video.controls = true;
-                  video.load();
-              });
-              video.src = theme.wrapper_url;
-          }
-      });
+function populateThemes(themes) {
+  themeContainer.innerHTML = '';
+  if (themes.length === 0) {
+    themeContainer.innerHTML = '<p style="color:#666;">No themes found.</p>';
+    return;
   }
+
+  themes.forEach(theme => {
+    const themeDiv = document.createElement('div');
+    themeDiv.classList.add('theme-item');
+
+    const videoContent = theme.wrapper_url.includes('player.cloudinary.com')
+      ? `
+        <div class="video-wrapper">
+          <div class="video-section">
+            <iframe id="video-${theme.id}" class="theme-video" width="200" height="150"
+                    src="${theme.wrapper_url}"
+                    frameborder="0"
+                    allow="autoplay; encrypted-media"
+                    allowfullscreen
+                    style="display:block;">
+            </iframe>
+          </div>
+          <div class="button-section">
+            <button class="apply-btn" data-theme-id="${theme.id}">Apply</button>
+          </div>
+        </div>`
+      : `
+        <div class="video-wrapper">
+          <div class="video-section">
+            <!-- NOTE: no <source> tag; we set .src in JS -->
+            <video id="video-${theme.id}" class="theme-video" width="200" height="150"
+                   style="display:none;"
+                   muted
+                   playsinline
+                   controls
+                   preload="metadata">
+            </video>
+            <div id="no-video-${theme.id}" class="no-video" style="display:none; color:red;">No Video</div>
+          </div>
+          <div class="button-section">
+            <button class="apply-btn" data-theme-id="${theme.id}">Apply</button>
+          </div>
+        </div>`;
+
+    themeDiv.innerHTML = `
+      <div class="theme-header">
+        <span class="theme-name">${theme.name}</span>
+      </div>
+      ${videoContent}
+    `;
+    themeContainer.appendChild(themeDiv);
+
+    const applyButton = themeDiv.querySelector('.apply-btn');
+    if (applyButton) {
+      applyButton.addEventListener('click', () => applyTheme(theme.id));
+    }
+
+    // Only wire up <video> if we're not using the Cloudinary player iframe
+    if (!theme.wrapper_url.includes('player.cloudinary.com')) {
+      const video = document.getElementById(`video-${theme.id}`);
+      const noVideo = document.getElementById(`no-video-${theme.id}`);
+
+      video.addEventListener('error', () => {
+        video.style.display = 'none';
+        noVideo.style.display = 'block';
+      }, { once: true });
+
+      // Show once it can play; start playback once
+      video.addEventListener('canplay', () => {
+        video.style.display = 'block';
+        noVideo.style.display = 'none';
+        // Optional smooth looping:
+        // video.loop = true;
+        video.play().catch(() => {/* autoplay may be blocked if not muted */});
+      }, { once: true });
+
+      // Set src AFTER attributes are in place
+      video.src = theme.wrapper_url;
+    }
+  });
+}
 
   function selectDeck(deckId) {
       selectedDeckId = deckId;
