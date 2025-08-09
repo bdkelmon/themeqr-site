@@ -32,6 +32,17 @@
 </div>
 
 <div class="container">
+
+    <!-- NEW: Create Deck Panel -->
+<div class="create-deck card">
+    <h2>Create New Deck</h2>
+    <label for="newDeckName" class="label">Deck name</label>
+    <input id="newDeckName" class="input" type="text" placeholder="e.g., Summer Promo" />
+    <button id="createDeckBtn" class="apply-btn" style="margin-top:8px;">Create</button>
+    <div id="createDeckStatus" class="status" style="margin-top:6px; display:none;"></div>
+    <hr style="margin:14px 0; opacity:.2;">
+</div>
+    
   <div class="left-panel">
     <h2>Your Decks</h2>
     <div id="deckContainer" class="grid"></div>
@@ -80,6 +91,10 @@
   const loadingIndicator = document.getElementById('loadingIndicator');
   const errorDisplay = document.getElementById('errorDisplay');
   const errorMessageSpan = document.getElementById('errorMessage');
+  const newDeckNameInput = document.getElementById('newDeckName');
+  const createDeckBtn = document.getElementById('createDeckBtn');
+  const createDeckStatus = document.getElementById('createDeckStatus'); 
+
 
   let allThemes = [];
   let allDecks = [];
@@ -270,6 +285,99 @@ function populateThemes(themes) {
       }
   }
 
+  function setCreateStatus(msg, kind = 'info') {
+  if (!createDeckStatus) return;
+  createDeckStatus.style.display = msg ? '' : 'none';
+  createDeckStatus.style.color = (kind === 'error') ? 'crimson' : (kind === 'success') ? 'green' : '#555';
+  createDeckStatus.textContent = msg || '';
+}
+
+async function createDeck() {
+  try {
+    if (!supabase) throw new Error("Supabase client not initialized.");
+    if (!VAULT_ID || VAULT_ID === "None") throw new Error("No vault_id available.");
+    const name = (newDeckNameInput.value || '').trim();
+    if (!name) {
+      setCreateStatus("Enter a deck name.", 'error');
+      return;
+    }
+
+    // Disable button during work
+    createDeckBtn.disabled = true;
+    setCreateStatus("Creating deck…");
+
+    // 1) Insert new deck row
+    const newId = (crypto && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const { data: inserted, error: insertErr } = await supabase
+      .from('decks')
+      .insert([{
+        id: newId,
+        vault_id: VAULT_ID,
+        deck_name: name,
+        qr_code: '',        // initially blank
+        wrapper: '',        // initially blank
+        landing_url: ''     // initially blank
+      }])
+      .select();
+
+    if (insertErr) throw new Error(`Insert failed: ${insertErr.message}`);
+    if (!inserted || !inserted.length) throw new Error("Insert returned no rows.");
+
+    // 2) Build landing URL for this deck
+    const landingUrl = `https://www.themeqr.com/go.html/?id=${newId}`;
+
+    setCreateStatus("Generating QR…");
+
+    // 3) Ask backend to generate QR (and upload to Cloudinary) for that landing URL
+    const qrResp = await fetch('/generate_qr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ link: landingUrl })
+    });
+    if (!qrResp.ok) {
+      const err = await qrResp.json().catch(() => ({}));
+      throw new Error(`QR generation failed: ${err.error || qrResp.statusText}`);
+    }
+    const qrJson = await qrResp.json();
+    if (!qrJson.success || !qrJson.qr_url) throw new Error("QR response missing URL.");
+    const cloudQrUrl = qrJson.qr_url;
+
+    setCreateStatus("Saving QR & landing to deck…");
+
+    // 4) Update the new deck with QR URL and landing URL
+    const { data: updated, error: updErr } = await supabase
+      .from('decks')
+      .update({ qr_code: cloudQrUrl, landing_url: landingUrl })
+      .eq('id', newId)       // safer than eq('landing_url',...)
+      .select();
+
+    if (updErr) throw new Error(`Update failed: ${updErr.message}`);
+
+    setCreateStatus("Deck created!", 'success');
+
+    // 5) Refresh local list and auto-select the new deck
+    // Pull the fresh row (or just push a local object if you want)
+    const { data: newDeckRow } = await supabase
+      .from('decks')
+      .select('*')
+      .eq('id', newId)
+      .single();
+
+    if (newDeckRow) {
+      allDecks.unshift(newDeckRow);
+      populateDecks(allDecks);
+      // Clear box, select the new one and show its QR
+      newDeckNameInput.value = '';
+      selectDeck(newId);
+    }
+  } catch (e) {
+    console.error(e);
+    setCreateStatus(e.message || "Failed to create deck.", 'error');
+  } finally {
+    createDeckBtn.disabled = false;
+  }
+}
+
   document.addEventListener('DOMContentLoaded', async () => {
       showLoading(true);
       try {
@@ -288,6 +396,10 @@ function populateThemes(themes) {
       } finally {
           showLoading(false);
       }
+
+      if (createDeckBtn) {
+       createDeckBtn.addEventListener('click', createDeck);
+     } 
   });
 </script>
 </body>
