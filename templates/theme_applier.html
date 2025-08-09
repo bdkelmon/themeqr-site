@@ -132,21 +132,22 @@
       }
   }
 
-  function populateDecks(decks) {
-      deckContainer.innerHTML = '';
-      if (decks.length === 0) {
-          deckContainer.innerHTML = '<p style="color:#666;">No decks found.</p>';
-          return;
-      }
-      decks.forEach(deck => {
-          const deckDiv = document.createElement('div');
-          deckDiv.classList.add('deck-item', 'apply-btn'); /* Apply button style to deck items */
-          deckDiv.textContent = deck.deck_name || `Deck ID: ${deck.id.substring(0, 8)}...`;
-          deckDiv.dataset.deckId = deck.id;
-          deckDiv.addEventListener('click', () => selectDeck(deck.id));
-          deckContainer.appendChild(deckDiv);
-      });
+function populateDecks(decks) {
+  deckContainer.innerHTML = '';
+  if (!decks.length) {
+    deckContainer.innerHTML = '<p style="color:#666;">No decks found.</p>';
+    return;
   }
+  decks.forEach(deck => {
+    const deckDiv = document.createElement('div');
+    deckDiv.classList.add('deck-item', 'apply-btn');
+    const hasQr = deck.qr_code && deck.qr_code.startsWith('http');
+    deckDiv.innerHTML = `${deck.deck_name || deck.id.slice(0,8)} ${hasQr ? '<span style="font-size:11px;color:green;">• QR</span>' : ''}`;
+    deckDiv.dataset.deckId = deck.id;
+    deckDiv.addEventListener('click', () => selectDeck(deck.id));
+    deckContainer.appendChild(deckDiv);
+  });
+}
 
 function populateThemes(themes) {
   themeContainer.innerHTML = '';
@@ -231,16 +232,37 @@ function populateThemes(themes) {
   });
 }
 
-  function selectDeck(deckId) {
-      selectedDeckId = deckId;
-      const selectedDeck = allDecks.find(d => d.id === deckId);
-      if (selectedDeck) {
-          const qrImageName = `${VAULT_ID}_${selectedDeck.deck_name}_qr.png`;
-          qrImg.src = `https://themeqr-backend.onrender.com/static/${qrImageName}?t=${new Date().getTime()}`;
-          qrImg.style.display = 'block';
-          console.log("Selected deck:", deckId, "QR displayed:", qrImg.src);
-      }
+function selectDeck(deckId) {
+  selectedDeckId = deckId;
+  const selectedDeck = allDecks.find(d => d.id === deckId);
+  if (!selectedDeck) return;
+
+  // Preferred: use Cloudinary URL saved in DB
+  const cloudQr = (selectedDeck.qr_code || '').trim();
+
+  if (cloudQr && cloudQr.startsWith('http')) {
+    // Cloudinary (or any remote) QR url
+    qrImg.src = `${cloudQr}${cloudQr.includes('?') ? '&' : '?'}t=${Date.now()}`;
+    qrImg.style.display = 'block';
+    console.log("Selected deck:", deckId, "QR displayed (cloud):", qrImg.src);
+    return;
   }
+
+  // Fallback to legacy local file pattern ONLY if no qr_code url
+  const deckName = (selectedDeck.deck_name || '').trim();
+  if (!deckName) {
+    qrImg.style.display = 'none';
+    console.warn("No deck_name or qr_code; nothing to show.");
+    return;
+  }
+
+  const qrImageName = `${VAULT_ID}_${deckName}_qr.png`;
+  const localUrl = `https://themeqr-backend.onrender.com/static/${encodeURIComponent(qrImageName)}?t=${Date.now()}`;
+
+  qrImg.src = localUrl;
+  qrImg.style.display = 'block';
+  console.log("Selected deck:", deckId, "QR displayed (local):", qrImg.src);
+}
 
   async function applyTheme(themeId) {
       if (!selectedDeckId) {
@@ -347,7 +369,7 @@ async function createDeck() {
     // 4) Update the new deck with QR URL and landing URL
     const { data: updated, error: updErr } = await supabase
       .from('decks')
-      .update({ qr_code: cloudQrUrl, landing_url: landingUrl })
+      .update({ qr_code: cloudQrUrl })
       .eq('id', newId)       // safer than eq('landing_url',...)
       .select();
 
@@ -377,6 +399,8 @@ async function createDeck() {
     createDeckBtn.disabled = false;
   }
 }
+
+
 
   document.addEventListener('DOMContentLoaded', async () => {
       showLoading(true);
