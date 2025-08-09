@@ -307,71 +307,88 @@ def apply_theme():
         return jsonify({'success': False, 'error': 'Missing deck_id, theme_id, or qr_url'}), 400
 
     try:
-        # Fetch theme details
-        theme_response = supabase.table('themes').select('wrapper_url, landing_url').eq('id', theme_id).single().execute()
-        if not theme_response.data:
+        # 1) Fetch theme + deck
+        theme_resp = supabase.table('themes').select('wrapper_url, landing_url').eq('id', theme_id).single().execute()
+        if not theme_resp.data:
             return jsonify({'success': False, 'error': 'Theme not found'}), 404
-        theme = theme_response.data
+        theme = theme_resp.data
 
-        # Fetch deck details
-        deck_response = supabase.table('decks').select('vault_id, deck_name').eq('id', deck_id).single().execute()
-        if not deck_response.data:
+        deck_resp = supabase.table('decks').select('vault_id, deck_name').eq('id', deck_id).single().execute()
+        if not deck_resp.data:
             return jsonify({'success': False, 'error': 'Deck not found'}), 404
-        deck = deck_response.data
+        deck = deck_resp.data
 
-        # Construct local path to the existing QR image (already served statically)
-        vault_id = deck['vault_id']
-        deck_name = deck['deck_name'] or deck_id[:8]  # Fallback to deck_id if deck_name is None
-        qr_img_path = os.path.join('static', f'{vault_id}_{deck_name}_qr.png')
-        if not os.path.exists(qr_img_path):
-            return jsonify({'success': False, 'error': f'QR image not found at {qr_img_path}'}), 500
-        print(f"Using local QR image: {qr_img_path}")
-
-        # Generate new wrapper with QR overlay
         wrapper_url = theme['wrapper_url']
-        output_path = os.path.join(tempfile.gettempdir(), f'{deck_id}_new_wrapper.mp4')
+        landing_url = theme['landing_url']
 
-        def generate_qr_video(wrapper, qr_img_path, output_path, duration=10):
-            image_extensions = ['.png', '.jpg', '.jpeg', '.bmp', '.gif']
-            file_ext = os.path.splitext(wrapper)[1].lower()
+        # 2) Download wrapper video to temp
+        tmp_wrapper = os.path.join(tempfile.gettempdir(), f'{uuid.uuid4()}.mp4')
+        with requests.get(wrapper_url, stream=True, timeout=60) as r:
+            r.raise_for_status()
+            with open(tmp_wrapper, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=1024*1024):
+                    if chunk:
+                        f.write(chunk)
 
+        # 3) Download QR image to temp (use client-provided qr_url)
+        tmp_qr = os.path.join(tempfile.gettempdir(), f'{uuid.uuid4()}.png')
+        with requests.get(qr_url, stream=True, timeout=30) as r:
+            r.raise_for_status()
+            with open(tmp_qr, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=1024*256):
+                    if chunk:
+                        f.write(chunk)
+
+        # 4) Compose new video with QR overlay
+        out_path = os.path.join(tempfile.gettempdir(), f'{uuid.uuid4()}_wrapper_out.mp4')
+
+        def compose(wrapper_fp, qr_fp, out_fp, max_duration=10):
             try:
-                if file_ext in image_extensions:
-                    base_clip = ImageClip(wrapper).set_duration(duration)
-                    base_width, base_height = base_clip.size
-                else:
-                    base_clip = VideoFileClip(wrapper)
-                    base_clip = base_clip.subclip(0, min(duration, base_clip.duration))
-                    base_width, base_height = base_clip.size
+                base_clip = VideoFileClip(wrapper_fp)
+                # limit duration so previews are snappy; tweak as needed
+                if base_clip.duration and base_clip.duration > max_duration:
+                    base_clip = base_clip.subclip(0, max_duration)
 
-                max_qr_height = min(base_width, base_height) / 12
-                qr_clip = ImageClip(qr_img_path).set_duration(base_clip.duration)
-                qr_clip = qr_clip.resize(height=max_qr_height).set_pos(("right", "bottom"))
+                bw, bh = base_clip.size
+                # QR ~ 1/12 of min dimension; adjust to taste
+                target_h = int(min(bw, bh) / 12)
+                qr_clip = ImageClip(qr_fp).set_duration(base_clip.duration).resize(height=target_h).set_pos(("right", "bottom"))
 
-                final_clip = CompositeVideoClip([base_clip, qr_clip])
-                final_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
-                print(f"[DONE] Final video with QR saved to: {output_path}")
+                final = CompositeVideoClip([base_clip, qr_clip])
+                final.write_videofile(out_fp, codec="libx264", audio_codec="aac", threads=2, preset="medium")
             except Exception as e:
-                raise Exception(f"Video processing failed: {str(e)}")
+                raise Exception(f"Video processing failed: {e}")
 
-        generate_qr_video(wrapper_url, qr_img_path, output_path)
+        compose(tmp_wrapper, tmp_qr, out_path)
 
-        # Upload to Cloudinary
-        cloud_result = cloudinary.uploader.upload(output_path, folder="themeqr/wrappers")
-        new_wrapper_url = cloud_result['secure_url']
+        # 5) Upload to Cloudinary as VIDEO (use upload_large for safety)
+        cloud_res = cloudinary.uploader.upload_large(
+          out_path,
+          resource_type="video",
+          folder="themeqr/wrappers",
+          public_id=f"{deck_id}_wrapper"
+       )
+        new_wrapper_url = cloud_res['secure_url']
 
-        # Update deck with theme's wrapper_url and landing_url
-        update_response = supabase.table('decks').update({
-            'wrapper': theme['wrapper_url'],  # Use theme's wrapper_url directly
-            'landing_url': theme['landing_url'],
+        # 6) Update deck with the *new* wrapper URL and the theme's landing URL
+        upd = supabase.table('decks').update({
+            'wrapper': new_wrapper_url,
+            'landing_url': landing_url,
             'updated_at': datetime.now(timezone.utc).isoformat()
         }).eq('id', deck_id).execute()
-        if not update_response.data:
+        if not upd.data:
             return jsonify({'success': False, 'error': 'Failed to update deck'}), 500
 
-        os.remove(output_path)
+        # 7) Cleanup
+        for p in (tmp_wrapper, tmp_qr, out_path):
+            try:
+                if os.path.exists(p):
+                    os.remove(p)
+            except:
+                pass
 
         return jsonify({'success': True, 'new_wrapper_url': new_wrapper_url})
+
     except Exception as e:
         print(f"Error in apply_theme: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500 

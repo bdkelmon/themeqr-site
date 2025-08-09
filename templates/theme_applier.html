@@ -248,12 +248,19 @@ function populateThemes(themes) {
           }
           const result = await response.json();
           if (result.success) {
-              showError("Theme applied successfully!");
+
               const updatedDeck = allDecks.find(d => d.id === selectedDeckId);
-              updatedDeck.wrapper = theme.wrapper_url;
+              if (updatedDeck) {
+              updatedDeck.wrapper = result.new_wrapper_url;
               updatedDeck.landing_url = theme.landing_url;
-              selectDeck(selectedDeckId);
-          } else {
+            }
+            errorMessageSpan.textContent = "Theme applied successfully!";
+            errorDisplay.style.color = 'green';
+            errorDisplay.style.display = '';
+        
+            selectDeck(selectedDeckId);
+        
+        } else {
               showError(result.error || "Failed to apply theme.");
           }
       } catch (error) {
