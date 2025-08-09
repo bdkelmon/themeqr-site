@@ -296,6 +296,34 @@ def get_or_create_user_vault(user_id):
         print(f"Error in get_or_create_user_vault: {str(e)}")
         return None
 
+from urllib.parse import urlparse, urlunparse
+import re
+
+def strip_query(u: str) -> str:
+    p = urlparse(u)
+    return urlunparse((p.scheme, p.netloc, p.path, '', '', ''))
+
+def qr_local_path_from_url(qr_url: str, static_root: str) -> str | None:
+    try:
+        p = urlparse(qr_url)
+        if p.path.startswith('/static/'):
+            fname = os.path.basename(p.path)
+            return os.path.join(static_root, fname)
+    except Exception:
+        pass
+    return None
+
+def cloudinary_direct_video_url(cld_url: str) -> str:
+    """
+    If given a Cloudinary *player* URL, raise. If given a direct video url, return it.
+    You can extend this to map player->direct by extracting public_id if needed.
+    """
+    p = urlparse(cld_url)
+    host = p.netloc.lower()
+    if 'player.cloudinary.com' in host:
+        raise ValueError("Theme wrapper_url is a Cloudinary *player* URL. Store a direct video URL (res.cloudinary.com/.../video/upload/...mp4).")
+    return cld_url
+
 @app.route('/apply_theme', methods=['POST'])
 def apply_theme():
     data = request.get_json()
@@ -318,26 +346,35 @@ def apply_theme():
             return jsonify({'success': False, 'error': 'Deck not found'}), 404
         deck = deck_resp.data
 
-        wrapper_url = theme['wrapper_url']
+        # --- sanitize inputs
+        wrapper_url = cloudinary_direct_video_url(theme['wrapper_url'])
         landing_url = theme['landing_url']
-
-        # 2) Download wrapper video to temp
+        qr_url_clean = strip_query(qr_url)
+        
+        # --- wrapper: download to temp (direct video only)
         tmp_wrapper = os.path.join(tempfile.gettempdir(), f'{uuid.uuid4()}.mp4')
-        with requests.get(wrapper_url, stream=True, timeout=60) as r:
+        app.logger.info(f"[apply_theme] downloading wrapper: {wrapper_url}")
+        with requests.get(wrapper_url, stream=True, timeout=120, headers={"User-Agent": "themeqr/1.0"}) as r:
             r.raise_for_status()
             with open(tmp_wrapper, 'wb') as f:
                 for chunk in r.iter_content(chunk_size=1024*1024):
                     if chunk:
                         f.write(chunk)
-
-        # 3) Download QR image to temp (use client-provided qr_url)
-        tmp_qr = os.path.join(tempfile.gettempdir(), f'{uuid.uuid4()}.png')
-        with requests.get(qr_url, stream=True, timeout=30) as r:
-            r.raise_for_status()
-            with open(tmp_qr, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=1024*256):
-                    if chunk:
-                        f.write(chunk)
+        
+        # --- QR: if it's our own /static, read from disk; else download (Cloudinary)
+        qr_local = qr_local_path_from_url(qr_url_clean, app.static_folder)
+        if qr_local and os.path.exists(qr_local) and os.path.getsize(qr_local) > 0:
+            tmp_qr = qr_local
+            app.logger.info(f"[apply_theme] using local QR: {tmp_qr}")
+        else:
+            tmp_qr = os.path.join(tempfile.gettempdir(), f'{uuid.uuid4()}.png')
+            app.logger.info(f"[apply_theme] downloading QR: {qr_url_clean}")
+            with requests.get(qr_url_clean, stream=True, timeout=120, headers={"User-Agent": "themeqr/1.0"}) as r:
+                r.raise_for_status()
+                with open(tmp_qr, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=256*1024):
+                        if chunk:
+                            f.write(chunk)
 
         # 4) Compose new video with QR overlay
         out_path = os.path.join(tempfile.gettempdir(), f'{uuid.uuid4()}_wrapper_out.mp4')
@@ -357,7 +394,8 @@ def apply_theme():
                 final = CompositeVideoClip([base_clip, qr_clip])
                 final.write_videofile(out_fp, codec="libx264", audio_codec="aac", threads=2, preset="medium")
             except Exception as e:
-                raise Exception(f"Video processing failed: {e}")
+                app.logger.exception("apply_theme failed")
+                return jsonify({'success': False, 'error': str(e)}), 500
 
         compose(tmp_wrapper, tmp_qr, out_path)
 

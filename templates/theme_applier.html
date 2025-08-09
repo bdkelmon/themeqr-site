@@ -277,7 +277,14 @@ function selectDeck(deckId) {
           const response = await fetch('/apply_theme', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ deck_id: selectedDeckId, theme_id: themeId, qr_url: qrImg.src })
+              const selectedDeck = allDecks.find(d => d.id === selectedDeckId);
+          const qrUrlForServer =
+            (selectedDeck?.qr_code && selectedDeck.qr_code.startsWith('http'))
+              ? selectedDeck.qr_code
+              : (qrImg.src || '').split('?')[0];   // strip ?t= cache buster
+          
+          body: JSON.stringify({ deck_id: selectedDeckId, theme_id: themeId, qr_url: qrUrlForServer })
+
           });
           if (!response.ok) {
               const errorData = await response.json();
