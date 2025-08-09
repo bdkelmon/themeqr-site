@@ -349,10 +349,10 @@ header {
 }
 
 .input { 
-    width: 100%; 
-    padding: 8px; 
+    width: 88%; 
+    padding: 6px; 
     border:1px solid #ccc; 
-    border-radius:6px; 
+    border-radius:15px; 
 }
 
 .status { 
