@@ -145,23 +145,26 @@ function populateDecks(decks) {
     deckDiv.style.cursor = 'pointer';
     deckDiv.dataset.deckId = deck.id;
 
-    const hasVideo = deck.wrapper && deck.wrapper.startsWith('http');
+    const hasVideo   = deck.wrapper && deck.wrapper.startsWith('http');
     const hasLanding = deck.landing_url && deck.landing_url.startsWith('http');
 
-    // Build video area (like themes)
+    const landingMarkup = hasLanding
+      ? `<a class="landing-link" href="${deck.landing_url}" target="_blank" rel="noopener"
+             style="display:block;margin-bottom:8px;text-decoration:underline;">Landing Page</a>`
+      : `<span class="no-landing" style="display:block;margin-bottom:8px;color:red;">No landing page</span>`;
+
+    // Build video area (like themes) + landing link + select button
     const videoSectionHTML = hasVideo
       ? `
         <div class="video-wrapper">
           <div class="video-section">
             <video id="deck-video-${deck.id}" class="theme-video" width="200" height="150"
-                   style="display:none;" muted playsinline controls preload="metadata">
-            </video>
+                   style="display:none;" muted playsinline controls preload="metadata"></video>
             <div id="deck-novideo-${deck.id}" class="no-video" style="display:none; color:red;">No Video</div>
           </div>
           <div class="button-section">
-            ${hasLanding
-              ? `<a class="apply-btn" href="${deck.landing_url}" target="_blank" rel="noopener">Landing page</a>`
-              : `<span class="no-video" style="color:#666;">No landing page</span>`}
+            ${landingMarkup}
+            <button class="apply-btn deck-select-btn" data-deck-id="${deck.id}">Select Deck</button>
           </div>
         </div>`
       : `
@@ -170,9 +173,8 @@ function populateDecks(decks) {
             <div id="deck-novideo-${deck.id}" class="no-video" style="display:block; color:red;">No Video</div>
           </div>
           <div class="button-section">
-            ${hasLanding
-              ? `<a class="apply-btn" href="${deck.landing_url}" target="_blank" rel="noopener">Landing page</a>`
-              : `<span class="no-video" style="color:#666;">No landing page</span>`}
+            ${landingMarkup}
+            <button class="apply-btn deck-select-btn" data-deck-id="${deck.id}">Select Deck</button>
           </div>
         </div>`;
 
@@ -183,12 +185,21 @@ function populateDecks(decks) {
       ${videoSectionHTML}
     `;
 
-    // Click selects the deck (for QR overlay/apply)
+    // Whole card click still selects, but don't hijack link/button clicks
     deckDiv.addEventListener('click', (e) => {
-      // Don’t hijack clicks on the Landing page link
-      if (e.target && e.target.tagName === 'A') return;
+      const tag = e.target.tagName;
+      if (tag === 'A' || (tag === 'BUTTON' && e.target.classList.contains('deck-select-btn'))) return;
       selectDeck(deck.id);
     });
+
+    // Select button explicitly selects the deck
+    const selectBtn = deckDiv.querySelector('.deck-select-btn');
+    if (selectBtn) {
+      selectBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectDeck(deck.id);
+      });
+    }
 
     deckContainer.appendChild(deckDiv);
 
