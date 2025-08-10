@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star Wars: The Ultimate Facts</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load a Star Wars-like font from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for the Star Wars theme */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a2e;
+        }
+        .star-wars-font {
+            font-family: 'Permanent Marker', cursive;
+        }
+        /* Simple hover effect for the fact cards */
+        .fact-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="text-gray-100 antialiased">
+
+    <!-- Header Section -->
+    <header class="bg-gray-900 shadow-xl py-8 px-4 text-center rounded-b-3xl">
+        <h1 class="star-wars-font text-5xl md:text-7xl font-bold text-yellow-300 tracking-widest leading-tight drop-shadow-lg">
+            Star Wars Facts
+        </h1>
+        <p class="mt-4 text-xl md:text-2xl font-light italic text-gray-300">
+            A long time ago, in a galaxy far, far away...
+        </p>
+    </header>
+
+    <!-- Main Content Section - Facts Grid -->
+    <main class="container mx-auto p-4 md:p-8 my-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+
+            <!-- Fact 1: A New Hope -->
+            <div class="fact-card bg-gray-800 p-6 rounded-2xl shadow-lg transform transition-transform duration-300">
+                <h2 class="star-wars-font text-2xl font-bold text-blue-400 mb-2">A New Hope's Original Title</h2>
+                <p class="text-gray-300 text-lg">
+                    The first film, released in 1977, was originally just titled "Star Wars." The subtitle "Episode IV – A New Hope" was only added in 1981, after the release of "The Empire Strikes Back," to help establish the film as part of a larger saga.
+                </p>
+            </div>
+
+            <!-- Fact 2: Yoda's Inspiration -->
+            <div class="fact-card bg-gray-800 p-6 rounded-2xl shadow-lg transform transition-transform duration-300">
+                <h2 class="star-wars-font text-2xl font-bold text-green-400 mb-2">Yoda's Early Design</h2>
+                <p class="text-gray-300 text-lg">
+                    Before Frank Oz was hired to operate the puppet, George Lucas considered having a monkey in a Yoda costume for the role. Thankfully, that idea was scrapped in favor of the wise, green Jedi Master we all know and love.
+                </p>
+            </div>
+
+            <!-- Fact 3: Chewbacca's Name -->
+            <div class="fact-card bg-gray-800 p-6 rounded-2xl shadow-lg transform transition-transform duration-300">
+                <h2 class="star-wars-font text-2xl font-bold text-red-400 mb-2">The Wookiee's Real-Life Muse</h2>
+                <p class="text-gray-300 text-lg">
+                    George Lucas’s Alaskan Malamute, Indiana, was the inspiration for Chewbacca. The dog often sat in the passenger seat of his car, leading to the idea of a large, hairy co-pilot for Han Solo.
+                </p>
+            </div>
+
+            <!-- Fact 4: TIE Fighter Sound -->
+            <div class="fact-card bg-gray-800 p-6 rounded-2xl shadow-lg transform transition-transform duration-300">
+                <h2 class="star-wars-font text-2xl font-bold text-yellow-400 mb-2">That Iconic TIE Fighter Sound</h2>
+                <p class="text-gray-300 text-lg">
+                    The distinctive sound of a TIE Fighter flying by was created by combining the sound of a car driving on a wet road with an elephant's trumpeting. This unique blend gave the ships a menacing and alien roar.
+                </p>
+            </div>
+
+            <!-- Fact 5: Millennium Falcon's Original Name -->
+            <div class="fact-card bg-gray-800 p-6 rounded-2xl shadow-lg transform transition-transform duration-300">
+                <h2 class="star-wars-font text-2xl font-bold text-teal-300 mb-2">A Falcon's Original Title</h2>
+                <p class="text-gray-300 text-lg">
+                    The famous ship, the Millennium Falcon, was originally called the "Starkiller." This name was later repurposed for the main hero's original family name, Luke Starkiller, before it was changed to Skywalker.
+                </p>
+            </div>
+
+            <!-- Fact 6: Bad Feeling -->
+            <div class="fact-card bg-gray-800 p-6 rounded-2xl shadow-lg transform transition-transform duration-300">
+                <h2 class="star-wars-font text-2xl font-bold text-purple-400 mb-2">The Running Gag Line</h2>
+                <p class="text-gray-300 text-lg">
+                    The phrase "I have a bad feeling about this" is a recurring line in every single Star Wars film. It's said by a different character each time, making it one of the most consistent running gags in movie history.
+                </p>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer Section -->
+    <footer class="bg-gray-900 text-center py-6 px-4 rounded-t-3xl mt-8">
+        <p class="text-gray-500 text-sm">
+            &copy; 2025 Star Wars Facts. All rights reserved. Not affiliated with Lucasfilm or Disney.
+        </p>
+    </footer>
+
+</body>
+</html>
