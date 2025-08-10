@@ -336,28 +336,53 @@ def cloudinary_direct_video_url(cld_url: str) -> str:
 
 def compose_ffmpeg(wrapper_fp: str, qr_fp: str, out_fp: str, max_duration: int = 10) -> None:
     """
-    Overlay QR (bottom-right) on wrapper using ffmpeg, scaling QR to ~1/6 of video height.
-    Keeps memory usage low vs MoviePy frame rendering.
+    Overlay QR (bottom-right) with ffmpeg.
+    Optimized for low-CPU/RAM and to avoid gunicorn timeouts.
     """
-    # Scale QR relative to base using scale2ref, then overlay with 20px margin
-    # -an disables audio to reduce encode time/size. Remove -an if you need audio.
-    cmd = f"""
-    ffmpeg -y
-      -i {shlex.quote(wrapper_fp)}
-      -i {shlex.quote(qr_fp)}
-      -t {max_duration}
-      -filter_complex "[1][0]scale2ref=h=ih/6:w=-1[qr][base];[base][qr]overlay=W-w-20:H-h-20"
-      -c:v libx264
-      -preset veryfast
-      -crf 28
-      -pix_fmt yuv420p
-      -movflags +faststart
-      -an
-      {shlex.quote(out_fp)}
-    """
-    proc = subprocess.run(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if not shutil.which("ffmpeg"):
+        raise RuntimeError("ffmpeg not found on PATH")
+
+    # Downscale base to <=720p to keep encode cheap.
+    # Scale QR to ~1/6 of base height. 20px margin.
+    # Shorten to max_duration, drop audio, use veryfast + crf 30, single thread.
+    filter_complex = (
+        "[0:v]scale='min(iw,720)':'-2':force_original_aspect_ratio=decrease[base];"
+        "[1][base]scale2ref=h=ih/6:w=-1[qr][b];"
+        "[b][qr]overlay=W-w-20:H-h-20"
+    )
+
+    cmd = [
+        "ffmpeg", "-y",
+        "-hide_banner", "-loglevel", "error",
+        "-i", wrapper_fp,
+        "-i", qr_fp,
+        "-t", str(max_duration),
+        "-filter_complex", filter_complex,
+        "-c:v", "libx264",
+        "-preset", "veryfast",
+        "-crf", "30",
+        "-pix_fmt", "yuv420p",
+        "-movflags", "+faststart",
+        "-threads", "1",
+        "-an",                 # remove if you need audio
+        out_fp,
+    ]
+
+    try:
+        proc = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=55,        # keep under typical 60s gunicorn timeout
+        )
+    except subprocess.TimeoutExpired as te:
+        raise RuntimeError(f"ffmpeg timed out at ~{te.timeout}s")
+
     if proc.returncode != 0:
-        raise RuntimeError(f"ffmpeg failed ({proc.returncode}): {proc.stderr.decode('utf-8', 'ignore')}")
+        # Surface the last part of stderr so we can see why
+        err = proc.stderr.decode("utf-8", "ignore")
+        raise RuntimeError(f"ffmpeg failed ({proc.returncode}): {err[-2000:]}")
+
     if not os.path.exists(out_fp) or os.path.getsize(out_fp) == 0:
         raise RuntimeError("ffmpeg produced an empty output file")
 
