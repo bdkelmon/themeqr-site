@@ -346,10 +346,19 @@ def compose_ffmpeg(wrapper_fp: str, qr_fp: str, out_fp: str, max_duration: int =
     # Scale QR to ~1/6 of base height. 20px margin.
     # Shorten to max_duration, drop audio, use veryfast + crf 30, single thread.
     filter_complex = (
-        "[0:v]scale='min(iw,720)':'-2':force_original_aspect_ratio=decrease[base];"
-        "[1][base]scale2ref=h=ih/6:w=-1[qr][b];"
-        "[b][qr]overlay=W-w-20:H-h-20"
-    )
+    # Downscale base to <=720p, keep AR, then force even dims
+    "[0:v]scale='min(iw,720)':'-2':force_original_aspect_ratio=decrease,"
+    "scale=trunc(iw/2)*2:trunc(ih/2)*2[base];"
+
+    # Scale QR relative to base height (~1/6 of base height)
+    "[1][base]scale2ref=w=-1:h=ih/6[qr][b];"
+
+    # Overlay bottom-right with 20px margin
+    "[b][qr]overlay=W-w-20:H-h-20"
+
+    # Ensure final frame is even (handles any odd result after overlay)
+    ",pad=ceil(iw/2)*2:ceil(ih/2)*2"
+  )
 
     cmd = [
         "ffmpeg", "-y",
