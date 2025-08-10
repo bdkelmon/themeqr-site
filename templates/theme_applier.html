@@ -141,19 +141,28 @@ function populateDecks(decks) {
 
   decks.forEach(deck => {
     const deckDiv = document.createElement('div');
-    deckDiv.classList.add('theme-item'); // reuse theme card styling for symmetry
+    deckDiv.classList.add('theme-item', 'deck-card'); // add deck-card for selection styling
     deckDiv.style.cursor = 'pointer';
     deckDiv.dataset.deckId = deck.id;
 
     const hasVideo   = deck.wrapper && deck.wrapper.startsWith('http');
     const hasLanding = deck.landing_url && deck.landing_url.startsWith('http');
 
+    // pick QR thumb: cloud first, else legacy local pattern
+    let qrThumbSrc = '';
+    const nm = (deck.deck_name || '').trim();
+    if (deck.qr_code && deck.qr_code.startsWith('http')) {
+      qrThumbSrc = deck.qr_code;
+    } else if (nm) {
+      const fname = `${VAULT_ID}_${nm}_qr.png`;
+      qrThumbSrc = `https://themeqr-backend.onrender.com/static/${encodeURIComponent(fname)}`;
+    }
+
     const landingMarkup = hasLanding
       ? `<a class="landing-link" href="${deck.landing_url}" target="_blank" rel="noopener"
              style="display:block;margin-bottom:8px;text-decoration:underline;">Landing Page</a>`
       : `<span class="no-landing" style="display:block;margin-bottom:8px;color:red;">No landing page</span>`;
 
-    // Build video area (like themes) + landing link + select button
     const videoSectionHTML = hasVideo
       ? `
         <div class="video-wrapper">
@@ -181,18 +190,19 @@ function populateDecks(decks) {
     deckDiv.innerHTML = `
       <div class="theme-header">
         <span class="theme-name">${deck.deck_name || deck.id.slice(0,8)}</span>
+        ${qrThumbSrc ? `<img class="deck-qr-thumb" src="${qrThumbSrc}" alt="QR" onerror="this.style.display='none'">` : ''}
       </div>
       ${videoSectionHTML}
     `;
 
-    // Whole card click still selects, but don't hijack link/button clicks
+    // Card click selects (but don't hijack link/button clicks)
     deckDiv.addEventListener('click', (e) => {
       const tag = e.target.tagName;
       if (tag === 'A' || (tag === 'BUTTON' && e.target.classList.contains('deck-select-btn'))) return;
       selectDeck(deck.id);
     });
 
-    // Select button explicitly selects the deck
+    // Explicit Select button
     const selectBtn = deckDiv.querySelector('.deck-select-btn');
     if (selectBtn) {
       selectBtn.addEventListener('click', (e) => {
@@ -201,9 +211,14 @@ function populateDecks(decks) {
       });
     }
 
+    // If the current deck is already selected, reflect the highlight
+    if (selectedDeckId === deck.id) {
+      deckDiv.classList.add('deck-selected');
+    }
+
     deckContainer.appendChild(deckDiv);
 
-    // Wire up video only if we have one
+    // Wire video if present
     if (hasVideo) {
       const videoEl = document.getElementById(`deck-video-${deck.id}`);
       const noVideoEl = document.getElementById(`deck-novideo-${deck.id}`);
@@ -219,7 +234,6 @@ function populateDecks(decks) {
         videoEl.play().catch(() => {});
       }, { once: true });
 
-      // Set src after listeners are attached
       videoEl.src = deck.wrapper;
     }
   });
@@ -326,34 +340,32 @@ function populateThemes(themes) {
 
 function selectDeck(deckId) {
   selectedDeckId = deckId;
+
+  // toggle card highlight
+  document.querySelectorAll('.deck-card').forEach(el => el.classList.remove('deck-selected'));
+  const picked = document.querySelector(`.deck-card[data-deck-id="${deckId}"]`);
+  if (picked) picked.classList.add('deck-selected');
+
   const selectedDeck = allDecks.find(d => d.id === deckId);
   if (!selectedDeck) return;
 
-  // Preferred: use Cloudinary URL saved in DB
   const cloudQr = (selectedDeck.qr_code || '').trim();
-
   if (cloudQr && cloudQr.startsWith('http')) {
-    // Cloudinary (or any remote) QR url
     qrImg.src = `${cloudQr}${cloudQr.includes('?') ? '&' : '?'}t=${Date.now()}`;
     qrImg.style.display = 'block';
-    console.log("Selected deck:", deckId, "QR displayed (cloud):", qrImg.src);
     return;
   }
 
-  // Fallback to legacy local file pattern ONLY if no qr_code url
   const deckName = (selectedDeck.deck_name || '').trim();
   if (!deckName) {
     qrImg.style.display = 'none';
-    console.warn("No deck_name or qr_code; nothing to show.");
     return;
   }
 
   const qrImageName = `${VAULT_ID}_${deckName}_qr.png`;
   const localUrl = `https://themeqr-backend.onrender.com/static/${encodeURIComponent(qrImageName)}?t=${Date.now()}`;
-
   qrImg.src = localUrl;
   qrImg.style.display = 'block';
-  console.log("Selected deck:", deckId, "QR displayed (local):", qrImg.src);
 }
 
 async function applyTheme(themeId) {

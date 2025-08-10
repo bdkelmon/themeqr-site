@@ -203,6 +203,23 @@ pre {
     gap: 1rem;
 }
 
+.deck-qr-thumb {
+  width: 90px;
+  height: auto;
+  margin-top: 6px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+
+.deck-card {
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.deck-selected {
+  border-color: #00b894 !important;
+  box-shadow: 0 0 0 2px #00b894, 0 0 12px rgba(0, 184, 148, 0.55);
+}
+
 .deck-item, .theme-item {
     padding: 1rem;
     border: 1px solid #ccc;
@@ -287,8 +304,10 @@ pre {
 }
 
 header {
-  position: relative;
-  padding: 1rem 0;
+  padding: 2rem;
+  background: #0a2540;
+  color: #fff;
+  text-align: center;
 }
 
 
@@ -301,7 +320,7 @@ header {
   left: 0;
   right: 0;
   padding: 0.5rem 1rem;
-  background-color: #333; /* Dark background for contrast */
+  background-color: #0a2540; /* <- changed from #333 */
 }
 
 .header-nav {
@@ -311,8 +330,8 @@ header {
 }
 
 .header-nav a {
-    color: #fff; /* White links */
-    text-decoration: none;
+  color: #fff;
+  text-decoration: none;
 }
 
 .header-nav a:hover {
