@@ -264,55 +264,68 @@ function selectDeck(deckId) {
   console.log("Selected deck:", deckId, "QR displayed (local):", qrImg.src);
 }
 
-  async function applyTheme(themeId) {
-      if (!selectedDeckId) {
-          showError("Please select a deck first.");
-          return;
-      }
-      showLoading(true);
-      try {
-          const theme = allThemes.find(t => t.id === themeId);
-          if (!theme) throw new Error("Theme not found.");
-
-          const response = await fetch('/apply_theme', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              const selectedDeck = allDecks.find(d => d.id === selectedDeckId);
-          const qrUrlForServer =
-            (selectedDeck?.qr_code && selectedDeck.qr_code.startsWith('http'))
-              ? selectedDeck.qr_code
-              : (qrImg.src || '').split('?')[0];   // strip ?t= cache buster
-          
-          body: JSON.stringify({ deck_id: selectedDeckId, theme_id: themeId, qr_url: qrUrlForServer })
-
-          });
-          if (!response.ok) {
-              const errorData = await response.json();
-              throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
-          }
-          const result = await response.json();
-          if (result.success) {
-
-              const updatedDeck = allDecks.find(d => d.id === selectedDeckId);
-              if (updatedDeck) {
-              updatedDeck.wrapper = result.new_wrapper_url;
-              updatedDeck.landing_url = theme.landing_url;
-            }
-            errorMessageSpan.textContent = "Theme applied successfully!";
-            errorDisplay.style.color = 'green';
-            errorDisplay.style.display = '';
-        
-            selectDeck(selectedDeckId);
-        
-        } else {
-              showError(result.error || "Failed to apply theme.");
-          }
-      } catch (error) {
-          showError(`Error applying theme: ${error.message}`);
-      } finally {
-          showLoading(false);
-      }
+async function applyTheme(themeId) {
+  if (!selectedDeckId) {
+    showError("Please select a deck first.");
+    return;
   }
+  showLoading(true);
+  try {
+    const theme = allThemes.find(t => t.id === themeId);
+    if (!theme) throw new Error("Theme not found.");
+
+    // ✅ Declare variables BEFORE fetch options
+    const selectedDeck = allDecks.find(d => d.id === selectedDeckId);
+    const qrUrlForServer =
+      (selectedDeck?.qr_code && selectedDeck.qr_code.startsWith('http'))
+        ? selectedDeck.qr_code
+        : (qrImg.src || '').split('?')[0]; // strip cache-buster
+
+    const payload = {
+      deck_id: selectedDeckId,
+      theme_id: themeId,
+      qr_url: qrUrlForServer
+    };
+
+    const response = await fetch('/apply_theme', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      // Try to surface the server message
+      let msg = `HTTP error! Status: ${response.status}`;
+      try {
+        const err = await response.json();
+        if (err?.error) msg = err.error;
+      } catch {}
+      throw new Error(msg);
+    }
+
+    const result = await response.json();
+
+    if (result.success) {
+      // reflect new wrapper + landing in local cache
+      const updatedDeck = allDecks.find(d => d.id === selectedDeckId);
+      if (updatedDeck) {
+        updatedDeck.wrapper = result.new_wrapper_url;
+        updatedDeck.landing_url = theme.landing_url;
+      }
+      errorMessageSpan.textContent = "Theme applied successfully!";
+      errorDisplay.style.color = 'green';
+      errorDisplay.style.display = '';
+      selectDeck(selectedDeckId);
+    } else {
+      showError(result.error || "Failed to apply theme.");
+    }
+  } catch (error) {
+    showError(`Error applying theme: ${error.message}`);
+  } finally {
+    showLoading(false);
+  }
+}
+
 
   function setCreateStatus(msg, kind = 'info') {
   if (!createDeckStatus) return;
