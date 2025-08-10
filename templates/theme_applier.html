@@ -34,13 +34,13 @@
 <div class="container">
 
     <!-- NEW: Create Deck Panel -->
+<h2>Create Deck</h2>
 <div class="create-deck card">
-    <h2>Create New Deck</h2>
-    <label for="newDeckName" class="label">Deck name</label>
-    <input id="newDeckName" class="input" type="text" placeholder="e.g., Summer Promo" />
-    <button id="createDeckBtn" class="apply-btn" style="margin-top:8px;">Create</button>
-    <div id="createDeckStatus" class="status" style="margin-top:6px; display:none;"></div>
-    <hr style="margin:14px 0; opacity:.2;">
+  <label for="newDeckName" class="label">Deck Name</label>
+  <input id="newDeckName" class="input" type="text" placeholder="Deck Name" />
+  <button id="createDeckBtn" class="apply-btn" style="margin-top:8px;">Create</button>
+  <div id="createDeckStatus" class="status" style="margin-top:6px; display:none;"></div>
+  <hr style="margin:14px 0; opacity:.2;">
 </div>
     
   <div class="left-panel">
@@ -138,15 +138,96 @@ function populateDecks(decks) {
     deckContainer.innerHTML = '<p style="color:#666;">No decks found.</p>';
     return;
   }
+
   decks.forEach(deck => {
     const deckDiv = document.createElement('div');
-    deckDiv.classList.add('deck-item', 'apply-btn');
-    const hasQr = deck.qr_code && deck.qr_code.startsWith('http');
-    deckDiv.innerHTML = `${deck.deck_name || deck.id.slice(0,8)} ${hasQr ? '<span style="font-size:11px;color:green;">• QR</span>' : ''}`;
+    deckDiv.classList.add('theme-item'); // reuse theme card styling for symmetry
+    deckDiv.style.cursor = 'pointer';
     deckDiv.dataset.deckId = deck.id;
-    deckDiv.addEventListener('click', () => selectDeck(deck.id));
+
+    const hasVideo = deck.wrapper && deck.wrapper.startsWith('http');
+    const hasLanding = deck.landing_url && deck.landing_url.startsWith('http');
+
+    // Build video area (like themes)
+    const videoSectionHTML = hasVideo
+      ? `
+        <div class="video-wrapper">
+          <div class="video-section">
+            <video id="deck-video-${deck.id}" class="theme-video" width="200" height="150"
+                   style="display:none;" muted playsinline controls preload="metadata">
+            </video>
+            <div id="deck-novideo-${deck.id}" class="no-video" style="display:none; color:red;">No Video</div>
+          </div>
+          <div class="button-section">
+            ${hasLanding
+              ? `<a class="apply-btn" href="${deck.landing_url}" target="_blank" rel="noopener">Landing page</a>`
+              : `<span class="no-video" style="color:#666;">No landing page</span>`}
+          </div>
+        </div>`
+      : `
+        <div class="video-wrapper">
+          <div class="video-section">
+            <div id="deck-novideo-${deck.id}" class="no-video" style="display:block; color:red;">No Video</div>
+          </div>
+          <div class="button-section">
+            ${hasLanding
+              ? `<a class="apply-btn" href="${deck.landing_url}" target="_blank" rel="noopener">Landing page</a>`
+              : `<span class="no-video" style="color:#666;">No landing page</span>`}
+          </div>
+        </div>`;
+
+    deckDiv.innerHTML = `
+      <div class="theme-header">
+        <span class="theme-name">${deck.deck_name || deck.id.slice(0,8)}</span>
+      </div>
+      ${videoSectionHTML}
+    `;
+
+    // Click selects the deck (for QR overlay/apply)
+    deckDiv.addEventListener('click', (e) => {
+      // Don’t hijack clicks on the Landing page link
+      if (e.target && e.target.tagName === 'A') return;
+      selectDeck(deck.id);
+    });
+
     deckContainer.appendChild(deckDiv);
+
+    // Wire up video only if we have one
+    if (hasVideo) {
+      const videoEl = document.getElementById(`deck-video-${deck.id}`);
+      const noVideoEl = document.getElementById(`deck-novideo-${deck.id}`);
+
+      videoEl.addEventListener('error', () => {
+        videoEl.style.display = 'none';
+        if (noVideoEl) noVideoEl.style.display = 'block';
+      }, { once: true });
+
+      videoEl.addEventListener('canplay', () => {
+        videoEl.style.display = 'block';
+        if (noVideoEl) noVideoEl.style.display = 'none';
+        videoEl.play().catch(() => {});
+      }, { once: true });
+
+      // Set src after listeners are attached
+      videoEl.src = deck.wrapper;
+    }
   });
+}
+
+async function refreshDecks() {
+  if (!VAULT_ID || VAULT_ID === "None") return;
+  const { data, error } = await supabase
+    .from('decks')
+    .select('*')
+    .eq('vault_id', VAULT_ID)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    showError(`Failed to refresh decks: ${error.message}`);
+    return;
+  }
+  allDecks = data || [];
+  populateDecks(allDecks);
 }
 
 function populateThemes(themes) {
@@ -312,10 +393,11 @@ async function applyTheme(themeId) {
         updatedDeck.wrapper = result.new_wrapper_url;
         updatedDeck.landing_url = theme.landing_url;
       }
+      await refreshDecks();
+      selectDeck(selectedDeckId);
       errorMessageSpan.textContent = "Theme applied successfully!";
       errorDisplay.style.color = 'green';
       errorDisplay.style.display = '';
-      selectDeck(selectedDeckId);
     } else {
       showError(result.error || "Failed to apply theme.");
     }
