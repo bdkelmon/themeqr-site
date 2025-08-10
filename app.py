@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 import json
 import tempfile
 from traceback import format_exc
+import subprocess, shlex
 from PIL import Image as _PILImage
 # ---- Pillow 10+ compatibility shim (MoviePy still expects ANTIALIAS/BICUBIC/BILINEAR)
 if hasattr(_PILImage, "Resampling"):
@@ -333,6 +334,33 @@ def cloudinary_direct_video_url(cld_url: str) -> str:
         raise ValueError("Theme wrapper_url is a Cloudinary *player* URL. Store a direct video URL (res.cloudinary.com/.../video/upload/...mp4).")
     return cld_url
 
+def compose_ffmpeg(wrapper_fp: str, qr_fp: str, out_fp: str, max_duration: int = 10) -> None:
+    """
+    Overlay QR (bottom-right) on wrapper using ffmpeg, scaling QR to ~1/6 of video height.
+    Keeps memory usage low vs MoviePy frame rendering.
+    """
+    # Scale QR relative to base using scale2ref, then overlay with 20px margin
+    # -an disables audio to reduce encode time/size. Remove -an if you need audio.
+    cmd = f"""
+    ffmpeg -y
+      -i {shlex.quote(wrapper_fp)}
+      -i {shlex.quote(qr_fp)}
+      -t {max_duration}
+      -filter_complex "[1][0]scale2ref=h=ih/6:w=-1[qr][base];[base][qr]overlay=W-w-20:H-h-20"
+      -c:v libx264
+      -preset veryfast
+      -crf 28
+      -pix_fmt yuv420p
+      -movflags +faststart
+      -an
+      {shlex.quote(out_fp)}
+    """
+    proc = subprocess.run(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if proc.returncode != 0:
+        raise RuntimeError(f"ffmpeg failed ({proc.returncode}): {proc.stderr.decode('utf-8', 'ignore')}")
+    if not os.path.exists(out_fp) or os.path.getsize(out_fp) == 0:
+        raise RuntimeError("ffmpeg produced an empty output file")
+
 @app.route('/apply_theme', methods=['POST'])
 def apply_theme():
     data = request.get_json()
@@ -386,12 +414,10 @@ def apply_theme():
         if not os.path.exists(tmp_qr) or os.path.getsize(tmp_qr) == 0:
             raise RuntimeError("QR file not found/empty")
 
-        # 4) Compose
+        # 4) Compose via ffmpeg (faster & lower memory than MoviePy)
         out_path = os.path.join(tempfile.gettempdir(), f'{uuid.uuid4()}_wrapper_out.mp4')
-        app.logger.info("[apply_theme] Composing video…")
-        compose(tmp_wrapper, tmp_qr, out_path)
-        if not os.path.exists(out_path) or os.path.getsize(out_path) == 0:
-            raise RuntimeError("Compose output is empty")
+        app.logger.info("[apply_theme] Composing with ffmpeg…")
+        compose_ffmpeg(tmp_wrapper, tmp_qr, out_path, max_duration=10)
 
         # 5) Upload to Cloudinary
         app.logger.info("[apply_theme] Uploading to Cloudinary…")
