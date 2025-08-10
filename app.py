@@ -14,6 +14,13 @@ from dotenv import load_dotenv
 import json
 import tempfile
 from traceback import format_exc
+from PIL import Image as _PILImage
+# ---- Pillow 10+ compatibility shim (MoviePy still expects ANTIALIAS/BICUBIC/BILINEAR)
+if hasattr(_PILImage, "Resampling"):
+    # Only patch if missing (Pillow >=10 removed these attributes)
+    _PILImage.ANTIALIAS = getattr(_PILImage, "ANTIALIAS", _PILImage.Resampling.LANCZOS)
+    _PILImage.BICUBIC   = getattr(_PILImage, "BICUBIC",   _PILImage.Resampling.BICUBIC)
+    _PILImage.BILINEAR  = getattr(_PILImage, "BILINEAR",  _PILImage.Resampling.BILINEAR)
 
 
 # Load environment variables
