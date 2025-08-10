@@ -430,6 +430,39 @@ def apply_theme():
                 os.remove(out_path)
         except: pass
 
+def compose(wrapper_fp, qr_fp, out_fp, max_duration=10):
+    """
+    Overlay the QR image onto the bottom-right of the base video
+    and write the result to out_fp.
+    """
+    try:
+        base_clip = VideoFileClip(wrapper_fp)
+
+        if base_clip.duration and base_clip.duration > max_duration:
+            base_clip = base_clip.subclip(0, max_duration)
+
+        bw, bh = base_clip.size
+        target_h = int(min(bw, bh) / 12)
+
+        qr_clip = (
+            ImageClip(qr_fp)
+            .set_duration(base_clip.duration)
+            .resize(height=target_h)
+            .set_pos(("right", "bottom"))
+        )
+
+        final = CompositeVideoClip([base_clip, qr_clip])
+        final.write_videofile(
+            out_fp,
+            codec="libx264",
+            audio_codec="aac",
+            threads=1,
+            preset="ultrafast",
+            bitrate="2000k"
+        )
+    except Exception as e:
+        raise RuntimeError(f"Compose failed: {e}")
+
 @app.route('/apply_theme_to_deck', methods=['POST'])
 def apply_theme_to_deck():
     data = request.get_json()
