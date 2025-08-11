@@ -331,6 +331,7 @@ header {
     display: flex;
     align-items: center;
     color: #c7ff4d;
+    text-decoration: none; /* keep it clean */   
 }
 
 .header-nav a {
