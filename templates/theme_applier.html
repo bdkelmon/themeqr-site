@@ -64,6 +64,8 @@
   console.log("Vault ID:", VAULT_ID);
 
   let supabase = null;
+
+  
   try {
       if (SUPABASE_URL && SUPABASE_URL.startsWith('http') && SUPABASE_KEY) {
           supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -376,7 +378,9 @@ function selectDeck(deckId) {
 }
 
 async function applyTheme(themeId) {
-  if (!selectedDeckId) {
+  console.log('Apply clicked for theme:', themeId, 'selectedDeckId:', selectedDeckId);
+  
+    if (!selectedDeckId) {
     showError("Please select a deck first.");
     return;
   }
@@ -557,6 +561,16 @@ async function createDeck() {
        createDeckBtn.addEventListener('click', createDeck);
      } 
   });
+
+  themeContainer.addEventListener('click', (e) => {
+  const btn = e.target.closest('button.apply-btn');
+  if (!btn) return;
+  const themeId = btn.getAttribute('data-theme-id');
+  if (!themeId) return;
+  e.preventDefault();
+  e.stopPropagation();
+  applyTheme(themeId);
+});
 </script>
 </body>
 </html>
