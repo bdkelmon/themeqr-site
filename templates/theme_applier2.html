@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>ThemeQR – Theme & Deck Manager</title>
+  <link rel="stylesheet" href="/static/css/theme_applier.css">
+  <link rel="icon" href="https://themeqr.com/images/TQR_Dude_Sm.png">
+</head>
+<body>
+
+<!-- Top Header Bar -->
+<header class="site-header">
+  <div class="container header-inner">
+    <div class="brand">
+      <img src="https://themeqr.com/images/TQR_Dude_Sm.png" alt="ThemeQR" class="brand-mark" />
+      <div class="brand-text">
+        <h1>ThemeQR</h1>
+        <span class="subtitle">Theme &amp; Deck Manager</span>
+      </div>
+    </div>
+
+    <nav class="main-nav">
+      <a href="/manager">Manager</a>
+      <a href="/themes">Themes</a>
+      <a href="/decks">Decks</a>
+    </nav>
+
+    <div class="user-actions">
+      <a href="/logout" class="logout-link">Log Out</a>
+    </div>
+  </div>
+</header>
+
+<!-- Global messages -->
+<div id="loadingIndicator" class="banner banner-info" style="display:none;">Loading data…</div>
+<div id="errorDisplay" class="banner banner-error" style="display:none;">
+  Error: <span id="errorMessage"></span>
+</div>
+
+<main class="container page-content">
+  <!-- Create Deck (centered) -->
+  <section class="panel create-deck card">
+    <h2>Create Deck</h2>
+    <div class="create-row">
+      <input id="newDeckName" class="input" type="text" placeholder="Deck Name" />
+      <button id="createDeckBtn" class="btn btn-primary">Create</button>
+    </div>
+    <div id="createDeckStatus" class="status" style="display:none;"></div>
+  </section>
+
+  <!-- Content grid: Decks (left) / Themes (right) -->
+  <section class="columns">
+    <div class="col">
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Your Decks</h3>
+        </div>
+        <div id="deckContainer" class="card-grid"></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Available Themes</h3>
+        </div>
+        <div id="themeContainer" class="card-grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- QR preview (kept for JS compatibility) -->
+  <section class="panel qr-panel">
+    <h3>QR Code Preview</h3>
+    <div class="qr-preview">
+      <img id="qrImg" class="qr" src="" alt="QR Code" style="display:none;">
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    &copy; 2025 ThemeQR. All rights reserved.
+  </div>
+</footer>
+
+<!-- Your existing JS stays the same and will hook into the preserved IDs/classes -->
+<script type="module">
+  /* Keep your current <script type="module"> block here exactly as-is.
+     The markup above preserves:
+     - #deckContainer, #themeContainer
+     - #newDeckName, #createDeckBtn, #createDeckStatus
+     - #qrImg, #loadingIndicator, #errorDisplay, #errorMessage
+     - Buttons with .apply-btn in themes (created by your populate code)
+     - Deck cards get .deck-card (your JS adds/removes .deck-selected)
+  */
+</script>
+</body>
+</html>
