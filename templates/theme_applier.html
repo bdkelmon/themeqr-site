@@ -160,7 +160,7 @@ function populateDecks(decks) {
         <div class="video-wrapper">
           <div class="video-section">
             <video id="deck-video-${deck.id}" class="theme-video" width="200" height="150"
-                   style="display:none;" muted playsinline controls preload="metadata"></video>
+                   style="display:none;" muted playsinline webkit-playsinline controls preload="metadata"></video>
             <div id="deck-novideo-${deck.id}" class="no-video" style="display:none; color:red;">No Video</div>
           </div>
           <div class="button-section">
@@ -225,6 +225,13 @@ function populateDecks(decks) {
         if (noVideoEl) noVideoEl.style.display = 'none';
         videoEl.play().catch(() => {});
       }, { once: true });
+    
+      videoEl.muted = true;
+      videoEl.setAttribute('muted', '');
+      videoEl.setAttribute('playsinline', '');
+      videoEl.setAttribute('webkit-playsinline', '');
+      videoEl.autoplay = true;
+      videoEl.setAttribute('autoplay', '');
 
       videoEl.src = deck.wrapper;
     }
@@ -282,6 +289,7 @@ function populateThemes(themes) {
                    style="display:none;"
                    muted
                    playsinline
+                   webkit-playsinline
                    controls
                    preload="metadata">
             </video>
@@ -323,6 +331,13 @@ function populateThemes(themes) {
         // video.loop = true;
         video.play().catch(() => {/* autoplay may be blocked if not muted */});
       }, { once: true });
+     
+      video.muted = true;
+      video.setAttribute('muted', '');
+      video.setAttribute('playsinline', '');
+      video.setAttribute('webkit-playsinline', '');
+      video.autoplay = true;
+      video.setAttribute('autoplay', ''); 
 
       // Set src AFTER attributes are in place
       video.src = theme.wrapper_url;
