@@ -97,7 +97,7 @@ def manager():
         return redirect(url_for('index'))
     
     print(f"Assigned vault_id: {vault_id}")
-    return render_template('theme_applier.html',
+    return render_template('theme_applier2.html',
                           supabase_url=os.getenv('SUPABASE_URL'),
                           supabase_key=os.getenv('SUPABASE_KEY'),
                           user=user,
