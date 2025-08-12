@@ -53,20 +53,23 @@ h2 {
 }
 
 .container {
-  display: block;           /* stack left & right panels */
+  display: block !important;           /* stack left & right panels */
   max-width: 1200px;
   margin: 0 auto;
   padding: 1rem;
 }
 
-/*.container {
+/* commented out for scrolling changes
+
+.container {
   display: flex;
   justify-content: space-between;
   max-width: 1200px;
   margin: 0 auto;
   padding: 1rem;
   position: relative;
-}*/
+}
+*/
 
 .theme-item span {
     flex-grow: 1;
@@ -189,17 +192,10 @@ pre {
     color: #dc3545;
 }
 
-.container {
-    display: flex;
-    justify-content: space-between;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1rem;
-    position: relative;
-}
 
 .left-panel,
 .right-panel {
+  width: 100%; /* full width on small screens */
   margin: 0 0 2rem 0;       /* space between sections */
 }
 
