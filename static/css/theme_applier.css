@@ -53,13 +53,20 @@ h2 {
 }
 
 .container {
+  display: block;           /* stack left & right panels */
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/*.container {
   display: flex;
   justify-content: space-between;
   max-width: 1200px;
   margin: 0 auto;
   padding: 1rem;
   position: relative;
-}
+}*/
 
 .theme-item span {
     flex-grow: 1;
@@ -191,10 +198,47 @@ pre {
     position: relative;
 }
 
-.left-panel, .right-panel {
+.left-panel,
+.right-panel {
+  margin: 0 0 2rem 0;       /* space between sections */
+}
+
+/*.left-panel, .right-panel {
     flex: 1;
     margin: 0 2rem;
+}*/
+
+/* Added for horizontal scrollign */
+#deckContainer {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;              /* breathing room under cards */
+  scroll-snap-type: x proximity;    /* nicer scrolling */
+  -webkit-overflow-scrolling: touch;
 }
+
+#deckContainer .theme-item,
+#deckContainer .deck-card {
+  min-width: 240px;                 /* fixed-ish card width */
+  flex: 0 0 auto;                   /* prevent shrinking */
+  scroll-snap-align: start;
+}
+
+/* Optional: thinner scrollbar on desktop */
+#deckContainer::-webkit-scrollbar { height: 8px; }
+#deckContainer::-webkit-scrollbar-thumb { background: #ccc; border-radius: 8px; }
+#deckContainer:hover::-webkit-scrollbar-thumb { background: #aaa; }
+
+/* --- Themes: grid underneath --- */
+#themeContainer {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+/*End of the scrolling changes*/
+
 
 .main-panel {
     text-align: center;
@@ -326,6 +370,18 @@ header {
     display: flex;
     gap: 1rem; /* Space between nav links */
 }
+
+/*New header right section for color*/
+.header-right .logout-btn,
+.header-right .logout-btn:visited {
+  color: #c7ff4d !important;
+  text-decoration: none;
+  font-weight: 600;
+}
+.header-right .logout-btn:hover {
+  text-decoration: underline;
+}
+/*end of new header right section*/
 
 .header-right {
     display: flex;
