@@ -482,16 +482,53 @@ return{toCanvas:(txt,ecc)=>e.make(txt,ecc)}}
     $('#simSubtitle').textContent = s.subtitle || 'One line description';
     const cta = $('#simCta'); cta.textContent = s.cta.text || 'Shop Now'; cta.href = s.cta.url || '#';
     // media
-    const mwrap = $('#simMedia'); mwrap.innerHTML='';
-    if(s.media.kind==='image' && s.media.data){
-      const img=document.createElement('img'); img.src = s.media.data; img.alt = s.media.alt || '';
-      mwrap.appendChild(img);
-    } else if(s.media.kind==='video' && s.media.data){
-      const vid=document.createElement('video'); vid.src = s.media.data; vid.muted=true; vid.autoplay=true; vid.loop=true; vid.playsInline=true;
-      mwrap.appendChild(vid);
-    } else {
-      mwrap.innerHTML='<div class="placard">Upload media to preview…</div>';
+// media
+  const mwrap = $('#simMedia');
+  mwrap.innerHTML = '';
+  const errBox = (msg) => { mwrap.innerHTML = `<div class="placard" style="color:#ffb4b4">${msg}</div>`; };
+
+  if (s.media.kind === 'image' && s.media.data) {
+    const img = document.createElement('img');
+    img.src = s.media.data;
+    img.alt = s.media.alt || '';
+    img.onerror = () => errBox('Image failed to load.');
+    mwrap.appendChild(img);
+  } else if (s.media.kind === 'video' && s.media.data) {
+    const vid = document.createElement('video');
+    vid.src = s.media.data;
+    vid.muted = true;
+    vid.loop = true;
+    vid.playsInline = true;
+    vid.preload = 'metadata';
+    vid.controls = false;
+
+    // Basic support check
+    const canMp4 = !!vid.canPlayType && vid.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"');
+    const canWebm = !!vid.canPlayType && vid.canPlayType('video/webm; codecs="vp9, opus"');
+    // Not a blocker, but we can hint if neither is advertised as supported.
+    if (!canMp4 && !canWebm) {
+      console.warn('Browser did not advertise MP4/WebM support via canPlayType — continuing anyway.');
     }
+
+    // Autoplay attempt with graceful fallback
+    const tryPlay = () => vid.play().catch(() => {
+      // Show a tap-to-play button if autoplay fails
+      const btn = document.createElement('button');
+      btn.className = 'btn';
+      btn.style.position = 'absolute';
+      btn.style.zIndex = '3';
+      btn.textContent = 'Tap to play';
+      btn.onclick = () => { vid.play().catch(()=>{}); btn.remove(); };
+      mwrap.style.position = 'relative';
+      mwrap.appendChild(btn);
+    });
+
+    vid.addEventListener('loadedmetadata', tryPlay, { once: true });
+    vid.onerror = () => errBox('Video failed to load (codec/format not supported). Try MP4 (H.264/AAC) or WebM.');
+    mwrap.appendChild(vid);
+  } else {
+    mwrap.innerHTML = '<div class="placard">Upload media to preview…</div>';
+  }
   }
 
   function captureFileAsDataURL(file){
@@ -608,20 +645,61 @@ return{toCanvas:(txt,ecc)=>e.make(txt,ecc)}}
 
   function loadOverlayFile(file){
     const wrap = $('#canvasBg'); wrap.innerHTML='';
-    if(!file){ overlayMediaEl = null; qrDrag.hidden=true; return; }
-    const isVideo = file.type.startsWith('video/');
+    if(!file){ overlayMediaEl = null; qrDrag.hidden = true; return; }
+  
     overlayStage.querySelector('.placard')?.remove();
+  
+    const isVideo = file.type.startsWith('video/');
     let el;
-    if(isVideo){ el=document.createElement('video'); el.controls=true; el.muted=true; el.autoplay=true; el.loop=true; }
-    else{ el=document.createElement('img'); }
-    el.style.maxWidth='100%'; el.style.maxHeight='100%';
-    el.style.display='block';
+  
+    if (isVideo) {
+      el = document.createElement('video');
+      el.controls = true;
+      el.muted = true;
+      el.autoplay = true;
+      el.loop = true;
+      el.playsInline = true;
+      el.preload = 'metadata';
+  
+      // Capability hint
+      const can = el.canPlayType ? (el.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"') || el.canPlayType('video/webm; codecs="vp9, opus"')) : '';
+      if (!can) {
+        console.warn('This browser may not play the chosen codec. Prefer MP4 (H.264/AAC) or WebM (VP9/Opus).');
+      }
+  
+      el.addEventListener('error', () => {
+        wrap.innerHTML = `<div class="placard" style="color:#ffb4b4">Video load error. Try converting to MP4 (H.264).</div>`;
+      });
+  
+      // If autoplay is blocked, user can press play
+      el.addEventListener('loadedmetadata', () => {
+        el.play().catch(()=>{/* ignore, controls visible */});
+      }, { once: true });
+    } else {
+      el = document.createElement('img');
+      el.addEventListener('error', () => {
+        wrap.innerHTML = `<div class="placard" style="color:#ffb4b4">Image load error.</div>`;
+      });
+    }
+  
+    el.style.maxWidth = '100%';
+    el.style.maxHeight = '100%';
+    el.style.display = 'block';
     wrap.appendChild(el);
+  
+    // Prefer object URL for large files
+    const blobUrl = URL.createObjectURL(file);
+    el.src = blobUrl;
+  
+    // Keep a ref for export snapshot
     overlayMediaEl = el;
-    const url = URL.createObjectURL(file);
-    el.src = url;
-    qrDrag.hidden=false;
+  
+    // Show the QR overlay and render it
+    qrDrag.hidden = false;
     ensureDraggableQR();
+  
+    // Revoke blob when unloaded
+    el.addEventListener('ended', () => URL.revokeObjectURL(blobUrl), { once: true });
   }
 
   $('#overlayFile').addEventListener('change', e=>{
@@ -678,7 +756,14 @@ return{toCanvas:(txt,ecc)=>e.make(txt,ecc)}}
     const rect=overlayStage.getBoundingClientRect();
     canvas.width = rect.width; canvas.height = rect.height;
     const ctx=canvas.getContext('2d');
-
+    // video readiness check
+    if (overlayMediaEl && overlayMediaEl.tagName === 'VIDEO') {
+      const v = overlayMediaEl;
+      if (!v.videoWidth || !v.videoHeight || v.readyState < 2) { // HAVE_CURRENT_DATA
+        alert('Video is not ready yet. Hit play or wait until metadata loads.');
+        return;
+      }
+    }
     // draw background
     if(overlayMediaEl){
       const w=overlayMediaEl.videoWidth||overlayMediaEl.naturalWidth;
