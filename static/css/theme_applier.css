@@ -307,12 +307,13 @@ pre {
     display: inline-block;
 }
 
-.video-wrapper {
+/* Removed for the new Responsive video wrapper */
+/*.video-wrapper {
     position: relative;
-    margin-top: 1rem; /* Space between name and video */
-    width: 200px; /* Match video/iframe width */
-    text-align: center; /* Center the video/iframe */
-}
+    margin-top: 1rem;  
+    width: 200px;  
+    text-align: center; 
+} */
 
 .video-section {
   flex: 1;
@@ -487,6 +488,12 @@ header {
   background: #000;         /* letterbox color */
   border: 1px solid #ccc;
   border-radius: 4px;
+}
+
+/* Optional “force” rule in case something above overrides */
+.theme-video {
+  height: 100% !important;
+  width: 100% !important;
 }
 
 /* Fallback for older browsers without aspect-ratio support */
