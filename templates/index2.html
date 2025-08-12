@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ThemeQR — Dynamic QR + Themes + Overlays</title>
+<link rel="icon" href="data:," />
+<style>
+  :root{
+    --bg:#0f1220; --panel:#171a2b; --muted:#8c93b2; --text:#e8ebff; --accent:#6c7dff; --accent-2:#2de6c5; --danger:#ff6b6b;
+    --radius:14px; --radius-sm:10px; --shadow:0 10px 30px rgba(0,0,0,.35);
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji", "Segoe UI Symbol";
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:radial-gradient(1200px 600px at 70% -10%, #4fc724 0%, #0f1220 55%) fixed;color:var(--text);font-family:var(--sans);}
+
+  header{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 22px;border-bottom:1px solid #232741;background:linear-gradient(180deg,#15182a, #12162a);
+    position:sticky;top:0;z-index:5;
+  }
+  .logo{display:flex;gap:12px;align-items:center;font-weight:700}
+  .logo .dot{width:12px;height:12px;border-radius:50%;background:conic-gradient(from 200deg, var(--accent), var(--accent-2))}
+  nav{display:flex;gap:10px;flex-wrap:wrap}
+  nav button{
+    background:#1b1f35;border:1px solid #262a45;color:var(--text);padding:10px 14px;border-radius:10px;cursor:pointer;
+  }
+  nav button.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(108,125,255,.25) inset}
+  main{display:grid;grid-template-columns:340px 1fr;gap:18px;padding:18px;max-width:1400px;margin:0 auto;}
+  aside{background:var(--panel);border:1px solid #232741;border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);height:calc(100vh - 110px);position:sticky;top:90px;overflow:auto}
+  section{background:rgba(18,22,43,.65);backdrop-filter:saturate(110%) blur(6px);border:1px solid #232741;border-radius:var(--radius);box-shadow:var(--shadow);min-height:480px}
+  .pad{padding:16px}
+
+  h2{margin:8px 0 14px 0;font-size:18px}
+  label{display:block;font-size:12px;color:var(--muted);margin:14px 0 6px}
+  input[type=text], input[type=url], input[type=number], select, textarea{
+    width:100%;padding:10px 12px;border:1px solid #2a2e4d;background:#13182e;color:var(--text);border-radius:10px;font-size:14px
+  }
+  textarea{min-height:70px;resize:vertical}
+  .row{display:flex;gap:10px}
+  .row>div{flex:1}
+  .btn{
+    appearance:none;border:1px solid #2b2f4e;background:#171b34;color:#e8ebff;border-radius:10px;padding:10px 12px;cursor:pointer
+  }
+  .btn.primary{background:linear-gradient(180deg,#3b47ff,#6c7dff);border-color:#5563ff}
+  .btn.ghost{background:#13182e;}
+  .btn.warn{border-color:var(--danger);color:#ffd6d6}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .stack{display:flex;gap:10px;flex-wrap:wrap}
+  .muted{color:var(--muted)}
+  .code{font-family:var(--mono);background:#0b0f23;border:1px solid #262a45;border-radius:8px;padding:6px 8px;display:inline-block}
+  .pill{padding:6px 8px;border:1px solid #262a45;border-radius:999px;background:#121632}
+  .list{display:flex;flex-direction:column;gap:10px}
+  .item{border:1px dashed #2a2e4d;border-radius:12px;padding:10px;display:flex;justify-content:space-between;align-items:center}
+  .small{font-size:12px}
+
+  /* Canvas / overlay workspace */
+  #overlayStage{
+    position:relative;background:#0b0f23;border-radius:var(--radius);border:1px solid #232741;overflow:hidden;min-height:420px;display:grid;place-items:center
+  }
+  #overlayStage .placard{color:#92a1ff}
+  .stage-wrap{padding:16px}
+  .stage-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+  .qr-wrap{display:grid;grid-template-columns:300px 1fr;gap:12px}
+  .qr-box{display:grid;place-items:center;background:#0b0f23;border:1px solid #232741;border-radius:12px;padding:12px}
+  canvas, video, img{max-width:100%;height:auto}
+  .floating-qr{
+    position:absolute; left:20px; top:20px; width:180px; height:180px; cursor:move;
+    display:grid; place-items:center; background:transparent; user-select:none;
+  }
+  .floating-qr.resizing{outline:2px dashed #6c7dff}
+  .resize-handle{
+    position:absolute; right:-8px; bottom:-8px; width:16px; height:16px; background:#6c7dff; border-radius:4px; cursor:nwse-resize; box-shadow:0 2px 6px rgba(0,0,0,.4)
+  }
+
+  /* Theme preview card */
+  .theme-card{
+    border:1px solid #2a2e4d;border-radius:12px;overflow:hidden;background:#0d1130
+  }
+  .theme-card header{padding:10px 12px;border-bottom:1px solid #1f2342;background:#11163a}
+  .theme-card .body{padding:12px}
+
+  /* Landing preview (iframe stand-in) */
+  .landing-preview{
+    background:#0e1127; border:1px solid #232741;border-radius:12px; overflow:hidden;
+  }
+  .landing-sim{
+    display:grid; grid-template-rows: 260px auto; min-height:360px;
+    background: linear-gradient(140deg,var(--lp-bg1,#101635), var(--lp-bg2,#0b0f23));
+    color: var(--lp-fg,#f3f6ff);
+    font-family: var(--lp-font, var(--sans));
+  }
+  .landing-sim .media{
+    display:grid; place-items:center; overflow:hidden; background:#070a18
+  }
+  .landing-sim .media img, .landing-sim .media video{ width:100%; height:100%; object-fit:cover }
+  .landing-sim .content{padding:16px}
+  .landing-sim .cta{display:inline-block;margin-top:8px;padding:10px 14px;border-radius:10px;
+    color:var(--lp-cta-fg,#09122a);background:var(--lp-cta-bg,#6c7dff);text-decoration:none;font-weight:600}
+
+  .footer-note{padding:14px;text-align:center;color:#95a0d8}
+</style>
+</head>
+<body>
+  <header>
+    <div class="logo"><span class="dot"></span><span>ThemeQR</span><span class="muted small">🔨🤖🔧</span></div>
+    <nav id="tabs">
+      <button data-tab="qr" class="active">Dynamic QR</button>
+      <button data-tab="themes">Theme Studio</button>
+      <button data-tab="overlay">QR Overlay</button>
+      <button data-tab="io">Export / Import</button>
+      <a class="btn ghost" href="./landing.html" target="_blank" title="Open Landing Page">Open landing.html ↗</a>
+    </nav>
+  </header>
+
+  <main>
+    <aside id="leftPanel"><!-- Populated by JS --></aside>
+
+    <!-- Right panel content -->
+    <section id="content">
+      <div id="qr" class="pad">
+        <h2>Dynamic QR Codes</h2>
+        <p class="muted">Create a short <span class="pill">Link ID</span> that points to a destination URL. The QR encodes a local resolver so you can <b>change where it goes later</b> without reprinting. 💡</p>
+
+        <div class="qr-wrap" style="margin-top:12px">
+          <div class="qr-box">
+            <div id="qrCanvas"></div>
+          </div>
+          <div>
+            <div class="row">
+              <div>
+                <label>Link ID (letters, digits, “-”)</label>
+                <input id="linkId" type="text" placeholder="e.g. spring-campaign" />
+              </div>
+              <div>
+                <label>Destination URL</label>
+                <input id="linkUrl" type="url" placeholder="https://example.com/landing" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label>Theme to apply on landing (optional)</label>
+                <select id="linkTheme"></select>
+              </div>
+              <div>
+                <label>QR Size (px)</label>
+                <input id="qrSize" type="number" value="512" min="128" max="1024" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label>QR Foreground</label>
+                <input id="qrFg" type="color" value="#000000" />
+              </div>
+              <div>
+                <label>QR Background</label>
+                <input id="qrBg" type="color" value="#ffffff" />
+              </div>
+              <div>
+                <label>Error Correction</label>
+                <select id="qrEcc">
+                  <option value="L">L (7%)</option>
+                  <option value="M" selected>M (15%)</option>
+                  <option value="Q">Q (25%)</option>
+                  <option value="H">H (30%)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="stack" style="margin-top:8px">
+              <button class="btn primary" id="saveLink">Save / Update Link</button>
+              <button class="btn" id="downloadQR">Download PNG</button>
+              <span class="muted small">Encoded URL: <span id="encoded" class="code">—</span></span>
+            </div>
+
+            <div style="margin-top:14px">
+              <label>Saved Dynamic Links</label>
+              <div id="linksList" class="list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="themes" class="pad" hidden>
+        <h2>Theme Studio</h2>
+        <p class="muted">Design a landing experience with image/video, colors, and a button. Save it as a theme and apply it to any QR.</p>
+
+        <div class="row">
+          <div>
+            <label>Theme Name</label>
+            <input id="themeName" type="text" placeholder="e.g. Neon Night" />
+          </div>
+          <div>
+            <label>Display Title</label>
+            <input id="themeTitle" type="text" placeholder="Your catchy headline" />
+          </div>
+          <div>
+            <label>Subtitle</label>
+            <input id="themeSubtitle" type="text" placeholder="One line description" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>CTA Text</label>
+            <input id="themeCtaText" type="text" placeholder="Shop Now" />
+          </div>
+          <div>
+            <label>CTA URL (optional)</label>
+            <input id="themeCtaUrl" type="url" placeholder="https://example.com" />
+          </div>
+          <div>
+            <label>Font Family</label>
+            <select id="themeFont">
+              <option value="Inter,system-ui">Inter (Default)</option>
+              <option value="Georgia,serif">Georgia (Serif)</option>
+              <option value="Tahoma,sans-serif">Tahoma</option>
+              <option value="'Segoe UI',sans-serif">Segoe UI</option>
+              <option value="Verdana,sans-serif">Verdana</option>
+              <option value="'Times New Roman',serif">Times</option>
+              <option value="'Courier New',monospace">Courier</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>BG Color 1</label>
+            <input id="themeBg1" type="color" value="#101635" />
+          </div>
+          <div>
+            <label>BG Color 2</label>
+            <input id="themeBg2" type="color" value="#0b0f23" />
+          </div>
+          <div>
+            <label>Text Color</label>
+            <input id="themeFg" type="color" value="#f3f6ff" />
+          </div>
+          <div>
+            <label>CTA BG</label>
+            <input id="themeCtaBg" type="color" value="#6c7dff" />
+          </div>
+          <div>
+            <label>CTA Text</label>
+            <input id="themeCtaFg" type="color" value="#09122a" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Upload Image or Video</label>
+            <input id="themeMedia" type="file" accept="image/*,video/*" />
+          </div>
+          <div>
+            <label>Media Alt Text (for images)</label>
+            <input id="themeAlt" type="text" placeholder="Describe the image" />
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <button id="clearMedia" class="btn ghost">Remove Media</button>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:8px">
+          <div class="theme-card" style="flex:1">
+            <header><strong>Live Preview</strong></header>
+            <div class="body">
+              <div class="landing-preview">
+                <div id="landingSim" class="landing-sim">
+                  <div class="media" id="simMedia"><div class="placard">Upload media to preview…</div></div>
+                  <div class="content">
+                    <div id="simTitle" style="font-size:22px;font-weight:800">Your catchy headline</div>
+                    <div id="simSubtitle" class="muted" style="margin-top:4px">One line description</div>
+                    <a id="simCta" class="cta" href="#" target="_blank" rel="noopener">Shop Now</a>
+                  </div>
+                </div>
+              </div>
+              <div class="small muted" style="margin-top:8px">This simulates <code>landing.html?themeId=…</code></div>
+            </div>
+          </div>
+
+          <div style="width:360px">
+            <label>Saved Themes</label>
+            <div id="themesList" class="list"></div>
+            <div class="stack" style="margin-top:10px">
+              <button class="btn primary" id="saveTheme">Save / Update Theme</button>
+              <button class="btn warn" id="deleteTheme">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="overlay" class="pad" hidden>
+        <h2>QR Overlay Composer</h2>
+        <p class="muted">Upload an image or video and place the QR over it. Export a PNG snapshot for print or social. ❗Videos export as a single-frame PNG snapshot.</p>
+        <div class="stage-wrap">
+          <div id="overlayStage">
+            <div class="placard">Drop image/video here or use the uploader below</div>
+            <div id="canvasBg"></div>
+            <div id="qrDraggable" class="floating-qr" hidden>
+              <div id="qrDraggableInner"></div>
+              <div class="resize-handle" title="Drag to resize"></div>
+            </div>
+          </div>
+
+          <div class="stage-controls" style="margin-top:12px">
+            <input id="overlayFile" type="file" accept="image/*,video/*" />
+            <button class="btn" id="overlayClear">Clear</button>
+            <span class="pill small">QR size: <span id="overlayQrPx">180</span>px</span>
+            <label class="pill small">Opacity
+              <input id="overlayOpacity" type="range" min="0.2" max="1" step="0.05" value="1" style="vertical-align:middle;margin-left:8px">
+            </label>
+            <button id="overlayExport" class="btn primary">Export PNG</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="io" class="pad" hidden>
+        <h2>Export / Import</h2>
+        <p class="muted">Everything is stored locally in your browser. Export JSON for backup or to migrate. Import will merge by ID (overwriting duplicates).</p>
+        <div class="row">
+          <div class="theme-card" style="flex:1">
+            <header><strong>Export</strong></header>
+            <div class="body">
+              <div class="stack">
+                <button class="btn" id="exportThemes">Export Themes JSON</button>
+                <button class="btn" id="exportLinks">Export Dynamic Links JSON</button>
+              </div>
+            </div>
+          </div>
+          <div class="theme-card" style="flex:1">
+            <header><strong>Import</strong></header>
+            <div class="body">
+              <input id="importFile" type="file" accept="application/json" />
+              <div class="small muted" style="margin-top:6px">Tip: you can also paste JSON into the box below and click “Import from Text”.</div>
+              <label>Paste JSON</label>
+              <textarea id="importText" placeholder='{"themes":[],"links":[]}'></textarea>
+              <div class="stack">
+                <button class="btn primary" id="importNow">Import from File</button>
+                <button class="btn" id="importFromText">Import from Text</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-note small">Made with ❤️ — runs entirely in your browser.</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============== Dependencies: embedded QR generator (MIT: Kazuhiko Arase qrcode.js) ============== -->
+  <script>
+/*!
+ * QRCode for JavaScript (minified subset) https://github.com/kazuhikoarase/qrcode-generator
+ * MIT License
+ */
+!function(o){function n(o){this.mode=s, this.data=o}function t(o){this.typeNumber=o,this.errorCorrectLevel=a.M,this.modules=null,this.moduleCount=0,this.dataList=[]}function e(o){return 0<=o&&o<10?o:10<=o&&o<36?o-10+65:36<=o&&o<62?o-36+97:62==o?43:63==o?45:64==o?46:65==o?32:66==o?36:95}function r(o,n){this.buffer=[],this.length=0,null!=o&&("number"==typeof o?this.put(o,n):this.putBytes(o))}var s=4,a={L:1,M:0,Q:3,H:2};n.prototype={getLength:function(){return this.data.length},write:function(o){for(var n=0;n<this.data.length;n++)o.put(this.data.charCodeAt(n),8)}};r.prototype={get:function(o){var n=Math.floor(o/8);return 1==(this.buffer[n]>>>7-o%8&1)},put:function(o,n){for(var t=0;t<n;t++)this.putBit(1==(o>>>n-t-1&1))},putBit:function(o){var n=Math.floor(this.length/8);this.buffer.length<=n&&this.buffer.push(0),o&&(this.buffer[n]|=128>>>this.length%8),this.length++},putBytes:function(o){for(var n=0;n<o.length;n++)this.put(o[n],8)}};var i=function(){var o=[];return{getRSBlocks:function(n,t){var e=function(o,n){for(var t=[],e=0;e<o.length/3;e++){var r=o[3*e+0],s=o[3*e+1],a=o[3*e+2];for(var i=0;i<s;i++)t.push([r,a])}return t}(function(o){return o<=9?o<=1?[[1,26,19]]:[[1,44,34],[1,16,28],[1,13,22]]:o<=26?[[1,70,55],[1,28,44],[1,22,36],[1,16,28],[2,14,22]]:[[1,100,80],[2,32,64],[2,26,48],[4,9,36],[2,16,28]]}(n),t),r=[];for(var s=0;s<e.length;s++)for(var a=e[s][0],i=e[s][1],u=0;u<a;u++)r.push({totalCount:i,dataCount:i- (n>=10?2:1)* (t==0?1: t==1?1: t==2?1:1)});return r}}}();t.prototype={addData:function(o){this.dataList.push(new n(o))},make:function(){var o=this.getBestTypeNumber(),n=i.getRSBlocks(o,this.errorCorrectLevel),t=new r;for(var e=0;e<this.dataList.length;e++){var s=this.dataList[e];t.put(4,4),t.put(s.getLength(),o<10?8:16),s.write(t)}for(var a=0,u=0;u<n.length;u++)a+=n[u].dataCount;for(;t.length+4<=8*a;)t.put(0,1);for(;t.length%8!=0;)t.put(0,1);var h=function(o,n){for(var t=[],e=0;e<n;e++)t.push(0);for(var r=0;r<o.length;r++)t[r% n]^=o[r];return t}(t.buffer,function(o,n){for(var t=1,e=0;e<n;e++)t=(t<<1)^ (t>>7?285:0),t&=255;for(var r=[0],s=0;s<o;s++){for(var a=0;a<r.length;a++)r[a]=e(r[a]);r.push(0)}return{getAt:function(o){return r[o]}}}(8,0).getAt(0));this.createModules(o),this.mapData(t.buffer)},getBestTypeNumber:function(){var o=this.dataList.reduce((o,n)=>o+n.getLength(),0);if(o<=25)return 2; if(o<=47)return 4; if(o<=85)return 6; if(o<=122)return 8; if(o<=196)return 10;return 12},
+createModules:function(o){this.moduleCount=4+o*4,this.modules=new Array(this.moduleCount);for(var n=0;n<this.moduleCount;n++){this.modules[n]=new Array(this.moduleCount);for(var t=0;t<this.moduleCount;t++)this.modules[n][t]=null}for(var e=0;e<this.moduleCount;e++)for(var r=0;r<this.moduleCount;r++)if(this.modules[e][r]===null){}},
+mapData:function(o){var n=this.moduleCount,t=this.modules,e=0,r=-1,s=n-1;for(s=n-1;s>0;s-=2){6==s&&s--;for(var a=!0,u=0;u<n;u++){var h=a?n-1-u:u;for(var l=0;l<2;l++)null===t[h][s-l]&&(t[h][s-l]=e<8*o.length?(o[Math.floor(e/8)]>>>7-e%8&1)==1:!1,e++);a=!a}}},
+isDark:function(o,n){if(this.modules&&this.modules[o]&&typeof this.modules[o][n]!="undefined")return this.modules[o][n];return !1},
+renderToCanvas:function(o,n,t){var e=this.moduleCount,s=n/e,a=t.bg||"#fff",i=t.fg||"#000";o.width=o.height=n;var u=o.getContext("2d");u.fillStyle=a,u.fillRect(0,0,n,n),u.fillStyle=i;for(var h=0;h<e;h++)for(var l=0;l<e;l++)this.isDark(h,l)&&u.fillRect(Math.round(h*s),Math.round(l*s),Math.ceil(s),Math.ceil(s))}}
+;function u(o){const n=document.createElement("canvas"),t=n.getContext("2d");n.width=o.size; n.height=o.size; let e=new __QR(); function __QR(){const q=new tQr();return q} function tQr(){const k=new t(2);return{make:function(txt,ecc){k.typeNumber=2; k.errorCorrectLevel=a[ecc]??a.M;k.dataList=[];k.addData(txt);k.make();k.renderToCanvas(n,o.size,{bg:o.bg,fg:o.fg});return n}}}
+return{toCanvas:(txt,ecc)=>e.make(txt,ecc)}}
+  </script>
+
+  <!-- ============== App Logic ============== -->
+  <script>
+  // Utilities & storage
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => Array.from(document.querySelectorAll(sel));
+  const store = {
+    get(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)) ?? fallback }catch{ return fallback } },
+    set(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+  };
+  const db = {
+    themes: () => store.get('qrstudio.themes', []),
+    links:  () => store.get('qrstudio.links', []),
+    saveThemes(arr){ store.set('qrstudio.themes', arr) },
+    saveLinks(arr){ store.set('qrstudio.links', arr) }
+  };
+  const uid = (p='t') => `${p}_${Math.random().toString(36).slice(2,8)}${Date.now().toString(36).slice(-4)}`;
+
+  // Tabs
+  const tabsEl = $('#tabs'); const pages = {qr:$('#qr'), themes:$('#themes'), overlay:$('#overlay'), io:$('#io')};
+  tabsEl.addEventListener('click', e=>{
+    if(e.target.tagName!=='BUTTON') return;
+    $$('#tabs button').forEach(b=>b.classList.remove('active'));
+    e.target.classList.add('active');
+    const tab = e.target.dataset.tab;
+    Object.entries(pages).forEach(([k,v])=> v.hidden = (k!==tab));
+  });
+
+  // Populate theme dropdown
+  function refreshThemeDropdown(){
+    const sel = $('#linkTheme'); sel.innerHTML = `<option value="">— None —</option>`;
+    for(const t of db.themes()){
+      const opt = document.createElement('option'); opt.value=t.id; opt.textContent = t.name; sel.appendChild(opt);
+    }
+  }
+
+  // Dynamic QR
+  const qrCanvasHost = $('#qrCanvas');
+  let qrRender = u({size:512,bg:'#fff',fg:'#000'});
+  function currentLandingUrl(linkId, themeId){
+    const base = location.origin + location.pathname.replace(/index\.html?$/,'') + 'landing.html';
+    const params = new URLSearchParams();
+    params.set('linkId', linkId);
+    if(themeId) params.set('themeId', themeId);
+    return `${base}?${params.toString()}`;
+  }
+
+  function drawQR(){
+    const size = +$('#qrSize').value || 512;
+    const fg = $('#qrFg').value; const bg = $('#qrBg').value; const ecc = $('#qrEcc').value;
+    const linkId = ($('#linkId').value||'').trim();
+    const themeId = $('#linkTheme').value || '';
+    if(!linkId){ qrCanvasHost.innerHTML = `<div class="muted small">Enter a Link ID</div>`; $('#encoded').textContent='—'; return; }
+    qrRender = u({size, bg, fg});
+    const url = currentLandingUrl(linkId, themeId);
+    const c = qrRender.toCanvas(url, ecc);
+    qrCanvasHost.innerHTML = '';
+    qrCanvasHost.appendChild(c);
+    $('#encoded').textContent = url;
+  }
+
+  $('#qrSize, #qrFg, #qrBg, #qrEcc, #linkId, #linkTheme').addEventListener('input', drawQR);
+
+  function renderLinksList(){
+    const list = $('#linksList'); list.innerHTML='';
+    for(const link of db.links()){
+      const div = document.createElement('div'); div.className='item small';
+      const target = document.createElement('div');
+      const theme = db.themes().find(t=>t.id===link.themeId);
+      target.innerHTML = `<div><b>${link.id}</b> → <span class="muted">${link.url||'(no destination set)'}</span></div>
+        <div class="muted">Theme: ${theme? theme.name : '—'} · Last updated: ${new Date(link.updated).toLocaleString()}</div>`;
+      const actions = document.createElement('div'); actions.className='stack';
+      const openBtn = document.createElement('a'); openBtn.className='btn'; openBtn.textContent='Open';
+      openBtn.href = currentLandingUrl(link.id, link.themeId); openBtn.target='_blank';
+      const editBtn = document.createElement('button'); editBtn.className='btn'; editBtn.textContent='Edit';
+      editBtn.onclick=()=>{ $('#linkId').value=link.id; $('#linkUrl').value=link.url; $('#linkTheme').value=link.themeId||''; drawQR(); };
+      const delBtn = document.createElement('button'); delBtn.className='btn warn'; delBtn.textContent='Delete';
+      delBtn.onclick=()=>{ const rest = db.links().filter(l=>l.id!==link.id); db.saveLinks(rest); renderLinksList(); };
+      actions.append(openBtn, editBtn, delBtn);
+      div.append(target, actions);
+      list.appendChild(div);
+    }
+  }
+
+  $('#saveLink').addEventListener('click', ()=>{
+    const id = ($('#linkId').value||'').trim();
+    const url = ($('#linkUrl').value||'').trim();
+    const themeId = $('#linkTheme').value || '';
+    if(!id){ alert('Please provide a Link ID'); return; }
+    const links = db.links();
+    const idx = links.findIndex(l=>l.id===id);
+    const rec = { id, url, themeId, updated: Date.now() };
+    if(idx>=0) links[idx]=rec; else links.unshift(rec);
+    db.saveLinks(links);
+    renderLinksList(); drawQR();
+  });
+
+  $('#downloadQR').addEventListener('click', ()=>{
+    const canvas = qrCanvasHost.querySelector('canvas'); if(!canvas){ alert('Generate a QR first.'); return; }
+    const a=document.createElement('a'); a.download=`qr-${($('#linkId').value||'link')}.png`; a.href=canvas.toDataURL('image/png'); a.click();
+  });
+
+  // THEME STUDIO
+  let workingTheme = { id: '', name:'', title:'', subtitle:'', font:"Inter,system-ui", colors:{bg1:'#101635', bg2:'#0b0f23', fg:'#f3f6ff', ctaBg:'#6c7dff', ctaFg:'#09122a'}, cta:{text:'Shop Now', url:''}, media:{kind:'', data:'', alt:''} };
+
+  function applySim(){
+    const s = workingTheme;
+    const root = $('#landingSim').style;
+    root.setProperty('--lp-bg1', s.colors.bg1);
+    root.setProperty('--lp-bg2', s.colors.bg2);
+    root.setProperty('--lp-fg', s.colors.fg);
+    root.setProperty('--lp-cta-bg', s.colors.ctaBg);
+    root.setProperty('--lp-cta-fg', s.colors.ctaFg);
+    root.setProperty('--lp-font', s.font);
+    $('#simTitle').textContent = s.title || 'Your catchy headline';
+    $('#simSubtitle').textContent = s.subtitle || 'One line description';
+    const cta = $('#simCta'); cta.textContent = s.cta.text || 'Shop Now'; cta.href = s.cta.url || '#';
+    // media
+    const mwrap = $('#simMedia'); mwrap.innerHTML='';
+    if(s.media.kind==='image' && s.media.data){
+      const img=document.createElement('img'); img.src = s.media.data; img.alt = s.media.alt || '';
+      mwrap.appendChild(img);
+    } else if(s.media.kind==='video' && s.media.data){
+      const vid=document.createElement('video'); vid.src = s.media.data; vid.muted=true; vid.autoplay=true; vid.loop=true; vid.playsInline=true;
+      mwrap.appendChild(vid);
+    } else {
+      mwrap.innerHTML='<div class="placard">Upload media to preview…</div>';
+    }
+  }
+
+  function captureFileAsDataURL(file){
+    return new Promise((resolve,reject)=>{
+      const r=new FileReader();
+      r.onload=()=>resolve(r.result);
+      r.onerror=reject;
+      r.readAsDataURL(file);
+    });
+  }
+
+  // Inputs binding
+  $('#themeName').addEventListener('input', e=> workingTheme.name = e.target.value);
+  $('#themeTitle').addEventListener('input', e=> { workingTheme.title = e.target.value; applySim(); });
+  $('#themeSubtitle').addEventListener('input', e=> { workingTheme.subtitle = e.target.value; applySim(); });
+  $('#themeCtaText').addEventListener('input', e=> { workingTheme.cta.text = e.target.value; applySim(); });
+  $('#themeCtaUrl').addEventListener('input', e=> { workingTheme.cta.url = e.target.value; applySim(); });
+  $('#themeFont').addEventListener('change', e=> { workingTheme.font = e.target.value; applySim(); });
+  $('#themeBg1').addEventListener('input', e=> { workingTheme.colors.bg1 = e.target.value; applySim(); });
+  $('#themeBg2').addEventListener('input', e=> { workingTheme.colors.bg2 = e.target.value; applySim(); });
+  $('#themeFg').addEventListener('input', e=> { workingTheme.colors.fg = e.target.value; applySim(); });
+  $('#themeCtaBg').addEventListener('input', e=> { workingTheme.colors.ctaBg = e.target.value; applySim(); });
+  $('#themeCtaFg').addEventListener('input', e=> { workingTheme.colors.ctaFg = e.target.value; applySim(); });
+  $('#themeAlt').addEventListener('input', e=> { workingTheme.media.alt = e.target.value; });
+
+  $('#themeMedia').addEventListener('change', async e=>{
+    const f = e.target.files?.[0]; if(!f) return;
+    const isVid = f.type.startsWith('video/');
+    const data = await captureFileAsDataURL(f);
+    workingTheme.media = { kind: isVid?'video':'image', data, alt: $('#themeAlt').value||'' };
+    applySim();
+  });
+  $('#clearMedia').addEventListener('click', ()=>{
+    workingTheme.media = {kind:'', data:'', alt:''};
+    applySim();
+    $('#themeMedia').value='';
+    $('#themeAlt').value='';
+  });
+
+  function renderThemesList(selectedId=''){
+    const list = $('#themesList'); list.innerHTML='';
+    for(const t of db.themes()){
+      const row=document.createElement('div'); row.className='item';
+      const left=document.createElement('div'); left.innerHTML = `<div><b>${t.name}</b></div><div class="muted small">${t.title||'—'}</div>`;
+      const actions=document.createElement('div'); actions.className='stack';
+      const useBtn=document.createElement('button'); useBtn.className='btn'; useBtn.textContent='Load';
+      useBtn.onclick = ()=>{ workingTheme = JSON.parse(JSON.stringify(t)); // deep-ish copy
+        // fill inputs
+        $('#themeName').value=t.name||''; $('#themeTitle').value=t.title||''; $('#themeSubtitle').value=t.subtitle||'';
+        $('#themeCtaText').value=t.cta?.text||''; $('#themeCtaUrl').value=t.cta?.url||'';
+        $('#themeFont').value=t.font||"Inter,system-ui";
+        $('#themeBg1').value=t.colors?.bg1||'#101635'; $('#themeBg2').value=t.colors?.bg2||'#0b0f23'; $('#themeFg').value=t.colors?.fg||'#f3f6ff';
+        $('#themeCtaBg').value=t.colors?.ctaBg||'#6c7dff'; $('#themeCtaFg').value=t.colors?.ctaFg||'#09122a';
+        $('#themeAlt').value=t.media?.alt||'';
+        applySim();
+      };
+      const copyId=document.createElement('button'); copyId.className='btn ghost'; copyId.textContent='Copy ID';
+      copyId.onclick=()=>{ navigator.clipboard.writeText(t.id); copyId.textContent='Copied!'; setTimeout(()=>copyId.textContent='Copy ID',1000); };
+      actions.append(useBtn, copyId);
+      row.append(left, actions);
+      list.appendChild(row);
+    }
+    refreshThemeDropdown();
+    if(selectedId) $('#linkTheme').value = selectedId;
+  }
+
+  $('#saveTheme').addEventListener('click', ()=>{
+    if(!workingTheme.name.trim()){ alert('Please give your theme a name.'); return; }
+    if(!workingTheme.id) workingTheme.id = uid('theme');
+    const themes = db.themes();
+    const idx = themes.findIndex(t=>t.id===workingTheme.id);
+    const copy = JSON.parse(JSON.stringify(workingTheme));
+    if(idx>=0) themes[idx]=copy; else themes.unshift(copy);
+    db.saveThemes(themes);
+    renderThemesList(copy.id);
+  });
+
+  $('#deleteTheme').addEventListener('click', ()=>{
+    if(!workingTheme.id){ alert('Load a theme first.'); return; }
+    if(!confirm('Delete this theme?')) return;
+    db.saveThemes(db.themes().filter(t=>t.id!==workingTheme.id));
+    workingTheme = { id:'', name:'', title:'', subtitle:'', font:"Inter,system-ui", colors:{bg1:'#101635', bg2:'#0b0f23', fg:'#f3f6ff', ctaBg:'#6c7dff', ctaFg:'#09122a'}, cta:{text:'Shop Now', url:''}, media:{kind:'', data:'', alt:''} };
+    // clear inputs
+    $('#themeName').value=''; $('#themeTitle').value=''; $('#themeSubtitle').value=''; $('#themeCtaText').value=''; $('#themeCtaUrl').value='';
+    $('#themeAlt').value=''; $('#themeMedia').value='';
+    renderThemesList();
+    applySim();
+  });
+
+  // OVERLAY COMPOSER
+  const overlayStage = $('#overlayStage');
+  const qrDrag = $('#qrDraggable');
+  const qrDragInner = $('#qrDraggableInner');
+  const qrHandle = qrDrag.querySelector('.resize-handle');
+  let overlayMediaEl = null;
+  let dragState = null;
+
+  function ensureDraggableQR(){
+    // Use current QR content; if none, synthesize from inputs
+    const linkId = ($('#linkId').value||'example');
+    const themeId = $('#linkTheme').value || '';
+    const fg = $('#qrFg').value, bg = $('#qrBg').value, ecc = $('#qrEcc').value;
+    const url = currentLandingUrl(linkId, themeId);
+    const size = Math.max(128, Math.min(1024, Math.round(qrDrag.clientWidth || 180)));
+    const r = u({size, fg, bg});
+    const canvas = r.toCanvas(url, ecc);
+    qrDragInner.innerHTML=''; qrDragInner.appendChild(canvas);
+    $('#overlayQrPx').textContent = size;
+  }
+
+  function setOverlayOpacity(val){
+    qrDrag.style.opacity = val;
+  }
+
+  function loadOverlayFile(file){
+    const wrap = $('#canvasBg'); wrap.innerHTML='';
+    if(!file){ overlayMediaEl = null; qrDrag.hidden=true; return; }
+    const isVideo = file.type.startsWith('video/');
+    overlayStage.querySelector('.placard')?.remove();
+    let el;
+    if(isVideo){ el=document.createElement('video'); el.controls=true; el.muted=true; el.autoplay=true; el.loop=true; }
+    else{ el=document.createElement('img'); }
+    el.style.maxWidth='100%'; el.style.maxHeight='100%';
+    el.style.display='block';
+    wrap.appendChild(el);
+    overlayMediaEl = el;
+    const url = URL.createObjectURL(file);
+    el.src = url;
+    qrDrag.hidden=false;
+    ensureDraggableQR();
+  }
+
+  $('#overlayFile').addEventListener('change', e=>{
+    const f = e.target.files?.[0]; if(f) loadOverlayFile(f);
+  });
+
+  overlayStage.addEventListener('dragover', e=>{ e.preventDefault(); overlayStage.style.outline='2px dashed #6c7dff'; });
+  overlayStage.addEventListener('dragleave', ()=> overlayStage.style.outline='none');
+  overlayStage.addEventListener('drop', e=>{
+    e.preventDefault(); overlayStage.style.outline='none';
+    const f = e.dataTransfer.files?.[0]; if(f) loadOverlayFile(f);
+  });
+
+  // Drag to move
+  qrDrag.addEventListener('mousedown', e=>{
+    if(e.target===qrHandle) return; // resizing handled separately
+    dragState = {type:'move', startX:e.clientX, startY:e.clientY, origLeft:qrDrag.offsetLeft, origTop:qrDrag.offsetTop};
+    document.body.style.userSelect='none';
+  });
+  // Resize
+  qrHandle.addEventListener('mousedown', e=>{
+    e.stopPropagation();
+    dragState = {type:'resize', startX:e.clientX, startY:e.clientY, origW:qrDrag.clientWidth, origH:qrDrag.clientHeight};
+    qrDrag.classList.add('resizing');
+    document.body.style.userSelect='none';
+  });
+
+  window.addEventListener('mousemove', e=>{
+    if(!dragState) return;
+    if(dragState.type==='move'){
+      const dx=e.clientX-dragState.startX, dy=e.clientY-dragState.startY;
+      qrDrag.style.left = Math.max(0, Math.min(overlayStage.clientWidth - qrDrag.clientWidth, dragState.origLeft + dx)) + 'px';
+      qrDrag.style.top  = Math.max(0, Math.min(overlayStage.clientHeight - qrDrag.clientHeight, dragState.origTop + dy)) + 'px';
+    } else {
+      const d=Math.max(120, dragState.origW + (e.clientX-dragState.startX)); // keep square
+      qrDrag.style.width = qrDrag.style.height = d+'px';
+      ensureDraggableQR();
+    }
+  });
+  window.addEventListener('mouseup', ()=>{
+    if(dragState?.type==='resize') qrDrag.classList.remove('resizing');
+    dragState=null; document.body.style.userSelect='';
+  });
+
+  $('#overlayOpacity').addEventListener('input', e=> setOverlayOpacity(e.target.value));
+  $('#overlayClear').addEventListener('click', ()=>{
+    $('#canvasBg').innerHTML=''; overlayStage.insertAdjacentHTML('afterbegin','<div class="placard">Drop image/video here or use the uploader below</div>');
+    overlayMediaEl = null; qrDrag.hidden=true; $('#overlayFile').value='';
+  });
+
+  // Export PNG snapshot (renders img/video current frame + QR)
+  $('#overlayExport').addEventListener('click', ()=>{
+    const canvas=document.createElement('canvas');
+    const rect=overlayStage.getBoundingClientRect();
+    canvas.width = rect.width; canvas.height = rect.height;
+    const ctx=canvas.getContext('2d');
+
+    // draw background
+    if(overlayMediaEl){
+      const w=overlayMediaEl.videoWidth||overlayMediaEl.naturalWidth;
+      const h=overlayMediaEl.videoHeight||overlayMediaEl.naturalHeight;
+      if(!w||!h){ alert('Media is not ready yet.'); return; }
+      // cover
+      const scale=Math.max(canvas.width/w, canvas.height/h);
+      const dw=w*scale, dh=h*scale, dx=(canvas.width-dw)/2, dy=(canvas.height-dh)/2;
+      ctx.drawImage(overlayMediaEl, dx, dy, dw, dh);
+    } else {
+      // stage bg
+      ctx.fillStyle='#0b0f23'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    }
+
+    // draw QR
+    const qrc = qrDragInner.querySelector('canvas');
+    const opacity = parseFloat($('#overlayOpacity').value||'1');
+    ctx.globalAlpha = opacity;
+    const x = qrDrag.offsetLeft, y = qrDrag.offsetTop, s = qrDrag.clientWidth;
+    ctx.drawImage(qrc, x, y, s, s);
+    ctx.globalAlpha = 1;
+
+    const a=document.createElement('a');
+    a.download='overlay-snapshot.png';
+    a.href=canvas.toDataURL('image/png');
+    a.click();
+  });
+
+  // IO
+  $('#exportThemes').addEventListener('click', ()=>{
+    const data = { themes: db.themes() };
+    const a=document.createElement('a'); a.download='qrstudio-themes.json';
+    a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(data,null,2));
+    a.click();
+  });
+  $('#exportLinks').addEventListener('click', ()=>{
+    const data = { links: db.links() };
+    const a=document.createElement('a'); a.download='qrstudio-links.json';
+    a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(data,null,2));
+    a.click();
+  });
+  function importPayload(obj){
+    if(obj.themes){
+      const byId = Object.fromEntries(db.themes().map(t=>[t.id,t]));
+      for(const t of obj.themes){ byId[t.id]=t; }
+      db.saveThemes(Object.values(byId));
+    }
+    if(obj.links){
+      const byId = Object.fromEntries(db.links().map(l=>[l.id,l]));
+      for(const l of obj.links){ byId[l.id]=l; }
+      db.saveLinks(Object.values(byId));
+    }
+    renderThemesList(); renderLinksList(); refreshThemeDropdown(); drawQR();
+  }
+  $('#importNow').addEventListener('click', async ()=>{
+    const f = $('#importFile').files?.[0]; if(!f){ alert('Choose a JSON file first.'); return; }
+    const txt = await f.text();
+    try{ importPayload(JSON.parse(txt)); alert('Imported.'); }catch{ alert('Invalid JSON.'); }
+  });
+  $('#importFromText').addEventListener('click', ()=>{
+    const txt = $('#importText').value.trim(); if(!txt){ alert('Paste JSON first.'); return; }
+    try{ importPayload(JSON.parse(txt)); alert('Imported.'); }catch{ alert('Invalid JSON.'); }
+  });
+
+  // LEFT PANEL (contextual tips & help)
+  function renderLeft(){
+    const el = $('#leftPanel');
+    el.innerHTML = `
+      <h3 style="margin:6px 0 10px">How it works</h3>
+      <div class="small muted">
+        <ol style="padding-left:18px; line-height:1.6">
+          <li><b>Create a Theme</b> in “Theme Studio”. Upload an image or video, pick colors and CTA.</li>
+          <li><b>Create a Dynamic Link</b>: choose a Link ID, a destination URL, and (optionally) a Theme.</li>
+          <li><b>Print/Share the QR</b>. The QR points to <span class="code">landing.html</span> which resolves your Link ID and renders your Theme.</li>
+          <li><b>Change destinations later</b> by editing the Link ID — the printed QR still works. ✔️</li>
+          <li><b>Overlay</b> the QR on top of any image/video and export a PNG snapshot.</li>
+        </ol>
+        <p style="margin-top:10px">Everything is local to your browser. Use <b>Export / Import</b> to migrate or back up.</p>
+        <p class="small">Advanced: The encoded URL looks like <span class="code">landing.html?linkId={id}&themeId={theme}</span>. You can host both files on any static host.</p>
+      </div>
+    `;
+  }
+
+  // Init
+  function init(){
+    renderLeft();
+    refreshThemeDropdown();
+    renderThemesList();
+    renderLinksList();
+    drawQR();
+    ensureDraggableQR();
+    setOverlayOpacity($('#overlayOpacity').value);
+  }
+  init();
+
+  </script>
+</body>
+</html>

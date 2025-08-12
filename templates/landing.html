@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QR Landing</title>
+<style>
+  :root{
+    --bg1:#101635; --bg2:#0b0f23; --fg:#f3f6ff; --cta-bg:#6c7dff; --cta-fg:#09122a;
+    --font: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; color:var(--fg); font-family:var(--font);
+    background:linear-gradient(140deg,var(--bg1),var(--bg2));
+    display:grid; min-height:100vh; grid-template-rows:auto 1fr auto;
+  }
+  header, footer{padding:14px 18px; opacity:.9}
+  header{display:flex;align-items:center;gap:10px}
+  .dot{width:10px;height:10px;border-radius:50%;background:conic-gradient(from 200deg, #6c7dff, #2de6c5)}
+  main{display:grid; grid-template-columns: minmax(280px, 860px); justify-content:center; padding:14px}
+  .card{
+    background:rgba(6,9,24,.5); border:1px solid rgba(255,255,255,.08); border-radius:14px; overflow:hidden;
+    backdrop-filter:saturate(110%) blur(8px);
+  }
+  .media{height:52vh; min-height:240px; display:grid; place-items:center; background:#070a18}
+  .media img,.media video{width:100%;height:100%;object-fit:cover}
+  .content{padding:16px}
+  h1{margin:0 0 6px 0}
+  .muted{color:#bac2ffb3}
+  .cta{
+    display:inline-block;margin-top:10px;padding:11px 16px;border-radius:12px;background:var(--cta-bg);color:var(--cta-fg);
+    text-decoration:none;font-weight:700; box-shadow:0 6px 20px rgba(108,125,255,.3)
+  }
+  .small{font-size:12px}
+</style>
+</head>
+<body>
+  <header><div class="dot"></div><div class="muted small">QR Landing</div></header>
+  <main>
+    <div class="card">
+      <div class="media" id="media"><div class="muted">No media in theme.</div></div>
+      <div class="content">
+        <h1 id="title">Hello 👋</h1>
+        <div id="subtitle" class="muted">Welcome!</div>
+        <a id="cta" class="cta" href="#" target="_blank" rel="noopener">Learn more</a>
+        <div id="note" class="small muted" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </main>
+  <footer class="small muted" id="foot">Powered by QR Studio</footer>
+
+<script>
+/* Data is loaded from localStorage created by index.html.
+   Fallbacks: you can also host a JSON at /themes.json and /links.json and this page will try to fetch them if localStorage is empty. */
+
+const store = {
+  get(key){ try{ return JSON.parse(localStorage.getItem(key)) }catch{ return null } }
+};
+const qs = new URLSearchParams(location.search);
+const linkId = qs.get('linkId') || '';
+const themeId = qs.get('themeId') || '';
+
+async function fetchFallback(path){
+  try{
+    const r = await fetch(path,{cache:'no-store'});
+    if(!r.ok) return null; return await r.json();
+  }catch{ return null }
+}
+
+async function loadData(){
+  let themes = store.get('qrstudio.themes');
+  let links = store.get('qrstudio.links');
+  if(!themes){ const j = await fetchFallback('./qrstudio-themes.json'); themes = j?.themes ?? []; }
+  if(!links){ const j = await fetchFallback('./qrstudio-links.json'); links = j?.links ?? []; }
+  return {themes, links};
+}
+
+function applyTheme(theme){
+  if(!theme) return;
+  document.documentElement.style.setProperty('--bg1', theme.colors?.bg1 || '#101635');
+  document.documentElement.style.setProperty('--bg2', theme.colors?.bg2 || '#0b0f23');
+  document.documentElement.style.setProperty('--fg', theme.colors?.fg || '#f3f6ff');
+  document.documentElement.style.setProperty('--cta-bg', theme.colors?.ctaBg || '#6c7dff');
+  document.documentElement.style.setProperty('--cta-fg', theme.colors?.ctaFg || '#09122a');
+  document.documentElement.style.setProperty('--font', theme.font || "Inter, system-ui");
+
+  const title = document.getElementById('title');
+  const subtitle = document.getElementById('subtitle');
+  const cta = document.getElementById('cta');
+  title.textContent = theme.title || 'Hello 👋';
+  subtitle.textContent = theme.subtitle || 'Welcome!';
+  cta.textContent = theme.cta?.text || 'Learn more';
+  cta.href = theme.cta?.url || '#';
+
+  const media = document.getElementById('media'); media.innerHTML='';
+  if(theme.media?.kind === 'image' && theme.media.data){
+    const img=document.createElement('img'); img.src=theme.media.data; img.alt=theme.media.alt || '';
+    media.appendChild(img);
+  } else if(theme.media?.kind === 'video' && theme.media.data){
+    const v=document.createElement('video'); v.src=theme.media.data; v.autoplay=true; v.loop=true; v.muted=true; v.playsInline=true; v.controls=false;
+    media.appendChild(v);
+  } else {
+    media.innerHTML = '<div class="muted">No media in theme.</div>';
+  }
+}
+
+// Resolve dynamic link: if link has a destination URL, show a little hint and (optionally) auto-redirect after a delay.
+function resolveLink(link){
+  if(!link || !link.url) return;
+  const note = document.getElementById('note');
+  note.innerHTML = `You’ll be redirected to <span class="muted">${link.url}</span> in <b id="sec">3</b>… <a href="#" id="stay">stay here</a>`;
+  let s=3; const id=setInterval(()=>{ s--; document.getElementById('sec').textContent = s; if(s<=0){ clearInterval(id); location.href = link.url; }},1000);
+  document.getElementById('stay').onclick=(e)=>{ e.preventDefault(); clearInterval(id); note.textContent=''; };
+}
+
+(async function start(){
+  const {themes, links} = await loadData();
+  const chosenTheme = themeId ? themes.find(t=>t.id===themeId) : null;
+  const link = linkId ? links.find(l=>l.id===linkId) : null;
+
+  // If link has a theme and no explicit themeId query, prefer link.themeId
+  const themeToUse = chosenTheme || (link?.themeId ? themes.find(t=>t.id===link.themeId) : null);
+  applyTheme(themeToUse);
+
+  if(link){ resolveLink(link); document.title = (themeToUse?.name || 'QR') + ' • ' + link.id; }
+})();
+</script>
+</body>
+</html>
