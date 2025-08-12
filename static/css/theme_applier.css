@@ -323,7 +323,6 @@ pre {
     border: 1px solid #ccc;
     border-radius: 4px;
     width: 100%;  
-    height: auto;
     object-fit: contain;
     background-color: #000;
 }
@@ -437,3 +436,74 @@ header {
 .status { 
     font-size: 12px; 
 }
+
+/* Responsive square media frame */
+.video-wrapper {
+  /* Square that scales with viewport:
+     - never smaller than 140px
+     - prefers ~28vw on medium screens
+     - never larger than 220px
+  */
+  width: clamp(140px, 28vw, 220px);
+  aspect-ratio: 1 / 1;
+
+  display: grid;
+  place-items: center;
+}
+
+/* Make <video> and <iframe> fill the square, keep their own AR */
+.theme-video,
+.video-wrapper > video,
+.video-wrapper > iframe {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;      /* preserves AR, adds letterboxing */
+  background: #000;         /* letterbox color */
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Responsive square media frame */
+.video-wrapper {
+  /* Square that scales with viewport:
+     - never smaller than 140px
+     - prefers ~28vw on medium screens
+     - never larger than 220px
+  */
+  width: clamp(140px, 28vw, 220px);
+  aspect-ratio: 1 / 1;
+
+  display: grid;
+  place-items: center;
+}
+
+/* Make <video> and <iframe> fill the square, keep their own AR */
+.theme-video,
+.video-wrapper > video,
+.video-wrapper > iframe {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;      /* preserves AR, adds letterboxing */
+  background: #000;         /* letterbox color */
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Fallback for older browsers without aspect-ratio support */
+@supports not (aspect-ratio: 1 / 1) {
+  .video-wrapper {
+    position: relative;
+  }
+  .video-wrapper::before {
+    content: "";
+    display: block;
+    padding-top: 100%;      /* makes the box square */
+  }
+  .theme-video,
+  .video-wrapper > video,
+  .video-wrapper > iframe {
+    position: absolute;
+    inset: 0;
+  }
+}
+
