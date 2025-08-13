@@ -226,6 +226,24 @@
             </select>
           </div>
         </div>
+        <!-- Redirect + Skip controls -->
+        <div class="row">
+          <div>
+            <label>Redirect Delay (seconds)</label>
+            <input id="themeDelay" type="number" min="0" max="120" step="1" value="2" />
+            <div class="small muted">0 = no auto‑redirect</div>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:8px">
+            <label class="pill small" style="margin:0">
+              <input id="themeShowSkip" type="checkbox" checked style="vertical-align:middle;margin-right:6px" />
+              Show “Skip” button
+            </label>
+          </div>
+          <div>
+            <label>Skip Button Text</label>
+            <input id="themeSkipText" type="text" value="Skip" />
+          </div>
+        </div>
 
         <div class="row">
           <div>
@@ -345,7 +363,7 @@
             </div>
           </div>
         </div>
-        <div class="footer-note small">Made with ❤️ — runs entirely in your browser.</div>
+        <div class="footer-note small">© 2025 All rights reserved. | Powered by ThemeQR</div>
       </div>
     </section>
   </main>
@@ -544,7 +562,17 @@ a(10,2,[1,134,108,2,43,86,2,32,64,4,13,32,4,9,26]);})();})();
   });
 
   // THEME STUDIO
-  let workingTheme = { id: '', name:'', title:'', subtitle:'', font:"Inter,system-ui", colors:{bg1:'#101635', bg2:'#0b0f23', fg:'#f3f6ff', ctaBg:'#6c7dff', ctaFg:'#09122a'}, cta:{text:'Shop Now', url:''}, media:{kind:'', data:'', alt:''} };
+   let workingTheme = {
+  id: '',
+  name:'',
+  title:'',
+  subtitle:'',
+  font:"Inter,system-ui",
+  colors:{ bg1:'#101635', bg2:'#0b0f23', fg:'#f3f6ff', ctaBg:'#6c7dff', ctaFg:'#09122a' },
+  cta:{ text:'Shop Now', url:'' },
+  media:{ kind:'', data:'', alt:'' },
+  settings:{ redirectDelay: 2, showSkip: true, skipText: 'Skip' } // NEW
+};
 
   function applySim(){
     const s = workingTheme;
@@ -558,8 +586,38 @@ a(10,2,[1,134,108,2,43,86,2,32,64,4,13,32,4,9,26]);})();})();
     $('#simTitle').textContent = s.title || 'Your catchy headline';
     $('#simSubtitle').textContent = s.subtitle || 'One line description';
     const cta = $('#simCta'); cta.textContent = s.cta.text || 'Shop Now'; cta.href = s.cta.url || '#';
+    // ===== Preview: Redirect Note + Skip Button =====
+    const contentEl = document.querySelector('#landingSim .content');
+      
+    // Note (auto-redirect info)
+    let note = document.getElementById('simNote');
+    if (!note) {
+      note = document.createElement('div');
+      note.id = 'simNote';
+      note.className = 'muted small';
+      note.style.marginTop = '6px';
+      contentEl.appendChild(note);
+    }
+    const delay = Number(workingTheme.settings?.redirectDelay ?? 2);
+    note.textContent = delay > 0
+      ? `Auto-redirect in ${delay}s…`
+      : 'No auto-redirect';
+     
+    // Skip button
+    let skip = document.getElementById('simSkip');
+    if (!skip) {
+      skip = document.createElement('a');
+      skip.id = 'simSkip';
+      skip.className = 'cta';
+      skip.style.marginLeft = '8px';
+      skip.href = '#';
+      contentEl.appendChild(skip);
+    }
+    skip.textContent = workingTheme.settings?.skipText || 'Skip';
+    skip.style.display = (workingTheme.settings?.showSkip ?? true) ? 'inline-block' : 'none';
+  
     // media
-// media
+ 
   const mwrap = $('#simMedia');
   mwrap.innerHTML = '';
   const errBox = (msg) => { mwrap.innerHTML = `<div class="placard" style="color:#ffb4b4">${msg}</div>`; };
@@ -630,6 +688,25 @@ a(10,2,[1,134,108,2,43,86,2,32,64,4,13,32,4,9,26]);})();})();
   $('#themeCtaBg').addEventListener('input', e=> { workingTheme.colors.ctaBg = e.target.value; applySim(); });
   $('#themeCtaFg').addEventListener('input', e=> { workingTheme.colors.ctaFg = e.target.value; applySim(); });
   $('#themeAlt').addEventListener('input', e=> { workingTheme.media.alt = e.target.value; });
+  // NEW: Redirect + Skip bindings
+  $('#themeDelay').addEventListener('input', e => {
+    const v = Math.max(0, Math.min(120, Number(e.target.value || 0)));
+    workingTheme.settings = workingTheme.settings || {};
+    workingTheme.settings.redirectDelay = v;
+    applySim();
+  });
+  
+  $('#themeShowSkip').addEventListener('change', e => {
+    workingTheme.settings = workingTheme.settings || {};
+    workingTheme.settings.showSkip = !!e.target.checked;
+    applySim();
+  });
+  
+  $('#themeSkipText').addEventListener('input', e => {
+    workingTheme.settings = workingTheme.settings || {};
+    workingTheme.settings.skipText = e.target.value || 'Skip';
+    applySim();
+  });
 
   $('#themeMedia').addEventListener('change', async e=>{
     const f = e.target.files?.[0]; if(!f) return;
@@ -660,6 +737,11 @@ a(10,2,[1,134,108,2,43,86,2,32,64,4,13,32,4,9,26]);})();})();
         $('#themeBg1').value=t.colors?.bg1||'#101635'; $('#themeBg2').value=t.colors?.bg2||'#0b0f23'; $('#themeFg').value=t.colors?.fg||'#f3f6ff';
         $('#themeCtaBg').value=t.colors?.ctaBg||'#6c7dff'; $('#themeCtaFg').value=t.colors?.ctaFg||'#09122a';
         $('#themeAlt').value=t.media?.alt||'';
+        // NEW: populate Redirect + Skip fields
+        $('#themeDelay').value = t.settings?.redirectDelay ?? 2;
+        $('#themeShowSkip').checked = t.settings?.showSkip ?? true;
+        $('#themeSkipText').value = t.settings?.skipText ?? 'Skip';
+
         applySim();
       };
       const copyId=document.createElement('button'); copyId.className='btn ghost'; copyId.textContent='Copy ID';
@@ -687,7 +769,14 @@ a(10,2,[1,134,108,2,43,86,2,32,64,4,13,32,4,9,26]);})();})();
     if(!workingTheme.id){ alert('Load a theme first.'); return; }
     if(!confirm('Delete this theme?')) return;
     db.saveThemes(db.themes().filter(t=>t.id!==workingTheme.id));
-    workingTheme = { id:'', name:'', title:'', subtitle:'', font:"Inter,system-ui", colors:{bg1:'#101635', bg2:'#0b0f23', fg:'#f3f6ff', ctaBg:'#6c7dff', ctaFg:'#09122a'}, cta:{text:'Shop Now', url:''}, media:{kind:'', data:'', alt:''} };
+    workingTheme = {
+      id:'', name:'', title:'', subtitle:'', font:"Inter,system-ui",
+      colors:{bg1:'#101635', bg2:'#0b0f23', fg:'#f3f6ff', ctaBg:'#6c7dff', ctaFg:'#09122a'},
+      cta:{text:'Shop Now', url:''},
+      media:{kind:'', data:'', alt:''},
+      settings:{ redirectDelay: 2, showSkip: true, skipText: 'Skip' } // keep in sync
+   };
+
     // clear inputs
     $('#themeName').value=''; $('#themeTitle').value=''; $('#themeSubtitle').value=''; $('#themeCtaText').value=''; $('#themeCtaUrl').value='';
     $('#themeAlt').value=''; $('#themeMedia').value='';
