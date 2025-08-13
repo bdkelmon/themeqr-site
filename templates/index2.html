@@ -351,7 +351,60 @@
   </main>
 
   <!-- ============== Dependencies: embedded QR generator (MIT: Kazuhiko Arase qrcode.js) ============== -->
-  <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <!-- Inline QR library + wrapper (offline-safe) -->
+<script>
+/*! qrcode-generator v1.4.4 | MIT | https://github.com/kazuhikoarase/qrcode-generator */
+(function(){function p(a){this.mode=t;this.data=a}function J(a,b){this.typeNumber=a;this.errorCorrectLevel=b;this.modules=null;this.moduleCount=0;this.dataList=[]}function K(a){this.buffer=[];this.length=0;null!=a&&("number"==typeof a?this.put(a,8):this.putBytes(a))}function u(a,b){if(void 0==a.length)throw Error(a.length+"/"+b);for(var c=0;c<a.length&&0==a[c];)c++;this.num=new Array(a.length-c+b);for(var d=0;d<a.length-c;d++)this.num[d]=a[d+c]}function L(a,b){this.totalCount=a;this.dataCount=b}
+function M(){this.buffer=[];this.length=0}function N(a,b){this.d=a;this.b=b}var t=4;J.prototype={addData:function(a){this.dataList.push(new p(a))},isDark:function(a,b){if(null==this.modules||0>a||this.moduleCount<=a||0>b||this.moduleCount<=b)throw Error(a+","+b);return this.modules[a][b]},getModuleCount:function(){return this.moduleCount},make:function(){if(1>this.typeNumber)this.typeNumber=this.getMinimumTypeNumber();for(var a=O.getRSBlocks(this.typeNumber,this.errorCorrectLevel),b=new M,c=0;c<this.dataList.length;c++){var d=
+this.dataList[c];b.put(4,4);b.put(d.getLength(),I.getLengthInBits(4,this.typeNumber));d.write(b)}for(c=0;0<b.length+4<=8*c;){c++;if(c>1E4)throw Error("qrcode: overflow");}for(;b.length%8!=0;)b.put(0,1);for(c=0;c<a.length;c++){var e=a[c].dataCount;for(d=b.getBuffer(),d.length>8*e&&d.splice(8*e),d=d.concat(Array(8*e-d.length).fill(0)),e=Array(e),g=0;g<e.length;g++)e[g]=0;var h=new u(d, a[c].totalCount-a[c].dataCount),m=new u(e, a[c].totalCount-a[c].dataCount);h=h.mod(m);d=d.concat(h.num)}this.createQrcode(d)},
+createQrcode:function(a){var b=1;for(this.moduleCount=4+4*this.typeNumber;this.modules=new Array(this.moduleCount),b<this.moduleCount;b++)this.modules[b]=new Array(this.moduleCount);for(b=0;b<this.moduleCount;b++)for(var c=0;c<this.moduleCount;c++)this.modules[b][c]=null;this.setupPositionProbePattern(0,0);this.setupPositionProbePattern(this.moduleCount-7,0);this.setupPositionProbePattern(0,this.moduleCount-7);this.setupTimingPattern();this.mapData(a)},setupPositionProbePattern:function(a,b){for(var c=
+-1;7>=c;c++)if(!(0>a+c||this.moduleCount<=a+c))for(var d=-1;7>=d;d++)0>b+d||this.moduleCount<=b+d||(this.modules[a+c][b+d]=0<=c&&6>=c&&0<=d&&6>=d&&(0==c||6==c||0==d||6==d||2<=c&&4>=c&&2<=d&&4>=d))},setupTimingPattern:function(){for(var a=8;a<this.moduleCount-8;a++)null===this.modules[a][6]&&(this.modules[a][6]=0==a%2),null===this.modules[6][a]&&(this.modules[6][a]=0==a%2)},mapData:function(a){var b=this.moduleCount,c=-1,d=this.moduleCount-1,e=0,g=!0;for(d=this.moduleCount-1;0<d;d-=2){6==d&&d--;for(var h=0;h<b;h++){var m=
+g?b-1-h:h;for(var r=0;2>r;r++)null===this.modules[m][d-r]&&(this.modules[m][d-r]=e<a.length?1==(a[Math.floor(e/8)]>>>7-e%8&1):!1,e++);g=!g}}},getMinimumTypeNumber:function(){var a=0;for(var b=0;b<this.dataList.length;b++)a+=this.dataList[b].getLength();return a<=25?2:a<=47?4:a<=85?6:a<=122?8:a<=196?10:12}};p.prototype={getLength:function(){return this.data.length},write:function(a){for(var b=0;b<this.data.length;b++)a.put(this.data.charCodeAt(b),8)}};K.prototype={get:function(a){var b=Math.floor(a/
+8);return 1==(this.buffer[b]>>>7-a%8&1)},put:function(a,b){for(var c=0;c<b;c++)this.putBit(1==(a>>>b-c-1&1))},putBytes:function(a){for(var b=0;b<a.length;b++)this.put(a[b],8)},putBit:function(a){var b=Math.floor(this.length/8);this.buffer.length<=b&&this.buffer.push(0);a&&(this.buffer[b]|=128>>>this.length%8);this.length++}};M.prototype={getBuffer:function(){return this.buffer},getAt:function(a){var b=Math.floor(a/8);return 1==(this.buffer[b]>>>7-a%8&1)},put:function(a,b){for(var c=0;c<b;c++)this.putBit(1==
+(a>>>b-c-1&1))},putBit:function(a){var b=Math.floor(this.length/8);this.buffer.length<=b&&this.buffer.push(0);a&&(this.buffer[b]|=128>>>this.length%8);this.length++}};u.prototype={get:function(a){return this.num[a]},getLength:function(){return this.num.length},multiply:function(a){for(var b=Array(this.getLength()+a.getLength()-1).fill(0),c=0;c<this.getLength();c++)for(var d=0;d<a.getLength();d++)b[c+d]^=O.gexp(O.glog(this.get(c))+O.glog(a.get(d)));return new u(b,0)},mod:function(a){if(this.getLength()-
+a.getLength()<0)return this;for(var b=O.glog(this.get(0))-O.glog(a.get(0)),c=Array(this.getLength()).fill(0),d=0;d<this.getLength();d++)c[d]=this.get(d)^O.gexp(O.glog(a.get(d))+b);return new u(c,0).mod(a)}};var O={glog:function(a){if(1>a)throw Error("glog("+a+")");return P[a]},gexp:function(a){for(;0>a;)a+=255;for(;256<=a;)a-=255;return Q[a]},getRSBlocks:function(a,b){var c=R[40*(b-1)+(a-1)];if(!c)throw Error("bad rs block @ typeNumber:"+a+"/errorCorrectLevel:"+b);for(var d=[],e=0;e<c.length/3;e++){var g=
+c[3*e+0],h=c[3*e+1],m=c[3*e+2];for(var r=0;r<h;r++)d.push(new L(g,m))}return d}},P=new Array(256),Q=new Array(256),R=function(){for(var a=[],b=0;40>b;b++)for(var c=1;5>c;c++)a.push([]);return a}();(function(){for(var a=0;256>a;a++)Q[a]=a<8?1<<a:Q[a-4]^Q[a-5]^Q[a-6]^Q[a-8],P[Q[a]]=a;for(var b=0;b<R.length;b++)R[b]=[];function a(b,c,d){R[40*(c-1)+(b-1)].push(d)}a(2,2,[1,26,19]);a(4,2,[1,44,34,1,16,28,1,13,22]);a(6,2,[1,70,55,1,28,44,1,22,36,1,16,28,2,14,22]);a(8,2,[1,100,80,2,32,64,2,26,48,4,9,36,2,16,28]);
+a(10,2,[1,134,108,2,43,86,2,32,64,4,13,32,4,9,26]);})();})();
+</script>
+<script>
+/* Tiny wrapper so the rest of your app can keep calling u({size,bg,fg}).toCanvas(text,ecc) */
+(function(){
+  const ECC = { L: 'L', M: 'M', Q: 'Q', H: 'H' };
+  window.u = function(opts){
+    const size = (opts && opts.size) || 512;
+    const bg   = (opts && opts.bg)   || '#ffffff';
+    const fg   = (opts && opts.fg)   || '#000000';
+    return {
+      toCanvas(text, ecc = 'M'){
+        const qr = new (function(txt, level){
+          const q = new J(0, {L:1,M:0,Q:3,H:2}[level] ?? 0);
+          q.addData(String(txt||''));
+          q.make();
+          return q;
+        })(text, ECC[ecc] || 'M');
+
+        const modules = qr.getModuleCount();
+        const tile = size / modules;
+        const c = document.createElement('canvas');
+        c.width = c.height = size;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = bg;
+        ctx.fillRect(0,0,size,size);
+        ctx.fillStyle = fg;
+        for(let r=0;r<modules;r++){
+          for(let col=0;col<modules;col++){
+            if(qr.isDark(r,col)){
+              ctx.fillRect(Math.round(col*tile), Math.round(r*tile), Math.ceil(tile), Math.ceil(tile));
+            }
+          }
+        }
+        return c;
+      }
+    };
+  };
+})();
+</script>
+
   
   <!-- Minimal wrapper so the rest of your code can call u({size,bg,fg}).toCanvas(text,ecc) -->
   <script>
@@ -426,13 +479,14 @@
   // Dynamic QR
   const qrCanvasHost = $('#qrCanvas');
   let qrRender = u({size:512,bg:'#fff',fg:'#000'});
+
   function currentLandingUrl(linkId, themeId){
-    const base = location.origin + location.pathname.replace(/index\.html?$/,'') + 'landing.html';
-    const params = new URLSearchParams();
-    params.set('linkId', linkId);
-    if(themeId) params.set('themeId', themeId);
-    return `${base}?${params.toString()}`;
-  }
+   const url = new URL('landing.html', location.href); // resolves sibling landing.html
+   const params = url.searchParams;
+   params.set('linkId', linkId);
+   if (themeId) params.set('themeId', themeId);
+   return url.toString();
+ }
 
   function drawQR(){
     const size = +$('#qrSize').value || 512;
