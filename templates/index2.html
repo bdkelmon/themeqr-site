@@ -506,19 +506,60 @@ a(10,2,[1,134,108,2,43,86,2,32,64,4,13,32,4,9,26]);})();})();
    return url.toString();
  }
 
-  function drawQR(){
-    const size = +$('#qrSize').value || 512;
-    const fg = $('#qrFg').value; const bg = $('#qrBg').value; const ecc = $('#qrEcc').value;
-    const linkId = ($('#linkId').value||'').trim();
-    const themeId = $('#linkTheme').value || '';
-    if(!linkId){ qrCanvasHost.innerHTML = `<div class="muted small">Enter a Link ID</div>`; $('#encoded').textContent='—'; return; }
-    qrRender = u({size, bg, fg});
-    const url = currentLandingUrl(linkId, themeId);
-    const c = qrRender.toCanvas(url, ecc);
-    qrCanvasHost.innerHTML = '';
-    qrCanvasHost.appendChild(c);
-    $('#encoded').textContent = url;
+ /* === QR renderer with fallback ===
+   - If window.u exists (inline QR lib), use it (canvas output)
+   - Otherwise, use an online PNG endpoint (img output) */
+function hasU(){ return typeof window.u === 'function'; }
+
+function hexNoHash(c){ return String(c || '#000000').replace('#',''); }
+
+/** Renders a QR into a host element. Returns a Promise<{type:'canvas'|'img', el:HTMLElement}> */
+function renderQRInto(host, text, {size=512, bg='#ffffff', fg='#000000', ecc='M'} = {}){
+  host.innerHTML = '';
+  if (hasU()){
+    const r = window.u({size, bg, fg});
+    const c = r.toCanvas(String(text || ''), ecc);
+    host.appendChild(c);
+    return Promise.resolve({ type:'canvas', el:c });
+  } else {
+    const img = new Image();
+    img.alt = 'QR';
+    img.width = size; img.height = size;
+    const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&ecc=${encodeURIComponent(ecc)}&color=${hexNoHash(fg)}&bgcolor=${hexNoHash(bg)}&qzone=0&data=${encodeURIComponent(String(text||''))}`;
+    img.crossOrigin = 'anonymous'; // so we can draw it to canvas for download/overlay
+    img.src = url;
+    host.appendChild(img);
+    return img.decode().then(()=>({ type:'img', el:img })).catch(()=>({ type:'img', el:img }));
   }
+}
+
+/** Helper: convert <img> to a <canvas> (same dimensions) */
+function imageToCanvas(img){
+  const c = document.createElement('canvas');
+  c.width = img.naturalWidth || img.width || 512;
+  c.height = img.naturalHeight || img.height || 512;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(img, 0, 0, c.width, c.height);
+  return c;
+}
+
+  async function drawQR(){
+  const size = +$('#qrSize').value || 512;
+  const fg = $('#qrFg').value; 
+  const bg = $('#qrBg').value; 
+  const ecc = $('#qrEcc').value;
+  const linkId = ($('#linkId').value||'').trim();
+  const themeId = $('#linkTheme').value || '';
+
+  // Always render something, even if linkId is empty (placeholder URL)
+  const payloadUrl = linkId ? currentLandingUrl(linkId, themeId) : 'https://example.com';
+
+  const result = await renderQRInto(qrCanvasHost, payloadUrl, {size, bg, fg, ecc});
+  $('#encoded').textContent = payloadUrl;
+
+  // Store a reference so Download button can grab the right node
+  qrCanvasHost.dataset.qrType = result.type; // 'canvas' | 'img'
+}
 
   $('#qrSize, #qrFg, #qrBg, #qrEcc, #linkId, #linkTheme').addEventListener('input', drawQR);
 
@@ -557,9 +598,15 @@ a(10,2,[1,134,108,2,43,86,2,32,64,4,13,32,4,9,26]);})();})();
   });
 
   $('#downloadQR').addEventListener('click', ()=>{
-    const canvas = qrCanvasHost.querySelector('canvas'); if(!canvas){ alert('Generate a QR first.'); return; }
-    const a=document.createElement('a'); a.download=`qr-${($('#linkId').value||'link')}.png`; a.href=canvas.toDataURL('image/png'); a.click();
-  });
+  let node = qrCanvasHost.querySelector('canvas, img');
+  if(!node){ alert('Generate a QR first.'); return; }
+  // Ensure we have a canvas (convert <img> to <canvas> if needed)
+  const canvas = node.tagName === 'CANVAS' ? node : imageToCanvas(node);
+  const a=document.createElement('a'); 
+  a.download=`qr-${($('#linkId').value||'link')}.png`; 
+  a.href=canvas.toDataURL('image/png'); 
+  a.click();
+});
 
   // THEME STUDIO
    let workingTheme = {
@@ -799,11 +846,11 @@ a(10,2,[1,134,108,2,43,86,2,32,64,4,13,32,4,9,26]);})();})();
     const fg = $('#qrFg').value, bg = $('#qrBg').value, ecc = $('#qrEcc').value;
     const url = currentLandingUrl(linkId, themeId);
     const size = Math.max(128, Math.min(1024, Math.round(qrDrag.clientWidth || 180)));
-    const r = u({size, fg, bg});
-    const canvas = r.toCanvas(url, ecc);
-    qrDragInner.innerHTML=''; qrDragInner.appendChild(canvas);
+    qrDragInner.innerHTML = '';
+    renderQRInto(qrDragInner, url, { size, bg, fg, ecc }).then(({type, el})=>{
     $('#overlayQrPx').textContent = size;
-  }
+});
+
 
   function setOverlayOpacity(val){
     qrDrag.style.opacity = val;
@@ -945,7 +992,8 @@ a(10,2,[1,134,108,2,43,86,2,32,64,4,13,32,4,9,26]);})();})();
     }
 
     // draw QR
-    const qrc = qrDragInner.querySelector('canvas');
+    let qrc = qrDragInner.querySelector('canvas, img');
+    if (qrc && qrc.tagName !== 'CANVAS') qrc = imageToCanvas(qrc);
     const opacity = parseFloat($('#overlayOpacity').value||'1');
     ctx.globalAlpha = opacity;
     const x = qrDrag.offsetLeft, y = qrDrag.offsetTop, s = qrDrag.clientWidth;
