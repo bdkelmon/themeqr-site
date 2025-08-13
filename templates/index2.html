@@ -368,8 +368,8 @@
     </section>
   </main>
 
-  <!-- ============== Dependencies: embedded QR generator (MIT: Kazuhiko Arase qrcode.js) ============== -->
-  <!-- Inline QR library + wrapper (offline-safe) -->
+<!-- ============== Dependencies: embedded QR generator (MIT: Kazuhiko Arase qrcode.js) ============== -->
+<!-- Inline QR library + wrapper (offline-safe) -->
 <script>
 /*! qrcode-generator v1.4.4 | MIT | https://github.com/kazuhikoarase/qrcode-generator */
 (function(){function p(a){this.mode=t;this.data=a}function J(a,b){this.typeNumber=a;this.errorCorrectLevel=b;this.modules=null;this.moduleCount=0;this.dataList=[]}function K(a){this.buffer=[];this.length=0;null!=a&&("number"==typeof a?this.put(a,8):this.putBytes(a))}function u(a,b){if(void 0==a.length)throw Error(a.length+"/"+b);for(var c=0;c<a.length&&0==a[c];)c++;this.num=new Array(a.length-c+b);for(var d=0;d<a.length-c;d++)this.num[d]=a[d+c]}function L(a,b){this.totalCount=a;this.dataCount=b}
@@ -458,7 +458,48 @@ a(10,2,[1,134,108,2,43,86,2,32,64,4,13,32,4,9,26]);})();})();
   })();
 </script>
 
+<!-- 1) QR library from CDN (preferred path) -->
+<script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
 
+<!-- 2) Safe wrapper: defines window.u() only if QRCode is present -->
+<script>
+/**
+ * u({ size, bg, fg }) -> { toCanvas(text, ecc:'L'|'M'|'Q'|'H') }
+ * Uses QRCode.toCanvas when available. If not, it leaves window.u undefined.
+ * Our fallback renderer below will handle the no-lib case.
+ */
+(function () {
+  if (!window.QRCode) {
+    console.warn('[QR] CDN library not found yet; will use fallback renderer.');
+    return; // leave window.u undefined; fallback will take over
+  }
+  const ECC = { L: 'low', M: 'medium', Q: 'quartile', H: 'high' };
+  window.u = function(opts){
+    const size = opts?.size || 512;
+    const bg   = opts?.bg   || '#ffffff';
+    const fg   = opts?.fg   || '#000000';
+    return {
+      toCanvas(text, ecc = 'M') {
+        const c = document.createElement('canvas');
+        c.width = c.height = size;
+        QRCode.toCanvas(
+          c,
+          String(text || ''),
+          {
+            errorCorrectionLevel: ECC[ecc] || 'medium',
+            color: { dark: fg, light: bg },
+            width: size,
+            margin: 0
+          }
+        );
+        return c;
+      }
+    };
+  };
+})();
+</script>
+
+  
   <!-- ============== App Logic ============== -->
   <script>
   // Utilities & storage
@@ -505,43 +546,6 @@ a(10,2,[1,134,108,2,43,86,2,32,64,4,13,32,4,9,26]);})();})();
    if (themeId) params.set('themeId', themeId);
    return url.toString();
  }
-  
- <!-- Load QRCode library from CDN before our render function -->
- <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
-
- 
- /**
- * Defines window.u() only if QRCode is available.
-  */
- (function () {
-   if (!window.QRCode) {
-     console.warn('[QR] QRCode library not found; will use fallback renderer.');
-     return; // let renderQRInto() fall back to image API
-   }
-   const ECC = { L: 'low', M: 'medium', Q: 'quartile', H: 'high' };
-   window.u = function(opts){
-     const size = opts?.size || 512;
-     const bg   = opts?.bg   || '#ffffff';
-     const fg   = opts?.fg   || '#000000';
-     return {
-       toCanvas(text, ecc = 'M') {
-         const c = document.createElement('canvas');
-         c.width = c.height = size;
-         QRCode.toCanvas(
-           c,
-           String(text || ''),
-           {
-             errorCorrectionLevel: ECC[ecc] || 'medium',
-             color: { dark: fg, light: bg },
-             width: size,
-             margin: 0
-           }
-         );
-         return c;
-       }
-     };
-   };
- })();
  
  /* ========== Robust renderer with fallback ========== */
  function hasU(){ return typeof window.u === 'function'; }
