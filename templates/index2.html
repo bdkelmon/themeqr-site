@@ -505,61 +505,113 @@ a(10,2,[1,134,108,2,43,86,2,32,64,4,13,32,4,9,26]);})();})();
    if (themeId) params.set('themeId', themeId);
    return url.toString();
  }
+  
+ <!-- Load QRCode library from CDN before our render function -->
+ <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
 
- /* === QR renderer with fallback ===
-   - If window.u exists (inline QR lib), use it (canvas output)
-   - Otherwise, use an online PNG endpoint (img output) */
-function hasU(){ return typeof window.u === 'function'; }
-
-function hexNoHash(c){ return String(c || '#000000').replace('#',''); }
-
-/** Renders a QR into a host element. Returns a Promise<{type:'canvas'|'img', el:HTMLElement}> */
-function renderQRInto(host, text, {size=512, bg='#ffffff', fg='#000000', ecc='M'} = {}){
-  host.innerHTML = '';
-  if (hasU()){
-    const r = window.u({size, bg, fg});
-    const c = r.toCanvas(String(text || ''), ecc);
-    host.appendChild(c);
-    return Promise.resolve({ type:'canvas', el:c });
-  } else {
-    const img = new Image();
-    img.alt = 'QR';
-    img.width = size; img.height = size;
-    const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&ecc=${encodeURIComponent(ecc)}&color=${hexNoHash(fg)}&bgcolor=${hexNoHash(bg)}&qzone=0&data=${encodeURIComponent(String(text||''))}`;
-    img.crossOrigin = 'anonymous'; // so we can draw it to canvas for download/overlay
-    img.src = url;
-    host.appendChild(img);
-    return img.decode().then(()=>({ type:'img', el:img })).catch(()=>({ type:'img', el:img }));
-  }
-}
-
-/** Helper: convert <img> to a <canvas> (same dimensions) */
-function imageToCanvas(img){
-  const c = document.createElement('canvas');
-  c.width = img.naturalWidth || img.width || 512;
-  c.height = img.naturalHeight || img.height || 512;
-  const ctx = c.getContext('2d');
-  ctx.drawImage(img, 0, 0, c.width, c.height);
-  return c;
-}
+ 
+ /**
+ * Defines window.u() only if QRCode is available.
+  */
+ (function () {
+   if (!window.QRCode) {
+     console.warn('[QR] QRCode library not found; will use fallback renderer.');
+     return; // let renderQRInto() fall back to image API
+   }
+   const ECC = { L: 'low', M: 'medium', Q: 'quartile', H: 'high' };
+   window.u = function(opts){
+     const size = opts?.size || 512;
+     const bg   = opts?.bg   || '#ffffff';
+     const fg   = opts?.fg   || '#000000';
+     return {
+       toCanvas(text, ecc = 'M') {
+         const c = document.createElement('canvas');
+         c.width = c.height = size;
+         QRCode.toCanvas(
+           c,
+           String(text || ''),
+           {
+             errorCorrectionLevel: ECC[ecc] || 'medium',
+             color: { dark: fg, light: bg },
+             width: size,
+             margin: 0
+           }
+         );
+         return c;
+       }
+     };
+   };
+ })();
+ 
+ /* ========== Robust renderer with fallback ========== */
+ function hasU(){ return typeof window.u === 'function'; }
+ function hexNoHash(c){ return String(c || '#000000').replace('#',''); }
+ 
+ /** Render a QR into a container. Returns Promise<{type:'canvas'|'img', el:HTMLElement}> */
+ function renderQRInto(host, text, {size=512, bg='#ffffff', fg='#000000', ecc='M'} = {}){
+   host.innerHTML = '';
+ 
+   if (hasU()) {
+     try {
+       const r = window.u({size, bg, fg});
+       const c = r.toCanvas(String(text || ''), ecc);
+       host.appendChild(c);
+       return Promise.resolve({ type:'canvas', el:c });
+     } catch (e) {
+       console.warn('[QR] u().toCanvas failed; falling back to image API.', e);
+       // continues to image fallback…
+     }
+   }
+ 
+   // Image fallback (network)
+   const img = new Image();
+   img.alt = 'QR';
+   img.width = size; img.height = size;
+   img.crossOrigin = 'anonymous';
+   const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&ecc=${encodeURIComponent(ecc)}&color=${hexNoHash(fg)}&bgcolor=${hexNoHash(bg)}&qzone=0&data=${encodeURIComponent(String(text||''))}`;
+   img.src = url;
+   host.appendChild(img);
+   return (img.decode ? img.decode() : Promise.resolve()).then(()=>({ type:'img', el:img })).catch(()=>({ type:'img', el:img }));
+ }
+ 
+ /** Convert <img> to <canvas> (for downloads/overlay export) */
+ function imageToCanvas(img){
+   const c = document.createElement('canvas');
+   c.width = img.naturalWidth || img.width || 512;
+   c.height = img.naturalHeight || img.height || 512;
+   const ctx = c.getContext('2d');
+   ctx.drawImage(img, 0, 0, c.width, c.height);
+   return c;
+ }
+ 
+ /** Helper: convert <img> to a <canvas> (same dimensions) */
+ function imageToCanvas(img){
+   const c = document.createElement('canvas');
+   c.width = img.naturalWidth || img.width || 512;
+   c.height = img.naturalHeight || img.height || 512;
+   const ctx = c.getContext('2d');
+   ctx.drawImage(img, 0, 0, c.width, c.height);
+   return c;
+ }
 
   async function drawQR(){
   const size = +$('#qrSize').value || 512;
-  const fg = $('#qrFg').value; 
-  const bg = $('#qrBg').value; 
+  const fg = $('#qrFg').value;
+  const bg = $('#qrBg').value;
   const ecc = $('#qrEcc').value;
   const linkId = ($('#linkId').value||'').trim();
   const themeId = $('#linkTheme').value || '';
 
-  // Always render something, even if linkId is empty (placeholder URL)
+  // Always show a QR (placeholder until Link ID is provided)
   const payloadUrl = linkId ? currentLandingUrl(linkId, themeId) : 'https://example.com';
 
-  const result = await renderQRInto(qrCanvasHost, payloadUrl, {size, bg, fg, ecc});
+  const result = await renderQRInto(qrCanvasHost, payloadUrl, { size, bg, fg, ecc });
   $('#encoded').textContent = payloadUrl;
 
-  // Store a reference so Download button can grab the right node
+  // Remember what we rendered so the Download button knows what to grab
   qrCanvasHost.dataset.qrType = result.type; // 'canvas' | 'img'
 }
+
 
   $('#qrSize, #qrFg, #qrBg, #qrEcc, #linkId, #linkTheme').addEventListener('input', drawQR);
 
@@ -600,13 +652,13 @@ function imageToCanvas(img){
   $('#downloadQR').addEventListener('click', ()=>{
   let node = qrCanvasHost.querySelector('canvas, img');
   if(!node){ alert('Generate a QR first.'); return; }
-  // Ensure we have a canvas (convert <img> to <canvas> if needed)
   const canvas = node.tagName === 'CANVAS' ? node : imageToCanvas(node);
-  const a=document.createElement('a'); 
-  a.download=`qr-${($('#linkId').value||'link')}.png`; 
-  a.href=canvas.toDataURL('image/png'); 
+  const a=document.createElement('a');
+  a.download=`qr-${($('#linkId').value||'link')}.png`;
+  a.href=canvas.toDataURL('image/png');
   a.click();
 });
+
 
   // THEME STUDIO
    let workingTheme = {
@@ -847,7 +899,7 @@ function imageToCanvas(img){
     const url = currentLandingUrl(linkId, themeId);
     const size = Math.max(128, Math.min(1024, Math.round(qrDrag.clientWidth || 180)));
     qrDragInner.innerHTML = '';
-    renderQRInto(qrDragInner, url, { size, bg, fg, ecc }).then(({type, el})=>{
+    renderQRInto(qrDragInner, url, { size, bg, fg, ecc }).then(()=>{
     $('#overlayQrPx').textContent = size;
 });
 
