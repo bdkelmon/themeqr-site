@@ -1,1134 +1,1870 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>ThemeQR — Dynamic QR + Themes + Overlays</title>
-<link rel="icon" href="data:," />
-<style>
-  :root{
-    --bg:#0f1220; --panel:#171a2b; --muted:#8c93b2; --text:#e8ebff; --accent:#6c7dff; --accent-2:#2de6c5; --danger:#ff6b6b;
-    --radius:14px; --radius-sm:10px; --shadow:0 10px 30px rgba(0,0,0,.35);
-    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    --sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji", "Segoe UI Symbol";
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{margin:0;background:radial-gradient(1200px 600px at 70% -10%, #4fc724 0%, #0f1220 55%) fixed;color:var(--text);font-family:var(--sans);}
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ThemeQR — Dynamic QR + Themes + Overlays</title>
+    <link rel="icon" href="data:," />
+    <style>
+      :root {
+        --bg: #0f1220;
+        --panel: #171a2b;
+        --muted: #8c93b2;
+        --text: #e8ebff;
+        --accent: #6c7dff;
+        --accent-2: #2de6c5;
+        --danger: #ff6b6b;
+        --radius: 14px;
+        --radius-sm: 10px;
+        --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        --sans: Inter, system-ui, -apple-system, Segoe UI, Roboto,
+          "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
+          "Segoe UI Emoji", "Segoe UI Symbol";
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        background: radial-gradient(
+            1200px 600px at 70% -10%,
+            #4fc724 0%,
+            #0f1220 55%
+          )
+          fixed;
+        color: var(--text);
+        font-family: var(--sans);
+      }
 
-  header{
-    display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 22px;border-bottom:1px solid #232741;background:linear-gradient(180deg,#15182a, #12162a);
-    position:sticky;top:0;z-index:5;
-  }
-  .logo{display:flex;gap:12px;align-items:center;font-weight:700}
-  .logo .dot{width:12px;height:12px;border-radius:50%;background:conic-gradient(from 200deg, var(--accent), var(--accent-2))}
-  nav{display:flex;gap:10px;flex-wrap:wrap}
-  nav button{
-    background:#1b1f35;border:1px solid #262a45;color:var(--text);padding:10px 14px;border-radius:10px;cursor:pointer;
-  }
-  nav button.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(108,125,255,.25) inset}
-  main{display:grid;grid-template-columns:340px 1fr;gap:18px;padding:18px;max-width:1400px;margin:0 auto;}
-  aside{background:var(--panel);border:1px solid #232741;border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);height:calc(100vh - 110px);position:sticky;top:90px;overflow:auto}
-  section{background:rgba(18,22,43,.65);backdrop-filter:saturate(110%) blur(6px);border:1px solid #232741;border-radius:var(--radius);box-shadow:var(--shadow);min-height:480px}
-  .pad{padding:16px}
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 22px;
+        border-bottom: 1px solid #232741;
+        background: linear-gradient(180deg, #15182a, #12162a);
+        position: sticky;
+        top: 0;
+        z-index: 5;
+      }
+      .logo {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        font-weight: 700;
+      }
+      .logo .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: conic-gradient(from 200deg, var(--accent), var(--accent-2));
+      }
+      nav {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      nav button {
+        background: #1b1f35;
+        border: 1px solid #262a45;
+        color: var(--text);
+        padding: 10px 14px;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      nav button.active {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(108, 125, 255, 0.25) inset;
+      }
+      main {
+        display: grid;
+        grid-template-columns: 340px 1fr;
+        gap: 18px;
+        padding: 18px;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+      aside {
+        background: var(--panel);
+        border: 1px solid #232741;
+        border-radius: var(--radius);
+        padding: 14px;
+        box-shadow: var(--shadow);
+        height: calc(100vh - 110px);
+        position: sticky;
+        top: 90px;
+        overflow: auto;
+      }
+      section {
+        background: rgba(18, 22, 43, 0.65);
+        backdrop-filter: saturate(110%) blur(6px);
+        border: 1px solid #232741;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        min-height: 480px;
+      }
+      .pad {
+        padding: 16px;
+      }
 
-  h2{margin:8px 0 14px 0;font-size:18px}
-  label{display:block;font-size:12px;color:var(--muted);margin:14px 0 6px}
-  input[type=text], input[type=url], input[type=number], select, textarea{
-    width:100%;padding:10px 12px;border:1px solid #2a2e4d;background:#13182e;color:var(--text);border-radius:10px;font-size:14px
-  }
-  textarea{min-height:70px;resize:vertical}
-  .row{display:flex;gap:10px}
-  .row>div{flex:1}
-  .btn{
-    appearance:none;border:1px solid #2b2f4e;background:#171b34;color:#e8ebff;border-radius:10px;padding:10px 12px;cursor:pointer
-  }
-  .btn.primary{background:linear-gradient(180deg,#3b47ff,#6c7dff);border-color:#5563ff}
-  .btn.ghost{background:#13182e;}
-  .btn.warn{border-color:var(--danger);color:#ffd6d6}
-  .btn:disabled{opacity:.6;cursor:not-allowed}
-  .stack{display:flex;gap:10px;flex-wrap:wrap}
-  .muted{color:var(--muted)}
-  .code{font-family:var(--mono);background:#0b0f23;border:1px solid #262a45;border-radius:8px;padding:6px 8px;display:inline-block}
-  .pill{padding:6px 8px;border:1px solid #262a45;border-radius:999px;background:#121632}
-  .list{display:flex;flex-direction:column;gap:10px}
-  .item{border:1px dashed #2a2e4d;border-radius:12px;padding:10px;display:flex;justify-content:space-between;align-items:center}
-  .small{font-size:12px}
+      h2 {
+        margin: 8px 0 14px 0;
+        font-size: 18px;
+      }
+      label {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+        margin: 14px 0 6px;
+      }
+      input[type="text"],
+      input[type="url"],
+      input[type="number"],
+      select,
+      textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #2a2e4d;
+        background: #13182e;
+        color: var(--text);
+        border-radius: 10px;
+        font-size: 14px;
+      }
+      textarea {
+        min-height: 70px;
+        resize: vertical;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+      }
+      .row > div {
+        flex: 1;
+      }
+      .btn {
+        appearance: none;
+        border: 1px solid #2b2f4e;
+        background: #171b34;
+        color: #e8ebff;
+        border-radius: 10px;
+        padding: 10px 12px;
+        cursor: pointer;
+      }
+      .btn.primary {
+        background: linear-gradient(180deg, #3b47ff, #6c7dff);
+        border-color: #5563ff;
+      }
+      .btn.ghost {
+        background: #13182e;
+      }
+      .btn.warn {
+        border-color: var(--danger);
+        color: #ffd6d6;
+      }
+      .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .stack {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .code {
+        font-family: var(--mono);
+        background: #0b0f23;
+        border: 1px solid #262a45;
+        border-radius: 8px;
+        padding: 6px 8px;
+        display: inline-block;
+      }
+      .pill {
+        padding: 6px 8px;
+        border: 1px solid #262a45;
+        border-radius: 999px;
+        background: #121632;
+      }
+      .list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .item {
+        border: 1px dashed #2a2e4d;
+        border-radius: 12px;
+        padding: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .small {
+        font-size: 12px;
+      }
 
-  /* Canvas / overlay workspace */
-  #overlayStage{
-    position:relative;background:#0b0f23;border-radius:var(--radius);border:1px solid #232741;overflow:hidden;min-height:420px;display:grid;place-items:center
-  }
-  #overlayStage .placard{color:#92a1ff}
-  .stage-wrap{padding:16px}
-  .stage-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+      /* Canvas / overlay workspace */
+      #overlayStage {
+        position: relative;
+        background: #0b0f23;
+        border-radius: var(--radius);
+        border: 1px solid #232741;
+        overflow: hidden;
+        min-height: 420px;
+        display: grid;
+        place-items: center;
+      }
+      #overlayStage .placard {
+        color: #92a1ff;
+      }
+      .stage-wrap {
+        padding: 16px;
+      }
+      .stage-controls {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
 
-  .qr-wrap{display:grid;grid-template-columns:300px 1fr;gap:12px}
-  .qr-box{display:grid;place-items:center;background:#0b0f23;border:1px solid #232741;border-radius:12px;padding:12px}
-  canvas, video, img{max-width:100%;height:auto}
-  .floating-qr{
-    position:absolute; left:20px; top:20px; width:180px; height:180px; cursor:move;
-    display:grid; place-items:center; background:transparent; user-select:none;
-  }
-  .floating-qr.resizing{outline:2px dashed #6c7dff}
-  .resize-handle{
-    position:absolute; right:-8px; bottom:-8px; width:16px; height:16px; background:#6c7dff; border-radius:4px; cursor:nwse-resize; box-shadow:0 2px 6px rgba(0,0,0,.4)
-  }
+      .qr-wrap {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 12px;
+      }
+      .qr-box {
+        display: grid;
+        place-items: center;
+        background: #0b0f23;
+        border: 1px solid #232741;
+        border-radius: 12px;
+        padding: 12px;
+      }
+      canvas,
+      video,
+      img {
+        max-width: 100%;
+        height: auto;
+      }
+      .floating-qr {
+        position: absolute;
+        left: 20px;
+        top: 20px;
+        width: 180px;
+        height: 180px;
+        cursor: move;
+        display: grid;
+        place-items: center;
+        background: transparent;
+        user-select: none;
+      }
+      .floating-qr.resizing {
+        outline: 2px dashed #6c7dff;
+      }
+      .resize-handle {
+        position: absolute;
+        right: -8px;
+        bottom: -8px;
+        width: 16px;
+        height: 16px;
+        background: #6c7dff;
+        border-radius: 4px;
+        cursor: nwse-resize;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+      }
 
-  /* Theme preview card */
-  .theme-card{
-    border:1px solid #2a2e4d;border-radius:12px;overflow:hidden;background:#0d1130
-  }
-  .theme-card header{padding:10px 12px;border-bottom:1px solid #1f2342;background:#11163a}
-  .theme-card .body{padding:12px}
+      /* Theme preview card */
+      .theme-card {
+        border: 1px solid #2a2e4d;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #0d1130;
+      }
+      .theme-card header {
+        padding: 10px 12px;
+        border-bottom: 1px solid #1f2342;
+        background: #11163a;
+      }
+      .theme-card .body {
+        padding: 12px;
+      }
 
-  /* Landing preview (iframe stand-in) */
-  .landing-preview{
-    background:#0e1127; border:1px solid #232741;border-radius:12px; overflow:hidden;
-  }
-  .landing-sim{
-    display:grid; grid-template-rows: 260px auto; min-height:360px;
-    background: linear-gradient(140deg,var(--lp-bg1,#101635), var(--lp-bg2,#0b0f23));
-    color: var(--lp-fg,#f3f6ff);
-    font-family: var(--lp-font, var(--sans));
-  }
-  .landing-sim .media{
-    display:grid; place-items:center; overflow:hidden; background:#070a18
-  }
-  .landing-sim .media img, .landing-sim .media video{ width:100%; height:100%; object-fit:cover }
-  .landing-sim .content{padding:16px}
-  .landing-sim .cta{display:inline-block;margin-top:8px;padding:10px 14px;border-radius:10px;
-    color:var(--lp-cta-fg,#09122a);background:var(--lp-cta-bg,#6c7dff);text-decoration:none;font-weight:600}
+      /* Landing preview (iframe stand-in) */
+      .landing-preview {
+        background: #0e1127;
+        border: 1px solid #232741;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .landing-sim {
+        display: grid;
+        grid-template-rows: 260px auto;
+        min-height: 360px;
+        background: linear-gradient(
+          140deg,
+          var(--lp-bg1, #101635),
+          var(--lp-bg2, #0b0f23)
+        );
+        color: var(--lp-fg, #f3f6ff);
+        font-family: var(--lp-font, var(--sans));
+      }
+      .landing-sim .media {
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        background: #070a18;
+      }
+      .landing-sim .media img,
+      .landing-sim .media video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .landing-sim .content {
+        padding: 16px;
+      }
+      .landing-sim .cta {
+        display: inline-block;
+        margin-top: 8px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        color: var(--lp-cta-fg, #09122a);
+        background: var(--lp-cta-bg, #6c7dff);
+        text-decoration: none;
+        font-weight: 600;
+      }
 
-  .footer-note{padding:14px;text-align:center;color:#95a0d8}
-</style>
-</head>
-<body>
-  <header>
-    <div class="logo"><span class="dot"></span><span>ThemeQR</span><span class="muted small"></span></div>
-    <nav id="tabs">
-      <button data-tab="qr" class="active">Dynamic QR</button>
-      <button data-tab="themes">Theme Studio</button>
-      <button data-tab="overlay">QR Overlay</button>
-      <button data-tab="io">Export / Import</button>
-      <a class="btn ghost" href="./landing.html" target="_blank" title="Open Landing Page">Open landing.html ↗</a>
-    </nav>
-  </header>
+      .footer-note {
+        padding: 14px;
+        text-align: center;
+        color: #95a0d8;
+      }
 
-  <main>
-    <aside id="leftPanel"><!-- Populated by JS --></aside>
-
-    <!-- Right panel content -->
-    <section id="content">
-      <div id="qr" class="pad">
-        <h2>Dynamic QR Codes</h2>
-        <p class="muted">Create a short <span class="pill">Link ID</span> that points to a destination URL. The QR encodes a local resolver so you can <b>change where it goes later</b> without reprinting. 💡</p>
-
-        <div class="qr-wrap" style="margin-top:12px">
-          <div class="qr-box">
-            <div id="qrCanvas"></div>
-          </div>
-          <div>
-            <div class="row">
-              <div>
-                <label>Link ID (letters, digits, “-”)</label>
-                <input id="linkId" type="text" placeholder="e.g. spring-campaign" />
-              </div>
-              <div>
-                <label>Destination URL</label>
-                <input id="linkUrl" type="url" placeholder="https://example.com/landing" />
-              </div>
-            </div>
-
-            <div class="row">
-              <div>
-                <label>Theme to apply on landing (optional)</label>
-                <select id="linkTheme"></select>
-              </div>
-              <div>
-                <label>QR Size (px)</label>
-                <input id="qrSize" type="number" value="512" min="128" max="1024" />
-              </div>
-            </div>
-
-            <div class="row">
-              <div>
-                <label>QR Foreground</label>
-                <input id="qrFg" type="color" value="#000000" />
-              </div>
-              <div>
-                <label>QR Background</label>
-                <input id="qrBg" type="color" value="#ffffff" />
-              </div>
-              <div>
-                <label>Error Correction</label>
-                <select id="qrEcc">
-                  <option value="L">L (7%)</option>
-                  <option value="M" selected>M (15%)</option>
-                  <option value="Q">Q (25%)</option>
-                  <option value="H">H (30%)</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="stack" style="margin-top:8px">
-              <button class="btn primary" id="saveLink">Save / Update Link</button>
-              <button class="btn" id="downloadQR">Download PNG</button>
-              <span class="muted small">Encoded URL: <span id="encoded" class="code">—</span></span>
-            </div>
-
-            <div style="margin-top:14px">
-              <label>Saved Dynamic Links</label>
-              <div id="linksList" class="list"></div>
-            </div>
-          </div>
-        </div>
+      /* Theme Studio: resizable media wrapper */
+.resizable {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+.resizable img,
+.resizable video {
+  display: block;
+  max-width: none; /* let JS control width */
+  width: 100%;     /* media fills wrapper width */
+  height: auto;
+}
+.resizer.se {
+  width: 12px; height: 12px;
+  background: #fff; border: 2px solid #000; border-radius: 50%;
+  position: absolute; right: -8px; bottom: -8px;
+  cursor: se-resize; z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,0,0,.35);
+}
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="logo">
+        <span class="dot"></span><span>ThemeQR</span
+        ><span class="muted small"></span>
       </div>
+      <nav id="tabs">
+        <button data-tab="qr" class="active">Dynamic QR</button>
+        <button data-tab="themes">Theme Studio</button>
+        <button data-tab="overlay">QR Overlay</button>
+        <button data-tab="io">Export / Import</button>
+        <a
+          class="btn ghost"
+          href="./landing.html"
+          target="_blank"
+          title="Open Landing Page"
+          >Open landing.html ↗</a
+        >
+      </nav>
+    </header>
 
-      <div id="themes" class="pad" hidden>
-        <h2>Theme Studio</h2>
-        <p class="muted">Design a landing experience with image/video, colors, and a button. Save it as a theme and apply it to any QR.</p>
+    <main>
+      <aside id="leftPanel"><!-- Populated by JS --></aside>
 
-        <div class="row">
-          <div>
-            <label>Theme Name</label>
-            <input id="themeName" type="text" placeholder="e.g. Neon Night" />
-          </div>
-          <div>
-            <label>Display Title</label>
-            <input id="themeTitle" type="text" placeholder="Your catchy headline" />
-          </div>
-          <div>
-            <label>Subtitle</label>
-            <input id="themeSubtitle" type="text" placeholder="One line description" />
-          </div>
-        </div>
+      <!-- Right panel content -->
+      <section id="content">
+        <div id="qr" class="pad">
+          <h2>Dynamic QR Codes</h2>
+          <p class="muted">
+            Create a short <span class="pill">Link ID</span> that points to a
+            destination URL. The QR encodes a local resolver so you can
+            <b>change where it goes later</b> without reprinting. 💡
+          </p>
 
-        <div class="row">
-          <div>
-            <label>CTA Text</label>
-            <input id="themeCtaText" type="text" placeholder="Shop Now" />
-          </div>
-          <div>
-            <label>CTA URL (optional)</label>
-            <input id="themeCtaUrl" type="url" placeholder="https://example.com" />
-          </div>
-          <div>
-            <label>Font Family</label>
-            <select id="themeFont">
-              <option value="Inter,system-ui">Inter (Default)</option>
-              <option value="Georgia,serif">Georgia (Serif)</option>
-              <option value="Tahoma,sans-serif">Tahoma</option>
-              <option value="'Segoe UI',sans-serif">Segoe UI</option>
-              <option value="Verdana,sans-serif">Verdana</option>
-              <option value="'Times New Roman',serif">Times</option>
-              <option value="'Courier New',monospace">Courier</option>
-            </select>
-          </div>
-        </div>
-        <!-- Redirect + Skip controls -->
-        <div class="row">
-          <div>
-            <label>Redirect Delay (seconds)</label>
-            <input id="themeDelay" type="number" min="0" max="120" step="1" value="2" />
-            <div class="small muted">0 = no auto‑redirect</div>
-          </div>
-          <div style="display:flex;align-items:flex-end;gap:8px">
-            <label class="pill small" style="margin:0">
-              <input id="themeShowSkip" type="checkbox" checked style="vertical-align:middle;margin-right:6px" />
-              Show “Skip” button
-            </label>
-          </div>
-          <div>
-            <label>Skip Button Text</label>
-            <input id="themeSkipText" type="text" value="Skip" />
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label>BG Color 1</label>
-            <input id="themeBg1" type="color" value="#101635" />
-          </div>
-          <div>
-            <label>BG Color 2</label>
-            <input id="themeBg2" type="color" value="#0b0f23" />
-          </div>
-          <div>
-            <label>Text Color</label>
-            <input id="themeFg" type="color" value="#f3f6ff" />
-          </div>
-          <div>
-            <label>CTA BG</label>
-            <input id="themeCtaBg" type="color" value="#6c7dff" />
-          </div>
-          <div>
-            <label>CTA Text</label>
-            <input id="themeCtaFg" type="color" value="#09122a" />
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label>Upload Image or Video</label>
-            <input id="themeMedia" type="file" accept="image/*,video/*" />
-          </div>
-          <div>
-            <label>Media Alt Text (for images)</label>
-            <input id="themeAlt" type="text" placeholder="Describe the image" />
-          </div>
-          <div style="display:flex;align-items:flex-end">
-            <button id="clearMedia" class="btn ghost">Remove Media</button>
-          </div>
-        </div>
-
-        <div class="row" style="margin-top:8px">
-          <div class="theme-card" style="flex:1">
-            <header><strong>Live Preview</strong></header>
-            <div class="body">
-              <div class="landing-preview">
-                <div id="landingSim" class="landing-sim">
-                  <div class="media" id="simMedia"><div class="placard">Upload media to preview…</div></div>
-                  <div class="content">
-                    <div id="simTitle" style="font-size:22px;font-weight:800">Your catchy headline</div>
-                    <div id="simSubtitle" class="muted" style="margin-top:4px">One line description</div>
-                    <a id="simCta" class="cta" href="#" target="_blank" rel="noopener">Shop Now</a>
-                  </div>
+          <div class="qr-wrap" style="margin-top: 12px">
+            <div class="qr-box">
+              <div id="qrCanvas"></div>
+            </div>
+            <div>
+              <div class="row">
+                <div>
+                  <label>Link ID (letters, digits, “-”)</label>
+                  <input
+                    id="linkId"
+                    type="text"
+                    placeholder="e.g. spring-campaign"
+                  />
+                </div>
+                <div>
+                  <label>Destination URL</label>
+                  <input
+                    id="linkUrl"
+                    type="url"
+                    placeholder="https://example.com/landing"
+                  />
                 </div>
               </div>
-              <div class="small muted" style="margin-top:8px">This simulates <code>landing.html?themeId=…</code></div>
-            </div>
-          </div>
 
-          <div style="width:360px">
-            <label>Saved Themes</label>
-            <div id="themesList" class="list"></div>
-            <div class="stack" style="margin-top:10px">
-              <button class="btn primary" id="saveTheme">Save / Update Theme</button>
-              <button class="btn warn" id="deleteTheme">Delete</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="overlay" class="pad" hidden>
-        <h2>QR Overlay Composer</h2>
-        <p class="muted">Upload an image or video and place the QR over it. Export a PNG snapshot for print or social. ❗Videos export as a single-frame PNG snapshot.</p>
-        <div class="stage-wrap">
-          <div id="overlayStage">
-            <div class="placard">Drop image/video here or use the uploader below</div>
-            <div id="canvasBg"></div>
-            <div id="qrDraggable" class="floating-qr" hidden>
-              <div id="qrDraggableInner"></div>
-              <div class="resize-handle" title="Drag to resize"></div>
-            </div>
-          </div>
-
-          <div class="stage-controls" style="margin-top:12px">
-            <input id="overlayFile" type="file" accept="image/*,video/*" />
-            <button class="btn" id="overlayClear">Clear</button>
-            <span class="pill small">QR size: <span id="overlayQrPx">180</span>px</span>
-            <label class="pill small">Opacity
-              <input id="overlayOpacity" type="range" min="0.2" max="1" step="0.05" value="1" style="vertical-align:middle;margin-left:8px">
-            </label>
-            <button id="overlayExport" class="btn primary">Export PNG</button>
-          </div>
-        </div>
-      </div>
-
-      <div id="io" class="pad" hidden>
-        <h2>Export / Import</h2>
-        <p class="muted">Everything is stored locally in your browser. Export JSON for backup or to migrate. Import will merge by ID (overwriting duplicates).</p>
-        <div class="row">
-          <div class="theme-card" style="flex:1">
-            <header><strong>Export</strong></header>
-            <div class="body">
-              <div class="stack">
-                <button class="btn" id="exportThemes">Export Themes JSON</button>
-                <button class="btn" id="exportLinks">Export Dynamic Links JSON</button>
+              <div class="row">
+                <div>
+                  <label>Theme to apply on landing (optional)</label>
+                  <select id="linkTheme"></select>
+                </div>
+                <div>
+                  <label>QR Size (px)</label>
+                  <input
+                    id="qrSize"
+                    type="number"
+                    value="512"
+                    min="128"
+                    max="1024"
+                  />
+                </div>
               </div>
-            </div>
-          </div>
-          <div class="theme-card" style="flex:1">
-            <header><strong>Import</strong></header>
-            <div class="body">
-              <input id="importFile" type="file" accept="application/json" />
-              <div class="small muted" style="margin-top:6px">Tip: you can also paste JSON into the box below and click “Import from Text”.</div>
-              <label>Paste JSON</label>
-              <textarea id="importText" placeholder='{"themes":[],"links":[]}'></textarea>
-              <div class="stack">
-                <button class="btn primary" id="importNow">Import from File</button>
-                <button class="btn" id="importFromText">Import from Text</button>
+
+              <div class="row">
+                <div>
+                  <label>QR Foreground</label>
+                  <input id="qrFg" type="color" value="#000000" />
+                </div>
+                <div>
+                  <label>QR Background</label>
+                  <input id="qrBg" type="color" value="#ffffff" />
+                </div>
+                <div>
+                  <label>Error Correction</label>
+                  <select id="qrEcc">
+                    <option value="L">L (7%)</option>
+                    <option value="M" selected>M (15%)</option>
+                    <option value="Q">Q (25%)</option>
+                    <option value="H">H (30%)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="stack" style="margin-top: 8px">
+                <button class="btn primary" id="saveLink">
+                  Save / Update Link
+                </button>
+                <button class="btn" id="downloadQR">Download PNG</button>
+                <span class="muted small"
+                  >Encoded URL: <span id="encoded" class="code">—</span></span
+                >
+              </div>
+
+              <div style="margin-top: 14px">
+                <label>Saved Dynamic Links</label>
+                <div id="linksList" class="list"></div>
               </div>
             </div>
           </div>
         </div>
-        <div class="footer-note small">© 2025 All rights reserved. | Powered by ThemeQR</div>
-      </div>
-    </section>
-  </main>
 
-<!-- ============== Dependencies: embedded QR generator (MIT: Kazuhiko Arase qrcode.js) ============== -->
-<!-- Inline QR library + wrapper (offline-safe) -->
-<script>
-/*! qrcode-generator v1.4.4 | MIT | https://github.com/kazuhikoarase/qrcode-generator */
-(function(){function p(a){this.mode=t;this.data=a}function J(a,b){this.typeNumber=a;this.errorCorrectLevel=b;this.modules=null;this.moduleCount=0;this.dataList=[]}function K(a){this.buffer=[];this.length=0;null!=a&&("number"==typeof a?this.put(a,8):this.putBytes(a))}function u(a,b){if(void 0==a.length)throw Error(a.length+"/"+b);for(var c=0;c<a.length&&0==a[c];)c++;this.num=new Array(a.length-c+b);for(var d=0;d<a.length-c;d++)this.num[d]=a[d+c]}function L(a,b){this.totalCount=a;this.dataCount=b}
-function M(){this.buffer=[];this.length=0}function N(a,b){this.d=a;this.b=b}var t=4;J.prototype={addData:function(a){this.dataList.push(new p(a))},isDark:function(a,b){if(null==this.modules||0>a||this.moduleCount<=a||0>b||this.moduleCount<=b)throw Error(a+","+b);return this.modules[a][b]},getModuleCount:function(){return this.moduleCount},make:function(){if(1>this.typeNumber)this.typeNumber=this.getMinimumTypeNumber();for(var a=O.getRSBlocks(this.typeNumber,this.errorCorrectLevel),b=new M,c=0;c<this.dataList.length;c++){var d=
-this.dataList[c];b.put(4,4);b.put(d.getLength(),I.getLengthInBits(4,this.typeNumber));d.write(b)}for(c=0;0<b.length+4<=8*c;){c++;if(c>1E4)throw Error("qrcode: overflow");}for(;b.length%8!=0;)b.put(0,1);for(c=0;c<a.length;c++){var e=a[c].dataCount;for(d=b.getBuffer(),d.length>8*e&&d.splice(8*e),d=d.concat(Array(8*e-d.length).fill(0)),e=Array(e),g=0;g<e.length;g++)e[g]=0;var h=new u(d, a[c].totalCount-a[c].dataCount),m=new u(e, a[c].totalCount-a[c].dataCount);h=h.mod(m);d=d.concat(h.num)}this.createQrcode(d)},
-createQrcode:function(a){var b=1;for(this.moduleCount=4+4*this.typeNumber;this.modules=new Array(this.moduleCount),b<this.moduleCount;b++)this.modules[b]=new Array(this.moduleCount);for(b=0;b<this.moduleCount;b++)for(var c=0;c<this.moduleCount;c++)this.modules[b][c]=null;this.setupPositionProbePattern(0,0);this.setupPositionProbePattern(this.moduleCount-7,0);this.setupPositionProbePattern(0,this.moduleCount-7);this.setupTimingPattern();this.mapData(a)},setupPositionProbePattern:function(a,b){for(var c=
--1;7>=c;c++)if(!(0>a+c||this.moduleCount<=a+c))for(var d=-1;7>=d;d++)0>b+d||this.moduleCount<=b+d||(this.modules[a+c][b+d]=0<=c&&6>=c&&0<=d&&6>=d&&(0==c||6==c||0==d||6==d||2<=c&&4>=c&&2<=d&&4>=d))},setupTimingPattern:function(){for(var a=8;a<this.moduleCount-8;a++)null===this.modules[a][6]&&(this.modules[a][6]=0==a%2),null===this.modules[6][a]&&(this.modules[6][a]=0==a%2)},mapData:function(a){var b=this.moduleCount,c=-1,d=this.moduleCount-1,e=0,g=!0;for(d=this.moduleCount-1;0<d;d-=2){6==d&&d--;for(var h=0;h<b;h++){var m=
-g?b-1-h:h;for(var r=0;2>r;r++)null===this.modules[m][d-r]&&(this.modules[m][d-r]=e<a.length?1==(a[Math.floor(e/8)]>>>7-e%8&1):!1,e++);g=!g}}},getMinimumTypeNumber:function(){var a=0;for(var b=0;b<this.dataList.length;b++)a+=this.dataList[b].getLength();return a<=25?2:a<=47?4:a<=85?6:a<=122?8:a<=196?10:12}};p.prototype={getLength:function(){return this.data.length},write:function(a){for(var b=0;b<this.data.length;b++)a.put(this.data.charCodeAt(b),8)}};K.prototype={get:function(a){var b=Math.floor(a/
-8);return 1==(this.buffer[b]>>>7-a%8&1)},put:function(a,b){for(var c=0;c<b;c++)this.putBit(1==(a>>>b-c-1&1))},putBytes:function(a){for(var b=0;b<a.length;b++)this.put(a[b],8)},putBit:function(a){var b=Math.floor(this.length/8);this.buffer.length<=b&&this.buffer.push(0);a&&(this.buffer[b]|=128>>>this.length%8);this.length++}};M.prototype={getBuffer:function(){return this.buffer},getAt:function(a){var b=Math.floor(a/8);return 1==(this.buffer[b]>>>7-a%8&1)},put:function(a,b){for(var c=0;c<b;c++)this.putBit(1==
-(a>>>b-c-1&1))},putBit:function(a){var b=Math.floor(this.length/8);this.buffer.length<=b&&this.buffer.push(0);a&&(this.buffer[b]|=128>>>this.length%8);this.length++}};u.prototype={get:function(a){return this.num[a]},getLength:function(){return this.num.length},multiply:function(a){for(var b=Array(this.getLength()+a.getLength()-1).fill(0),c=0;c<this.getLength();c++)for(var d=0;d<a.getLength();d++)b[c+d]^=O.gexp(O.glog(this.get(c))+O.glog(a.get(d)));return new u(b,0)},mod:function(a){if(this.getLength()-
-a.getLength()<0)return this;for(var b=O.glog(this.get(0))-O.glog(a.get(0)),c=Array(this.getLength()).fill(0),d=0;d<this.getLength();d++)c[d]=this.get(d)^O.gexp(O.glog(a.get(d))+b);return new u(c,0).mod(a)}};var O={glog:function(a){if(1>a)throw Error("glog("+a+")");return P[a]},gexp:function(a){for(;0>a;)a+=255;for(;256<=a;)a-=255;return Q[a]},getRSBlocks:function(a,b){var c=R[40*(b-1)+(a-1)];if(!c)throw Error("bad rs block @ typeNumber:"+a+"/errorCorrectLevel:"+b);for(var d=[],e=0;e<c.length/3;e++){var g=
-c[3*e+0],h=c[3*e+1],m=c[3*e+2];for(var r=0;r<h;r++)d.push(new L(g,m))}return d}},P=new Array(256),Q=new Array(256),R=function(){for(var a=[],b=0;40>b;b++)for(var c=1;5>c;c++)a.push([]);return a}();(function(){for(var a=0;256>a;a++)Q[a]=a<8?1<<a:Q[a-4]^Q[a-5]^Q[a-6]^Q[a-8],P[Q[a]]=a;for(var b=0;b<R.length;b++)R[b]=[];function a(b,c,d){R[40*(c-1)+(b-1)].push(d)}a(2,2,[1,26,19]);a(4,2,[1,44,34,1,16,28,1,13,22]);a(6,2,[1,70,55,1,28,44,1,22,36,1,16,28,2,14,22]);a(8,2,[1,100,80,2,32,64,2,26,48,4,9,36,2,16,28]);
-a(10,2,[1,134,108,2,43,86,2,32,64,4,13,32,4,9,26]);})();})();
-</script>
-<script>
-/* Tiny wrapper so the rest of your app can keep calling u({size,bg,fg}).toCanvas(text,ecc) */
-(function(){
-  const ECC = { L: 'L', M: 'M', Q: 'Q', H: 'H' };
-  window.u = function(opts){
-    const size = (opts && opts.size) || 512;
-    const bg   = (opts && opts.bg)   || '#ffffff';
-    const fg   = (opts && opts.fg)   || '#000000';
-    return {
-      toCanvas(text, ecc = 'M'){
-        const qr = new (function(txt, level){
-          const q = new J(0, {L:1,M:0,Q:3,H:2}[level] ?? 0);
-          q.addData(String(txt||''));
-          q.make();
-          return q;
-        })(text, ECC[ecc] || 'M');
+        <div id="themes" class="pad" hidden>
+          <h2>Theme Studio</h2>
+          <p class="muted">
+            Design a landing experience with image/video, colors, and a button.
+            Save it as a theme and apply it to any QR.
+          </p>
 
-        const modules = qr.getModuleCount();
-        const tile = size / modules;
-        const c = document.createElement('canvas');
-        c.width = c.height = size;
-        const ctx = c.getContext('2d');
-        ctx.fillStyle = bg;
-        ctx.fillRect(0,0,size,size);
-        ctx.fillStyle = fg;
-        for(let r=0;r<modules;r++){
-          for(let col=0;col<modules;col++){
-            if(qr.isDark(r,col)){
-              ctx.fillRect(Math.round(col*tile), Math.round(r*tile), Math.ceil(tile), Math.ceil(tile));
-            }
-          }
+          <div class="row">
+            <div>
+              <label>Theme Name</label>
+              <input id="themeName" type="text" placeholder="e.g. Neon Night" />
+            </div>
+            <div>
+              <label>Display Title</label>
+              <input
+                id="themeTitle"
+                type="text"
+                placeholder="Your catchy headline"
+              />
+            </div>
+            <div>
+              <label>Subtitle</label>
+              <input
+                id="themeSubtitle"
+                type="text"
+                placeholder="One line description"
+              />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>CTA Text</label>
+              <input id="themeCtaText" type="text" placeholder="Shop Now" />
+            </div>
+            <div>
+              <label>CTA URL (optional)</label>
+              <input
+                id="themeCtaUrl"
+                type="url"
+                placeholder="https://example.com"
+              />
+            </div>
+            <div>
+              <label>Font Family</label>
+              <select id="themeFont">
+                <option value="Inter,system-ui">Inter (Default)</option>
+                <option value="Georgia,serif">Georgia (Serif)</option>
+                <option value="Tahoma,sans-serif">Tahoma</option>
+                <option value="'Segoe UI',sans-serif">Segoe UI</option>
+                <option value="Verdana,sans-serif">Verdana</option>
+                <option value="'Times New Roman',serif">Times</option>
+                <option value="'Courier New',monospace">Courier</option>
+              </select>
+            </div>
+          </div>
+          <!-- Redirect + Skip controls -->
+          <div class="row">
+            <div>
+              <label>Redirect Delay (seconds)</label>
+              <input
+                id="themeDelay"
+                type="number"
+                min="0"
+                max="120"
+                step="1"
+                value="2"
+              />
+              <div class="small muted">0 = no auto‑redirect</div>
+            </div>
+            <div style="display: flex; align-items: flex-end; gap: 8px">
+              <label class="pill small" style="margin: 0">
+                <input
+                  id="themeShowSkip"
+                  type="checkbox"
+                  checked
+                  style="vertical-align: middle; margin-right: 6px"
+                />
+                Show “Skip” button
+              </label>
+            </div>
+            <div>
+              <label>Skip Button Text</label>
+              <input id="themeSkipText" type="text" value="Skip" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>BG Color 1</label>
+              <input id="themeBg1" type="color" value="#101635" />
+            </div>
+            <div>
+              <label>BG Color 2</label>
+              <input id="themeBg2" type="color" value="#0b0f23" />
+            </div>
+            <div>
+              <label>Text Color</label>
+              <input id="themeFg" type="color" value="#f3f6ff" />
+            </div>
+            <div>
+              <label>CTA BG</label>
+              <input id="themeCtaBg" type="color" value="#6c7dff" />
+            </div>
+            <div>
+              <label>CTA Text</label>
+              <input id="themeCtaFg" type="color" value="#09122a" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>Upload Image or Video</label>
+              <input id="themeMedia" type="file" accept="image/*,video/*" />
+            </div>
+            <div>
+              <label>Media Alt Text (for images)</label>
+              <input
+                id="themeAlt"
+                type="text"
+                placeholder="Describe the image"
+              />
+            </div>
+            <div style="display: flex; align-items: flex-end">
+              <button id="clearMedia" class="btn ghost">Remove Media</button>
+            </div>
+          </div>
+
+          <div class="row" style="margin-top: 8px">
+            <div class="theme-card" style="flex: 1">
+              <header><strong>Live Preview</strong></header>
+              <div class="body">
+                <div class="landing-preview">
+                  <div id="landingSim" class="landing-sim">
+                    <div class="media" id="simMedia">
+                      <div class="placard">Upload media to preview…</div>
+                    </div>
+                    <div class="content">
+                      <div
+                        id="simTitle"
+                        style="font-size: 22px; font-weight: 800"
+                      >
+                        Your catchy headline
+                      </div>
+                      <div
+                        id="simSubtitle"
+                        class="muted"
+                        style="margin-top: 4px"
+                      >
+                        One line description
+                      </div>
+                      <a
+                        id="simCta"
+                        class="cta"
+                        href="#"
+                        target="_blank"
+                        rel="noopener"
+                        >Shop Now</a
+                      >
+                    </div>
+                  </div>
+                </div>
+                <div class="small muted" style="margin-top: 8px">
+                  This simulates <code>landing.html?themeId=…</code>
+                </div>
+              </div>
+            </div>
+
+            <div style="width: 360px">
+              <label>Saved Themes</label>
+              <div id="themesList" class="list"></div>
+              <div class="stack" style="margin-top: 10px">
+                <button class="btn primary" id="saveTheme">
+                  Save / Update Theme
+                </button>
+                <button class="btn warn" id="deleteTheme">Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="overlay" class="pad" hidden>
+          <h2>QR Overlay Composer</h2>
+          <p class="muted">
+            Upload an image or video and place the QR over it. Export a PNG
+            snapshot for print or social. ❗Videos export as a single-frame PNG
+            snapshot.
+          </p>
+          <div class="stage-wrap">
+            <div id="overlayStage">
+              <div class="placard">
+                Drop image/video here or use the uploader below
+              </div>
+              <div id="canvasBg"></div>
+              <div id="qrDraggable" class="floating-qr" hidden>
+                <div id="qrDraggableInner"></div>
+                <div class="resize-handle" title="Drag to resize"></div>
+              </div>
+            </div>
+
+            <div class="stage-controls" style="margin-top: 12px">
+              <input id="overlayFile" type="file" accept="image/*,video/*" />
+              <button class="btn" id="overlayClear">Clear</button>
+              <span class="pill small"
+                >QR size: <span id="overlayQrPx">180</span>px</span
+              >
+              <label class="pill small"
+                >Opacity
+                <input
+                  id="overlayOpacity"
+                  type="range"
+                  min="0.2"
+                  max="1"
+                  step="0.05"
+                  value="1"
+                  style="vertical-align: middle; margin-left: 8px"
+                />
+              </label>
+              <button id="overlayExport" class="btn primary">Export PNG</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="io" class="pad" hidden>
+          <h2>Export / Import</h2>
+          <p class="muted">
+            Everything is stored locally in your browser. Export JSON for backup
+            or to migrate. Import will merge by ID (overwriting duplicates).
+          </p>
+          <div class="row">
+            <div class="theme-card" style="flex: 1">
+              <header><strong>Export</strong></header>
+              <div class="body">
+                <div class="stack">
+                  <button class="btn" id="exportThemes">
+                    Export Themes JSON
+                  </button>
+                  <button class="btn" id="exportLinks">
+                    Export Dynamic Links JSON
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="theme-card" style="flex: 1">
+              <header><strong>Import</strong></header>
+              <div class="body">
+                <input id="importFile" type="file" accept="application/json" />
+                <div class="small muted" style="margin-top: 6px">
+                  Tip: you can also paste JSON into the box below and click
+                  “Import from Text”.
+                </div>
+                <label>Paste JSON</label>
+                <textarea
+                  id="importText"
+                  placeholder='{"themes":[],"links":[]}'
+                ></textarea>
+                <div class="stack">
+                  <button class="btn primary" id="importNow">
+                    Import from File
+                  </button>
+                  <button class="btn" id="importFromText">
+                    Import from Text
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="footer-note small">
+            © 2025 All rights reserved. | Powered by ThemeQR
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ============== Dependencies: embedded QR generator (MIT: Kazuhiko Arase qrcode.js) ============== -->
+    <!-- Inline QR library + wrapper (offline-safe) -->
+    <script>
+      /*! qrcode-generator v1.4.4 | MIT | https://github.com/kazuhikoarase/qrcode-generator */
+      (function () {
+        function p(a) {
+          this.mode = t;
+          this.data = a;
         }
-        return c;
-      }
-    };
-  };
-})();
-</script>
-
-  
-  <!-- Minimal wrapper so the rest of your code can call u({size,bg,fg}).toCanvas(text,ecc) -->
-  <script>
-  /**
-   * u({ size, bg, fg }) -> { toCanvas(text, ecc) }
-   * ecc: 'L' | 'M' | 'Q' | 'H'
-   */
-  (function () {
-    const ECC = { L: 'low', M: 'medium', Q: 'quartile', H: 'high' };
-    window.u = function(opts){
-      const size = opts?.size || 512;
-      const bg   = opts?.bg   || '#ffffff';
-      const fg   = opts?.fg   || '#000000';
-  
-      return {
-        toCanvas(text, ecc = 'M') {
-          const c = document.createElement('canvas');
-          c.width = c.height = size;
-          QRCode.toCanvas(
-            c,
-            String(text || ''),
-            {
-              errorCorrectionLevel: ECC[ecc] || 'medium',
-              color: { dark: fg, light: bg },
-              width: size,
-              margin: 0
+        function J(a, b) {
+          this.typeNumber = a;
+          this.errorCorrectLevel = b;
+          this.modules = null;
+          this.moduleCount = 0;
+          this.dataList = [];
+        }
+        function K(a) {
+          this.buffer = [];
+          this.length = 0;
+          null != a &&
+            ("number" == typeof a ? this.put(a, 8) : this.putBytes(a));
+        }
+        function u(a, b) {
+          if (void 0 == a.length) throw Error(a.length + "/" + b);
+          for (var c = 0; c < a.length && 0 == a[c]; ) c++;
+          this.num = new Array(a.length - c + b);
+          for (var d = 0; d < a.length - c; d++) this.num[d] = a[d + c];
+        }
+        function L(a, b) {
+          this.totalCount = a;
+          this.dataCount = b;
+        }
+        function M() {
+          this.buffer = [];
+          this.length = 0;
+        }
+        function N(a, b) {
+          this.d = a;
+          this.b = b;
+        }
+        var t = 4;
+        J.prototype = {
+          addData: function (a) {
+            this.dataList.push(new p(a));
+          },
+          isDark: function (a, b) {
+            if (
+              null == this.modules ||
+              0 > a ||
+              this.moduleCount <= a ||
+              0 > b ||
+              this.moduleCount <= b
+            )
+              throw Error(a + "," + b);
+            return this.modules[a][b];
+          },
+          getModuleCount: function () {
+            return this.moduleCount;
+          },
+          make: function () {
+            if (1 > this.typeNumber)
+              this.typeNumber = this.getMinimumTypeNumber();
+            for (
+              var a = O.getRSBlocks(this.typeNumber, this.errorCorrectLevel),
+                b = new M(),
+                c = 0;
+              c < this.dataList.length;
+              c++
+            ) {
+              var d = this.dataList[c];
+              b.put(4, 4);
+              b.put(d.getLength(), I.getLengthInBits(4, this.typeNumber));
+              d.write(b);
             }
+            for (c = 0; 0 < b.length + 4 <= 8 * c; ) {
+              c++;
+              if (c > 1e4) throw Error("qrcode: overflow");
+            }
+            for (; b.length % 8 != 0; ) b.put(0, 1);
+            for (c = 0; c < a.length; c++) {
+              var e = a[c].dataCount;
+              for (
+                d = b.getBuffer(),
+                  d.length > 8 * e && d.splice(8 * e),
+                  d = d.concat(Array(8 * e - d.length).fill(0)),
+                  e = Array(e),
+                  g = 0;
+                g < e.length;
+                g++
+              )
+                e[g] = 0;
+              var h = new u(d, a[c].totalCount - a[c].dataCount),
+                m = new u(e, a[c].totalCount - a[c].dataCount);
+              h = h.mod(m);
+              d = d.concat(h.num);
+            }
+            this.createQrcode(d);
+          },
+          createQrcode: function (a) {
+            var b = 1;
+            for (
+              this.moduleCount = 4 + 4 * this.typeNumber;
+              (this.modules = new Array(this.moduleCount)),
+                b < this.moduleCount;
+              b++
+            )
+              this.modules[b] = new Array(this.moduleCount);
+            for (b = 0; b < this.moduleCount; b++)
+              for (var c = 0; c < this.moduleCount; c++)
+                this.modules[b][c] = null;
+            this.setupPositionProbePattern(0, 0);
+            this.setupPositionProbePattern(this.moduleCount - 7, 0);
+            this.setupPositionProbePattern(0, this.moduleCount - 7);
+            this.setupTimingPattern();
+            this.mapData(a);
+          },
+          setupPositionProbePattern: function (a, b) {
+            for (var c = -1; 7 >= c; c++)
+              if (!(0 > a + c || this.moduleCount <= a + c))
+                for (var d = -1; 7 >= d; d++)
+                  0 > b + d ||
+                    this.moduleCount <= b + d ||
+                    (this.modules[a + c][b + d] =
+                      0 <= c &&
+                      6 >= c &&
+                      0 <= d &&
+                      6 >= d &&
+                      (0 == c ||
+                        6 == c ||
+                        0 == d ||
+                        6 == d ||
+                        (2 <= c && 4 >= c && 2 <= d && 4 >= d)));
+          },
+          setupTimingPattern: function () {
+            for (var a = 8; a < this.moduleCount - 8; a++)
+              null === this.modules[a][6] && (this.modules[a][6] = 0 == a % 2),
+                null === this.modules[6][a] &&
+                  (this.modules[6][a] = 0 == a % 2);
+          },
+          mapData: function (a) {
+            var b = this.moduleCount,
+              c = -1,
+              d = this.moduleCount - 1,
+              e = 0,
+              g = !0;
+            for (d = this.moduleCount - 1; 0 < d; d -= 2) {
+              6 == d && d--;
+              for (var h = 0; h < b; h++) {
+                var m = g ? b - 1 - h : h;
+                for (var r = 0; 2 > r; r++)
+                  null === this.modules[m][d - r] &&
+                    ((this.modules[m][d - r] =
+                      e < a.length
+                        ? 1 == ((a[Math.floor(e / 8)] >>> (7 - (e % 8))) & 1)
+                        : !1),
+                    e++);
+                g = !g;
+              }
+            }
+          },
+          getMinimumTypeNumber: function () {
+            var a = 0;
+            for (var b = 0; b < this.dataList.length; b++)
+              a += this.dataList[b].getLength();
+            return a <= 25
+              ? 2
+              : a <= 47
+              ? 4
+              : a <= 85
+              ? 6
+              : a <= 122
+              ? 8
+              : a <= 196
+              ? 10
+              : 12;
+          },
+        };
+        p.prototype = {
+          getLength: function () {
+            return this.data.length;
+          },
+          write: function (a) {
+            for (var b = 0; b < this.data.length; b++)
+              a.put(this.data.charCodeAt(b), 8);
+          },
+        };
+        K.prototype = {
+          get: function (a) {
+            var b = Math.floor(a / 8);
+            return 1 == ((this.buffer[b] >>> (7 - (a % 8))) & 1);
+          },
+          put: function (a, b) {
+            for (var c = 0; c < b; c++)
+              this.putBit(1 == ((a >>> (b - c - 1)) & 1));
+          },
+          putBytes: function (a) {
+            for (var b = 0; b < a.length; b++) this.put(a[b], 8);
+          },
+          putBit: function (a) {
+            var b = Math.floor(this.length / 8);
+            this.buffer.length <= b && this.buffer.push(0);
+            a && (this.buffer[b] |= 128 >>> this.length % 8);
+            this.length++;
+          },
+        };
+        M.prototype = {
+          getBuffer: function () {
+            return this.buffer;
+          },
+          getAt: function (a) {
+            var b = Math.floor(a / 8);
+            return 1 == ((this.buffer[b] >>> (7 - (a % 8))) & 1);
+          },
+          put: function (a, b) {
+            for (var c = 0; c < b; c++)
+              this.putBit(1 == ((a >>> (b - c - 1)) & 1));
+          },
+          putBit: function (a) {
+            var b = Math.floor(this.length / 8);
+            this.buffer.length <= b && this.buffer.push(0);
+            a && (this.buffer[b] |= 128 >>> this.length % 8);
+            this.length++;
+          },
+        };
+        u.prototype = {
+          get: function (a) {
+            return this.num[a];
+          },
+          getLength: function () {
+            return this.num.length;
+          },
+          multiply: function (a) {
+            for (
+              var b = Array(this.getLength() + a.getLength() - 1).fill(0),
+                c = 0;
+              c < this.getLength();
+              c++
+            )
+              for (var d = 0; d < a.getLength(); d++)
+                b[c + d] ^= O.gexp(O.glog(this.get(c)) + O.glog(a.get(d)));
+            return new u(b, 0);
+          },
+          mod: function (a) {
+            if (this.getLength() - a.getLength() < 0) return this;
+            for (
+              var b = O.glog(this.get(0)) - O.glog(a.get(0)),
+                c = Array(this.getLength()).fill(0),
+                d = 0;
+              d < this.getLength();
+              d++
+            )
+              c[d] = this.get(d) ^ O.gexp(O.glog(a.get(d)) + b);
+            return new u(c, 0).mod(a);
+          },
+        };
+        var O = {
+            glog: function (a) {
+              if (1 > a) throw Error("glog(" + a + ")");
+              return P[a];
+            },
+            gexp: function (a) {
+              for (; 0 > a; ) a += 255;
+              for (; 256 <= a; ) a -= 255;
+              return Q[a];
+            },
+            getRSBlocks: function (a, b) {
+              var c = R[40 * (b - 1) + (a - 1)];
+              if (!c)
+                throw Error(
+                  "bad rs block @ typeNumber:" + a + "/errorCorrectLevel:" + b
+                );
+              for (var d = [], e = 0; e < c.length / 3; e++) {
+                var g = c[3 * e + 0],
+                  h = c[3 * e + 1],
+                  m = c[3 * e + 2];
+                for (var r = 0; r < h; r++) d.push(new L(g, m));
+              }
+              return d;
+            },
+          },
+          P = new Array(256),
+          Q = new Array(256),
+          R = (function () {
+            for (var a = [], b = 0; 40 > b; b++)
+              for (var c = 1; 5 > c; c++) a.push([]);
+            return a;
+          })();
+        (function () {
+          for (var a = 0; 256 > a; a++)
+            (Q[a] = a < 8 ? 1 << a : Q[a - 4] ^ Q[a - 5] ^ Q[a - 6] ^ Q[a - 8]),
+              (P[Q[a]] = a);
+          for (var b = 0; b < R.length; b++) R[b] = [];
+          function a(b, c, d) {
+            R[40 * (c - 1) + (b - 1)].push(d);
+          }
+          a(2, 2, [1, 26, 19]);
+          a(4, 2, [1, 44, 34, 1, 16, 28, 1, 13, 22]);
+          a(6, 2, [1, 70, 55, 1, 28, 44, 1, 22, 36, 1, 16, 28, 2, 14, 22]);
+          a(8, 2, [1, 100, 80, 2, 32, 64, 2, 26, 48, 4, 9, 36, 2, 16, 28]);
+          a(10, 2, [1, 134, 108, 2, 43, 86, 2, 32, 64, 4, 13, 32, 4, 9, 26]);
+        })();
+      })();
+    </script>
+    <script>
+      /* Tiny wrapper so the rest of your app can keep calling u({size,bg,fg}).toCanvas(text,ecc) */
+      (function () {
+        const ECC = { L: "L", M: "M", Q: "Q", H: "H" };
+        window.u = function (opts) {
+          const size = (opts && opts.size) || 512;
+          const bg = (opts && opts.bg) || "#ffffff";
+          const fg = (opts && opts.fg) || "#000000";
+          return {
+            toCanvas(text, ecc = "M") {
+              const qr = new (function (txt, level) {
+                const q = new J(0, { L: 1, M: 0, Q: 3, H: 2 }[level] ?? 0);
+                q.addData(String(txt || ""));
+                q.make();
+                return q;
+              })(text, ECC[ecc] || "M");
+
+              const modules = qr.getModuleCount();
+              const tile = size / modules;
+              const c = document.createElement("canvas");
+              c.width = c.height = size;
+              const ctx = c.getContext("2d");
+              ctx.fillStyle = bg;
+              ctx.fillRect(0, 0, size, size);
+              ctx.fillStyle = fg;
+              for (let r = 0; r < modules; r++) {
+                for (let col = 0; col < modules; col++) {
+                  if (qr.isDark(r, col)) {
+                    ctx.fillRect(
+                      Math.round(col * tile),
+                      Math.round(r * tile),
+                      Math.ceil(tile),
+                      Math.ceil(tile)
+                    );
+                  }
+                }
+              }
+              return c;
+            },
+          };
+        };
+      })();
+    </script>
+
+    <!-- Minimal wrapper so the rest of your code can call u({size,bg,fg}).toCanvas(text,ecc) -->
+    <script>
+      /**
+       * u({ size, bg, fg }) -> { toCanvas(text, ecc) }
+       * ecc: 'L' | 'M' | 'Q' | 'H'
+       */
+      (function () {
+        const ECC = { L: "low", M: "medium", Q: "quartile", H: "high" };
+        window.u = function (opts) {
+          const size = opts?.size || 512;
+          const bg = opts?.bg || "#ffffff";
+          const fg = opts?.fg || "#000000";
+
+          return {
+            toCanvas(text, ecc = "M") {
+              const c = document.createElement("canvas");
+              c.width = c.height = size;
+              QRCode.toCanvas(c, String(text || ""), {
+                errorCorrectionLevel: ECC[ecc] || "medium",
+                color: { dark: fg, light: bg },
+                width: size,
+                margin: 0,
+              });
+              return c;
+            },
+          };
+        };
+      })();
+    </script>
+
+    <!-- 1) QR library from CDN (preferred path) -->
+    <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+    <!-- 2) Safe wrapper: defines window.u() only if QRCode is present -->
+    <script>
+      /**
+       * u({ size, bg, fg }) -> { toCanvas(text, ecc:'L'|'M'|'Q'|'H') }
+       * Uses QRCode.toCanvas when available. If not, it leaves window.u undefined.
+       * Our fallback renderer below will handle the no-lib case.
+       */
+      (function () {
+        if (!window.QRCode) {
+          console.warn(
+            "[QR] CDN library not found yet; will use fallback renderer."
           );
-          return c;
+          return; // leave window.u undefined; fallback will take over
         }
-      };
-    };
-  })();
-</script>
+        const ECC = { L: "low", M: "medium", Q: "quartile", H: "high" };
+        window.u = function (opts) {
+          const size = opts?.size || 512;
+          const bg = opts?.bg || "#ffffff";
+          const fg = opts?.fg || "#000000";
+          return {
+            toCanvas(text, ecc = "M") {
+              const c = document.createElement("canvas");
+              c.width = c.height = size;
+              QRCode.toCanvas(c, String(text || ""), {
+                errorCorrectionLevel: ECC[ecc] || "medium",
+                color: { dark: fg, light: bg },
+                width: size,
+                margin: 0,
+              });
+              return c;
+            },
+          };
+        };
+      })();
+    </script>
 
-<!-- 1) QR library from CDN (preferred path) -->
-<script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <!-- ============== App Logic ============== -->
+    <script>
+        // Utilities & storage
+        const $ = sel => document.querySelector(sel);
+        const $$ = sel => Array.from(document.querySelectorAll(sel));
+        const store = {
+          get(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)) ?? fallback }catch{ return fallback } },
+          set(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+        };
+        const db = {
+          themes: () => store.get('qrstudio.themes', []),
+          links:  () => store.get('qrstudio.links', []),
+          saveThemes(arr){ store.set('qrstudio.themes', arr) },
+          saveLinks(arr){ store.set('qrstudio.links', arr) }
+        };
+        const uid = (p='t') => `${p}_${Math.random().toString(36).slice(2,8)}${Date.now().toString(36).slice(-4)}`;
 
-<!-- 2) Safe wrapper: defines window.u() only if QRCode is present -->
-<script>
-/**
- * u({ size, bg, fg }) -> { toCanvas(text, ecc:'L'|'M'|'Q'|'H') }
- * Uses QRCode.toCanvas when available. If not, it leaves window.u undefined.
- * Our fallback renderer below will handle the no-lib case.
- */
-(function () {
-  if (!window.QRCode) {
-    console.warn('[QR] CDN library not found yet; will use fallback renderer.');
-    return; // leave window.u undefined; fallback will take over
-  }
-  const ECC = { L: 'low', M: 'medium', Q: 'quartile', H: 'high' };
-  window.u = function(opts){
-    const size = opts?.size || 512;
-    const bg   = opts?.bg   || '#ffffff';
-    const fg   = opts?.fg   || '#000000';
-    return {
-      toCanvas(text, ecc = 'M') {
-        const c = document.createElement('canvas');
-        c.width = c.height = size;
-        QRCode.toCanvas(
-          c,
-          String(text || ''),
-          {
-            errorCorrectionLevel: ECC[ecc] || 'medium',
-            color: { dark: fg, light: bg },
-            width: size,
-            margin: 0
+        // Tabs
+        const tabsEl = $('#tabs'); const pages = {qr:$('#qr'), themes:$('#themes'), overlay:$('#overlay'), io:$('#io')};
+        tabsEl.addEventListener('click', e=>{
+          if(e.target.tagName!=='BUTTON') return;
+          $$('#tabs button').forEach(b=>b.classList.remove('active'));
+          e.target.classList.add('active');
+          const tab = e.target.dataset.tab;
+          Object.entries(pages).forEach(([k,v])=> v.hidden = (k!==tab));
+        });
+
+        // Populate theme dropdown
+        function refreshThemeDropdown(){
+          const sel = $('#linkTheme'); sel.innerHTML = `<option value="">— None —</option>`;
+          for(const t of db.themes()){
+            const opt = document.createElement('option'); opt.value=t.id; opt.textContent = t.name; sel.appendChild(opt);
           }
-        );
-        return c;
+        }
+
+        // Dynamic QR
+        const qrCanvasHost = $('#qrCanvas');
+        let qrRender = u({size:512,bg:'#fff',fg:'#000'});
+
+        function currentLandingUrl(linkId, themeId){
+         const url = new URL('landing.html', location.href); // resolves sibling landing.html
+         const params = url.searchParams;
+         params.set('linkId', linkId);
+         if (themeId) params.set('themeId', themeId);
+         return url.toString();
+       }
+
+       /* ========== Robust renderer with fallback ========== */
+       function hasU(){ return typeof window.u === 'function'; }
+       function hexNoHash(c){ return String(c || '#000000').replace('#',''); }
+
+       /** Render a QR into a container. Returns Promise<{type:'canvas'|'img', el:HTMLElement}> */
+       function renderQRInto(host, text, {size=512, bg='#ffffff', fg='#000000', ecc='M'} = {}){
+         host.innerHTML = '';
+
+         if (hasU()) {
+           try {
+             const r = window.u({size, bg, fg});
+             const c = r.toCanvas(String(text || ''), ecc);
+             host.appendChild(c);
+             return Promise.resolve({ type:'canvas', el:c });
+           } catch (e) {
+             console.warn('[QR] u().toCanvas failed; falling back to image API.', e);
+             // continues to image fallback…
+           }
+         }
+
+         // Image fallback (network)
+         const img = new Image();
+         img.alt = 'QR';
+         img.width = size; img.height = size;
+         img.crossOrigin = 'anonymous';
+         const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&ecc=${encodeURIComponent(ecc)}&color=${hexNoHash(fg)}&bgcolor=${hexNoHash(bg)}&qzone=0&data=${encodeURIComponent(String(text||''))}`;
+         img.src = url;
+         host.appendChild(img);
+         return (img.decode ? img.decode() : Promise.resolve()).then(()=>({ type:'img', el:img })).catch(()=>({ type:'img', el:img }));
+       }
+
+       /** Convert <img> to <canvas> (for downloads/overlay export) */
+       function imageToCanvas(img){
+         const c = document.createElement('canvas');
+         c.width = img.naturalWidth || img.width || 512;
+         c.height = img.naturalHeight || img.height || 512;
+         const ctx = c.getContext('2d');
+         ctx.drawImage(img, 0, 0, c.width, c.height);
+         return c;
+       }
+
+       /** Helper: convert <img> to a <canvas> (same dimensions) */
+       function imageToCanvas(img){
+         const c = document.createElement('canvas');
+         c.width = img.naturalWidth || img.width || 512;
+         c.height = img.naturalHeight || img.height || 512;
+         const ctx = c.getContext('2d');
+         ctx.drawImage(img, 0, 0, c.width, c.height);
+         return c;
+       }
+
+        async function drawQR(){
+        const size = +$('#qrSize').value || 512;
+        const fg = $('#qrFg').value;
+        const bg = $('#qrBg').value;
+        const ecc = $('#qrEcc').value;
+        const linkId = ($('#linkId').value||'').trim();
+        const themeId = $('#linkTheme').value || '';
+
+        // Always show a QR (placeholder until Link ID is provided)
+        const payloadUrl = linkId ? currentLandingUrl(linkId, themeId) : 'https://example.com';
+
+        const result = await renderQRInto(qrCanvasHost, payloadUrl, { size, bg, fg, ecc });
+        $('#encoded').textContent = payloadUrl;
+
+        // Remember what we rendered so the Download button knows what to grab
+        qrCanvasHost.dataset.qrType = result.type; // 'canvas' | 'img'
       }
-    };
-  };
-})();
-</script>
-
-  
-  <!-- ============== App Logic ============== -->
-  <script>
-  // Utilities & storage
-  const $ = sel => document.querySelector(sel);
-  const $$ = sel => Array.from(document.querySelectorAll(sel));
-  const store = {
-    get(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)) ?? fallback }catch{ return fallback } },
-    set(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
-  };
-  const db = {
-    themes: () => store.get('qrstudio.themes', []),
-    links:  () => store.get('qrstudio.links', []),
-    saveThemes(arr){ store.set('qrstudio.themes', arr) },
-    saveLinks(arr){ store.set('qrstudio.links', arr) }
-  };
-  const uid = (p='t') => `${p}_${Math.random().toString(36).slice(2,8)}${Date.now().toString(36).slice(-4)}`;
-
-  // Tabs
-  const tabsEl = $('#tabs'); const pages = {qr:$('#qr'), themes:$('#themes'), overlay:$('#overlay'), io:$('#io')};
-  tabsEl.addEventListener('click', e=>{
-    if(e.target.tagName!=='BUTTON') return;
-    $$('#tabs button').forEach(b=>b.classList.remove('active'));
-    e.target.classList.add('active');
-    const tab = e.target.dataset.tab;
-    Object.entries(pages).forEach(([k,v])=> v.hidden = (k!==tab));
-  });
-
-  // Populate theme dropdown
-  function refreshThemeDropdown(){
-    const sel = $('#linkTheme'); sel.innerHTML = `<option value="">— None —</option>`;
-    for(const t of db.themes()){
-      const opt = document.createElement('option'); opt.value=t.id; opt.textContent = t.name; sel.appendChild(opt);
-    }
-  }
-
-  // Dynamic QR
-  const qrCanvasHost = $('#qrCanvas');
-  let qrRender = u({size:512,bg:'#fff',fg:'#000'});
-
-  function currentLandingUrl(linkId, themeId){
-   const url = new URL('landing.html', location.href); // resolves sibling landing.html
-   const params = url.searchParams;
-   params.set('linkId', linkId);
-   if (themeId) params.set('themeId', themeId);
-   return url.toString();
- }
- 
- /* ========== Robust renderer with fallback ========== */
- function hasU(){ return typeof window.u === 'function'; }
- function hexNoHash(c){ return String(c || '#000000').replace('#',''); }
- 
- /** Render a QR into a container. Returns Promise<{type:'canvas'|'img', el:HTMLElement}> */
- function renderQRInto(host, text, {size=512, bg='#ffffff', fg='#000000', ecc='M'} = {}){
-   host.innerHTML = '';
- 
-   if (hasU()) {
-     try {
-       const r = window.u({size, bg, fg});
-       const c = r.toCanvas(String(text || ''), ecc);
-       host.appendChild(c);
-       return Promise.resolve({ type:'canvas', el:c });
-     } catch (e) {
-       console.warn('[QR] u().toCanvas failed; falling back to image API.', e);
-       // continues to image fallback…
-     }
-   }
- 
-   // Image fallback (network)
-   const img = new Image();
-   img.alt = 'QR';
-   img.width = size; img.height = size;
-   img.crossOrigin = 'anonymous';
-   const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&ecc=${encodeURIComponent(ecc)}&color=${hexNoHash(fg)}&bgcolor=${hexNoHash(bg)}&qzone=0&data=${encodeURIComponent(String(text||''))}`;
-   img.src = url;
-   host.appendChild(img);
-   return (img.decode ? img.decode() : Promise.resolve()).then(()=>({ type:'img', el:img })).catch(()=>({ type:'img', el:img }));
- }
- 
- /** Convert <img> to <canvas> (for downloads/overlay export) */
- function imageToCanvas(img){
-   const c = document.createElement('canvas');
-   c.width = img.naturalWidth || img.width || 512;
-   c.height = img.naturalHeight || img.height || 512;
-   const ctx = c.getContext('2d');
-   ctx.drawImage(img, 0, 0, c.width, c.height);
-   return c;
- }
- 
- /** Helper: convert <img> to a <canvas> (same dimensions) */
- function imageToCanvas(img){
-   const c = document.createElement('canvas');
-   c.width = img.naturalWidth || img.width || 512;
-   c.height = img.naturalHeight || img.height || 512;
-   const ctx = c.getContext('2d');
-   ctx.drawImage(img, 0, 0, c.width, c.height);
-   return c;
- }
-
-  async function drawQR(){
-  const size = +$('#qrSize').value || 512;
-  const fg = $('#qrFg').value;
-  const bg = $('#qrBg').value;
-  const ecc = $('#qrEcc').value;
-  const linkId = ($('#linkId').value||'').trim();
-  const themeId = $('#linkTheme').value || '';
-
-  // Always show a QR (placeholder until Link ID is provided)
-  const payloadUrl = linkId ? currentLandingUrl(linkId, themeId) : 'https://example.com';
-
-  const result = await renderQRInto(qrCanvasHost, payloadUrl, { size, bg, fg, ecc });
-  $('#encoded').textContent = payloadUrl;
-
-  // Remember what we rendered so the Download button knows what to grab
-  qrCanvasHost.dataset.qrType = result.type; // 'canvas' | 'img'
-}
 
 
-  $('#qrSize, #qrFg, #qrBg, #qrEcc, #linkId, #linkTheme').addEventListener('input', drawQR);
+        $('#qrSize, #qrFg, #qrBg, #qrEcc, #linkId, #linkTheme').addEventListener('input', drawQR);
 
-  function renderLinksList(){
-    const list = $('#linksList'); list.innerHTML='';
-    for(const link of db.links()){
-      const div = document.createElement('div'); div.className='item small';
-      const target = document.createElement('div');
-      const theme = db.themes().find(t=>t.id===link.themeId);
-      target.innerHTML = `<div><b>${link.id}</b> → <span class="muted">${link.url||'(no destination set)'}</span></div>
-        <div class="muted">Theme: ${theme? theme.name : '—'} · Last updated: ${new Date(link.updated).toLocaleString()}</div>`;
-      const actions = document.createElement('div'); actions.className='stack';
-      const openBtn = document.createElement('a'); openBtn.className='btn'; openBtn.textContent='Open';
-      openBtn.href = currentLandingUrl(link.id, link.themeId); openBtn.target='_blank';
-      const editBtn = document.createElement('button'); editBtn.className='btn'; editBtn.textContent='Edit';
-      editBtn.onclick=()=>{ $('#linkId').value=link.id; $('#linkUrl').value=link.url; $('#linkTheme').value=link.themeId||''; drawQR(); };
-      const delBtn = document.createElement('button'); delBtn.className='btn warn'; delBtn.textContent='Delete';
-      delBtn.onclick=()=>{ const rest = db.links().filter(l=>l.id!==link.id); db.saveLinks(rest); renderLinksList(); };
-      actions.append(openBtn, editBtn, delBtn);
-      div.append(target, actions);
-      list.appendChild(div);
-    }
-  }
+        function renderLinksList(){
+          const list = $('#linksList'); list.innerHTML='';
+          for(const link of db.links()){
+            const div = document.createElement('div'); div.className='item small';
+            const target = document.createElement('div');
+            const theme = db.themes().find(t=>t.id===link.themeId);
+            target.innerHTML = `<div><b>${link.id}</b> → <span class="muted">${link.url||'(no destination set)'}</span></div>
+              <div class="muted">Theme: ${theme? theme.name : '—'} · Last updated: ${new Date(link.updated).toLocaleString()}</div>`;
+            const actions = document.createElement('div'); actions.className='stack';
+            const openBtn = document.createElement('a'); openBtn.className='btn'; openBtn.textContent='Open';
+            openBtn.href = currentLandingUrl(link.id, link.themeId); openBtn.target='_blank';
+            const editBtn = document.createElement('button'); editBtn.className='btn'; editBtn.textContent='Edit';
+            editBtn.onclick=()=>{ $('#linkId').value=link.id; $('#linkUrl').value=link.url; $('#linkTheme').value=link.themeId||''; drawQR(); };
+            const delBtn = document.createElement('button'); delBtn.className='btn warn'; delBtn.textContent='Delete';
+            delBtn.onclick=()=>{ const rest = db.links().filter(l=>l.id!==link.id); db.saveLinks(rest); renderLinksList(); };
+            actions.append(openBtn, editBtn, delBtn);
+            div.append(target, actions);
+            list.appendChild(div);
+          }
+        }
 
-  $('#saveLink').addEventListener('click', ()=>{
-    const id = ($('#linkId').value||'').trim();
-    const url = ($('#linkUrl').value||'').trim();
-    const themeId = $('#linkTheme').value || '';
-    if(!id){ alert('Please provide a Link ID'); return; }
-    const links = db.links();
-    const idx = links.findIndex(l=>l.id===id);
-    const rec = { id, url, themeId, updated: Date.now() };
-    if(idx>=0) links[idx]=rec; else links.unshift(rec);
-    db.saveLinks(links);
-    renderLinksList(); drawQR();
-  });
+        $('#saveLink').addEventListener('click', ()=>{
+          const id = ($('#linkId').value||'').trim();
+          const url = ($('#linkUrl').value||'').trim();
+          const themeId = $('#linkTheme').value || '';
+          if(!id){ alert('Please provide a Link ID'); return; }
+          const links = db.links();
+          const idx = links.findIndex(l=>l.id===id);
+          const rec = { id, url, themeId, updated: Date.now() };
+          if(idx>=0) links[idx]=rec; else links.unshift(rec);
+          db.saveLinks(links);
+          renderLinksList(); drawQR();
+        });
 
-  $('#downloadQR').addEventListener('click', ()=>{
-  let node = qrCanvasHost.querySelector('canvas, img');
-  if(!node){ alert('Generate a QR first.'); return; }
-  const canvas = node.tagName === 'CANVAS' ? node : imageToCanvas(node);
-  const a=document.createElement('a');
-  a.download=`qr-${($('#linkId').value||'link')}.png`;
-  a.href=canvas.toDataURL('image/png');
-  a.click();
-});
+        $('#downloadQR').addEventListener('click', ()=>{
+        let node = qrCanvasHost.querySelector('canvas, img');
+        if(!node){ alert('Generate a QR first.'); return; }
+        const canvas = node.tagName === 'CANVAS' ? node : imageToCanvas(node);
+        const a=document.createElement('a');
+        a.download=`qr-${($('#linkId').value||'link')}.png`;
+        a.href=canvas.toDataURL('image/png');
+        a.click();
+      });
 
 
-  // THEME STUDIO
-   let workingTheme = {
-  id: '',
-  name:'',
-  title:'',
-  subtitle:'',
-  font:"Inter,system-ui",
-  colors:{ bg1:'#101635', bg2:'#0b0f23', fg:'#f3f6ff', ctaBg:'#6c7dff', ctaFg:'#09122a' },
-  cta:{ text:'Shop Now', url:'' },
-  media:{ kind:'', data:'', alt:'' },
-  settings:{ redirectDelay: 2, showSkip: true, skipText: 'Skip' } // NEW
-};
-
-  function applySim(){
-    const s = workingTheme;
-    const root = $('#landingSim').style;
-    root.setProperty('--lp-bg1', s.colors.bg1);
-    root.setProperty('--lp-bg2', s.colors.bg2);
-    root.setProperty('--lp-fg', s.colors.fg);
-    root.setProperty('--lp-cta-bg', s.colors.ctaBg);
-    root.setProperty('--lp-cta-fg', s.colors.ctaFg);
-    root.setProperty('--lp-font', s.font);
-    $('#simTitle').textContent = s.title || 'Your catchy headline';
-    $('#simSubtitle').textContent = s.subtitle || 'One line description';
-    const cta = $('#simCta'); cta.textContent = s.cta.text || 'Shop Now'; cta.href = s.cta.url || '#';
-    // ===== Preview: Redirect Note + Skip Button =====
-    const contentEl = document.querySelector('#landingSim .content');
-      
-    // Note (auto-redirect info)
-    let note = document.getElementById('simNote');
-    if (!note) {
-      note = document.createElement('div');
-      note.id = 'simNote';
-      note.className = 'muted small';
-      note.style.marginTop = '6px';
-      contentEl.appendChild(note);
-    }
-    const delay = Number(workingTheme.settings?.redirectDelay ?? 2);
-    note.textContent = delay > 0
-      ? `Auto-redirect in ${delay}s…`
-      : 'No auto-redirect';
-     
-    // Skip button
-    let skip = document.getElementById('simSkip');
-    if (!skip) {
-      skip = document.createElement('a');
-      skip.id = 'simSkip';
-      skip.className = 'cta';
-      skip.style.marginLeft = '8px';
-      skip.href = '#';
-      contentEl.appendChild(skip);
-    }
-    skip.textContent = workingTheme.settings?.skipText || 'Skip';
-    skip.style.display = (workingTheme.settings?.showSkip ?? true) ? 'inline-block' : 'none';
-  
-    // media
- 
-  const mwrap = $('#simMedia');
-  mwrap.innerHTML = '';
-  const errBox = (msg) => { mwrap.innerHTML = `<div class="placard" style="color:#ffb4b4">${msg}</div>`; };
-
-  if (s.media.kind === 'image' && s.media.data) {
-    const img = document.createElement('img');
-    img.src = s.media.data;
-    img.alt = s.media.alt || '';
-    img.onerror = () => errBox('Image failed to load.');
-    mwrap.appendChild(img);
-  } else if (s.media.kind === 'video' && s.media.data) {
-    const vid = document.createElement('video');
-    vid.src = s.media.data;
-    vid.muted = true;
-    vid.loop = true;
-    vid.playsInline = true;
-    vid.preload = 'metadata';
-    vid.controls = false;
-
-    // Basic support check
-    const canMp4 = !!vid.canPlayType && vid.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"');
-    const canWebm = !!vid.canPlayType && vid.canPlayType('video/webm; codecs="vp9, opus"');
-    // Not a blocker, but we can hint if neither is advertised as supported.
-    if (!canMp4 && !canWebm) {
-      console.warn('Browser did not advertise MP4/WebM support via canPlayType — continuing anyway.');
-    }
-
-    // Autoplay attempt with graceful fallback
-    const tryPlay = () => vid.play().catch(() => {
-      // Show a tap-to-play button if autoplay fails
-      const btn = document.createElement('button');
-      btn.className = 'btn';
-      btn.style.position = 'absolute';
-      btn.style.zIndex = '3';
-      btn.textContent = 'Tap to play';
-      btn.onclick = () => { vid.play().catch(()=>{}); btn.remove(); };
-      mwrap.style.position = 'relative';
-      mwrap.appendChild(btn);
-    });
-
-    vid.addEventListener('loadedmetadata', tryPlay, { once: true });
-    vid.onerror = () => errBox('Video failed to load (codec/format not supported). Try MP4 (H.264/AAC) or WebM.');
-    mwrap.appendChild(vid);
-  } else {
-    mwrap.innerHTML = '<div class="placard">Upload media to preview…</div>';
-  }
-  }
-
-  function captureFileAsDataURL(file){
-    return new Promise((resolve,reject)=>{
-      const r=new FileReader();
-      r.onload=()=>resolve(r.result);
-      r.onerror=reject;
-      r.readAsDataURL(file);
-    });
-  }
-
-  // Inputs binding
-  $('#themeName').addEventListener('input', e=> workingTheme.name = e.target.value);
-  $('#themeTitle').addEventListener('input', e=> { workingTheme.title = e.target.value; applySim(); });
-  $('#themeSubtitle').addEventListener('input', e=> { workingTheme.subtitle = e.target.value; applySim(); });
-  $('#themeCtaText').addEventListener('input', e=> { workingTheme.cta.text = e.target.value; applySim(); });
-  $('#themeCtaUrl').addEventListener('input', e=> { workingTheme.cta.url = e.target.value; applySim(); });
-  $('#themeFont').addEventListener('change', e=> { workingTheme.font = e.target.value; applySim(); });
-  $('#themeBg1').addEventListener('input', e=> { workingTheme.colors.bg1 = e.target.value; applySim(); });
-  $('#themeBg2').addEventListener('input', e=> { workingTheme.colors.bg2 = e.target.value; applySim(); });
-  $('#themeFg').addEventListener('input', e=> { workingTheme.colors.fg = e.target.value; applySim(); });
-  $('#themeCtaBg').addEventListener('input', e=> { workingTheme.colors.ctaBg = e.target.value; applySim(); });
-  $('#themeCtaFg').addEventListener('input', e=> { workingTheme.colors.ctaFg = e.target.value; applySim(); });
-  $('#themeAlt').addEventListener('input', e=> { workingTheme.media.alt = e.target.value; });
-  // NEW: Redirect + Skip bindings
-  $('#themeDelay').addEventListener('input', e => {
-    const v = Math.max(0, Math.min(120, Number(e.target.value || 0)));
-    workingTheme.settings = workingTheme.settings || {};
-    workingTheme.settings.redirectDelay = v;
-    applySim();
-  });
-  
-  $('#themeShowSkip').addEventListener('change', e => {
-    workingTheme.settings = workingTheme.settings || {};
-    workingTheme.settings.showSkip = !!e.target.checked;
-    applySim();
-  });
-  
-  $('#themeSkipText').addEventListener('input', e => {
-    workingTheme.settings = workingTheme.settings || {};
-    workingTheme.settings.skipText = e.target.value || 'Skip';
-    applySim();
-  });
-
-  $('#themeMedia').addEventListener('change', async e=>{
-    const f = e.target.files?.[0]; if(!f) return;
-    const isVid = f.type.startsWith('video/');
-    const data = await captureFileAsDataURL(f);
-    workingTheme.media = { kind: isVid?'video':'image', data, alt: $('#themeAlt').value||'' };
-    applySim();
-  });
-  $('#clearMedia').addEventListener('click', ()=>{
-    workingTheme.media = {kind:'', data:'', alt:''};
-    applySim();
-    $('#themeMedia').value='';
-    $('#themeAlt').value='';
-  });
-
-  function renderThemesList(selectedId=''){
-    const list = $('#themesList'); list.innerHTML='';
-    for(const t of db.themes()){
-      const row=document.createElement('div'); row.className='item';
-      const left=document.createElement('div'); left.innerHTML = `<div><b>${t.name}</b></div><div class="muted small">${t.title||'—'}</div>`;
-      const actions=document.createElement('div'); actions.className='stack';
-      const useBtn=document.createElement('button'); useBtn.className='btn'; useBtn.textContent='Load';
-      useBtn.onclick = ()=>{ workingTheme = JSON.parse(JSON.stringify(t)); // deep-ish copy
-        // fill inputs
-        $('#themeName').value=t.name||''; $('#themeTitle').value=t.title||''; $('#themeSubtitle').value=t.subtitle||'';
-        $('#themeCtaText').value=t.cta?.text||''; $('#themeCtaUrl').value=t.cta?.url||'';
-        $('#themeFont').value=t.font||"Inter,system-ui";
-        $('#themeBg1').value=t.colors?.bg1||'#101635'; $('#themeBg2').value=t.colors?.bg2||'#0b0f23'; $('#themeFg').value=t.colors?.fg||'#f3f6ff';
-        $('#themeCtaBg').value=t.colors?.ctaBg||'#6c7dff'; $('#themeCtaFg').value=t.colors?.ctaFg||'#09122a';
-        $('#themeAlt').value=t.media?.alt||'';
-        // NEW: populate Redirect + Skip fields
-        $('#themeDelay').value = t.settings?.redirectDelay ?? 2;
-        $('#themeShowSkip').checked = t.settings?.showSkip ?? true;
-        $('#themeSkipText').value = t.settings?.skipText ?? 'Skip';
-
-        applySim();
+        // THEME STUDIO
+         let workingTheme = {
+        id: '',
+        name:'',
+        title:'',
+        subtitle:'',
+        font:"Inter,system-ui",
+        colors:{ bg1:'#101635', bg2:'#0b0f23', fg:'#f3f6ff', ctaBg:'#6c7dff', ctaFg:'#09122a' },
+        cta:{ text:'Shop Now', url:'' },
+        media:{ kind:'', data:'', alt:'' },
+        settings:{ redirectDelay: 2, showSkip: true, skipText: 'Skip', mediaBox:{ w: 320 } } // NEW
       };
-      const copyId=document.createElement('button'); copyId.className='btn ghost'; copyId.textContent='Copy ID';
-      copyId.onclick=()=>{ navigator.clipboard.writeText(t.id); copyId.textContent='Copied!'; setTimeout(()=>copyId.textContent='Copy ID',1000); };
-      actions.append(useBtn, copyId);
-      row.append(left, actions);
-      list.appendChild(row);
-    }
-    refreshThemeDropdown();
-    if(selectedId) $('#linkTheme').value = selectedId;
-  }
 
-  $('#saveTheme').addEventListener('click', ()=>{
-    if(!workingTheme.name.trim()){ alert('Please give your theme a name.'); return; }
-    if(!workingTheme.id) workingTheme.id = uid('theme');
-    const themes = db.themes();
-    const idx = themes.findIndex(t=>t.id===workingTheme.id);
-    const copy = JSON.parse(JSON.stringify(workingTheme));
-    if(idx>=0) themes[idx]=copy; else themes.unshift(copy);
-    db.saveThemes(themes);
-    renderThemesList(copy.id);
-  });
+      // Simple resizer for the Theme Studio preview
+function makeResizable(wrapper, { onChange } = {}){
+  const handle = document.createElement('div');
+  handle.className = 'resizer se';
+  wrapper.appendChild(handle);
 
-  $('#deleteTheme').addEventListener('click', ()=>{
-    if(!workingTheme.id){ alert('Load a theme first.'); return; }
-    if(!confirm('Delete this theme?')) return;
-    db.saveThemes(db.themes().filter(t=>t.id!==workingTheme.id));
-    workingTheme = {
-      id:'', name:'', title:'', subtitle:'', font:"Inter,system-ui",
-      colors:{bg1:'#101635', bg2:'#0b0f23', fg:'#f3f6ff', ctaBg:'#6c7dff', ctaFg:'#09122a'},
-      cta:{text:'Shop Now', url:''},
-      media:{kind:'', data:'', alt:''},
-      settings:{ redirectDelay: 2, showSkip: true, skipText: 'Skip' } // keep in sync
-   };
+  let startX, startW;
 
-    // clear inputs
-    $('#themeName').value=''; $('#themeTitle').value=''; $('#themeSubtitle').value=''; $('#themeCtaText').value=''; $('#themeCtaUrl').value='';
-    $('#themeAlt').value=''; $('#themeMedia').value='';
-    renderThemesList();
-    applySim();
-  });
+  const move = (e) => {
+    const cx = (e.touches ? e.touches[0].clientX : e.clientX);
+    const newW = Math.max(120, Math.min(wrapper.parentElement.clientWidth, startW + (cx - startX)));
+    wrapper.style.width = newW + 'px';
+    if (onChange) onChange(newW);
+  };
+  const up = () => {
+    document.removeEventListener('mousemove', move);
+    document.removeEventListener('mouseup', up);
+    document.removeEventListener('touchmove', move);
+    document.removeEventListener('touchend', up);
+  };
+  const down = (e) => {
+    e.preventDefault();
+    startX = (e.touches ? e.touches[0].clientX : e.clientX);
+    startW = parseInt(getComputedStyle(wrapper).width, 10) || wrapper.clientWidth;
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+    document.addEventListener('touchmove', move, { passive:false });
+    document.addEventListener('touchend', up);
+  };
 
-  // OVERLAY COMPOSER
-  const overlayStage = $('#overlayStage');
-  const qrDrag = $('#qrDraggable');
-  const qrDragInner = $('#qrDraggableInner');
-  const qrHandle = qrDrag.querySelector('.resize-handle');
-  let overlayMediaEl = null;
-  let dragState = null;
-
-  function ensureDraggableQR(){
-    // Use current QR content; if none, synthesize from inputs
-    const linkId = ($('#linkId').value||'example');
-    const themeId = $('#linkTheme').value || '';
-    const fg = $('#qrFg').value, bg = $('#qrBg').value, ecc = $('#qrEcc').value;
-    const url = currentLandingUrl(linkId, themeId);
-    const size = Math.max(128, Math.min(1024, Math.round(qrDrag.clientWidth || 180)));
-    qrDragInner.innerHTML = '';
-    renderQRInto(qrDragInner, url, { size, bg, fg, ecc }).then(()=>{
-    $('#overlayQrPx').textContent = size;
-});
-
+  handle.addEventListener('mousedown', down);
+  handle.addEventListener('touchstart', down, { passive:false });
 }
-  function setOverlayOpacity(val){
-    qrDrag.style.opacity = val;
-  }
 
-  function loadOverlayFile(file){
-    const wrap = $('#canvasBg'); wrap.innerHTML='';
-    if(!file){ overlayMediaEl = null; qrDrag.hidden = true; return; }
-  
-    overlayStage.querySelector('.placard')?.remove();
-  
-    const isVideo = file.type.startsWith('video/');
-    let el;
-  
-    if (isVideo) {
-      el = document.createElement('video');
-      el.controls = true;
-      el.muted = true;
-      el.autoplay = true;
-      el.loop = true;
-      el.playsInline = true;
-      el.preload = 'metadata';
-  
-      // Capability hint
-      const can = el.canPlayType ? (el.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"') || el.canPlayType('video/webm; codecs="vp9, opus"')) : '';
-      if (!can) {
-        console.warn('This browser may not play the chosen codec. Prefer MP4 (H.264/AAC) or WebM (VP9/Opus).');
+        function applySim(){
+          const s = workingTheme;
+          const root = $('#landingSim').style;
+          root.setProperty('--lp-bg1', s.colors.bg1);
+          root.setProperty('--lp-bg2', s.colors.bg2);
+          root.setProperty('--lp-fg', s.colors.fg);
+          root.setProperty('--lp-cta-bg', s.colors.ctaBg);
+          root.setProperty('--lp-cta-fg', s.colors.ctaFg);
+          root.setProperty('--lp-font', s.font);
+          $('#simTitle').textContent = s.title || 'Your catchy headline';
+          $('#simSubtitle').textContent = s.subtitle || 'One line description';
+          const cta = $('#simCta'); cta.textContent = s.cta.text || 'Shop Now'; cta.href = s.cta.url || '#';
+          // ===== Preview: Redirect Note + Skip Button =====
+          const contentEl = document.querySelector('#landingSim .content');
+
+          // Note (auto-redirect info)
+          let note = document.getElementById('simNote');
+          if (!note) {
+            note = document.createElement('div');
+            note.id = 'simNote';
+            note.className = 'muted small';
+            note.style.marginTop = '6px';
+            contentEl.appendChild(note);
+          }
+          const delay = Number(workingTheme.settings?.redirectDelay ?? 2);
+          note.textContent = delay > 0
+            ? `Auto-redirect in ${delay}s…`
+            : 'No auto-redirect';
+
+          // Skip button
+          let skip = document.getElementById('simSkip');
+          if (!skip) {
+            skip = document.createElement('a');
+            skip.id = 'simSkip';
+            skip.className = 'cta';
+            skip.style.marginLeft = '8px';
+            skip.href = '#';
+            contentEl.appendChild(skip);
+          }
+          skip.textContent = workingTheme.settings?.skipText || 'Skip';
+          skip.style.display = (workingTheme.settings?.showSkip ?? true) ? 'inline-block' : 'none';
+
+          // media
+
+        // media
+      const mwrap = $('#simMedia');
+      mwrap.innerHTML = '';
+      const errBox = (msg) => { mwrap.innerHTML = `<div class="placard" style="color:#ffb4b4">${msg}</div>`; };
+
+      // Helper: create wrapper with persisted width (default 320px)
+      const createWrapper = () => {
+        const wrap = document.createElement('div');
+        wrap.className = 'resizable';
+        wrap.id = 'simMediaBox';
+        const savedW = Number(workingTheme.settings?.mediaBox?.w || 320);
+        wrap.style.width = Math.max(120, savedW) + 'px';
+        wrap.style.maxWidth = '100%';
+        return wrap;
+      };
+
+      if (s.media.kind === 'image' && s.media.data) {
+        const wrap = createWrapper();
+        const img = document.createElement('img');
+        img.src = s.media.data;
+        img.alt = s.media.alt || '';
+        img.onerror = () => errBox('Image failed to load.');
+        wrap.appendChild(img);
+        mwrap.appendChild(wrap);
+
+        // Make resizable & persist width
+        makeResizable(wrap, {
+          onChange: (w) => {
+            workingTheme.settings = workingTheme.settings || {};
+            workingTheme.settings.mediaBox = { ...(workingTheme.settings.mediaBox||{}), w: Math.round(w) };
+          }
+        });
+
+      } else if (s.media.kind === 'video' && s.media.data) {
+        const wrap = createWrapper();
+        const vid = document.createElement('video');
+        vid.src = s.media.data;
+        vid.muted = true;
+        vid.loop = true;
+        vid.playsInline = true;
+        vid.preload = 'metadata';
+        vid.controls = false;
+
+        // Basic support check (non-blocking hints)
+        const canMp4 = !!vid.canPlayType && vid.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"');
+        const canWebm = !!vid.canPlayType && vid.canPlayType('video/webm; codecs="vp9, opus"');
+        if (!canMp4 && !canWebm) console.warn('Browser did not advertise MP4/WebM support via canPlayType — continuing anyway.');
+
+        // Autoplay with fallback button
+        const tryPlay = () => vid.play().catch(() => {
+          const btn = document.createElement('button');
+          btn.className = 'btn';
+          btn.style.position = 'absolute';
+          btn.style.zIndex = '3';
+          btn.textContent = 'Tap to play';
+          btn.onclick = () => { vid.play().catch(()=>{}); btn.remove(); };
+          wrap.style.position = 'relative';
+          wrap.appendChild(btn);
+        });
+        vid.addEventListener('loadedmetadata', tryPlay, { once: true });
+        vid.onerror = () => errBox('Video failed to load (codec/format not supported). Try MP4 (H.264/AAC) or WebM.');
+
+        wrap.appendChild(vid);
+        mwrap.appendChild(wrap);
+
+        // Make resizable & persist width
+        makeResizable(wrap, {
+          onChange: (w) => {
+            workingTheme.settings = workingTheme.settings || {};
+            workingTheme.settings.mediaBox = { ...(workingTheme.settings.mediaBox||{}), w: Math.round(w) };
+          }
+        });
+
+      } else {
+        mwrap.innerHTML = '<div class="placard">Upload media to preview…</div>';
       }
-  
-      el.addEventListener('error', () => {
-        wrap.innerHTML = `<div class="placard" style="color:#ffb4b4">Video load error. Try converting to MP4 (H.264).</div>`;
+
+
+        function captureFileAsDataURL(file){
+          return new Promise((resolve,reject)=>{
+            const r=new FileReader();
+            r.onload=()=>resolve(r.result);
+            r.onerror=reject;
+            r.readAsDataURL(file);
+          });
+        }
+
+        // Inputs binding
+        $('#themeName').addEventListener('input', e=> workingTheme.name = e.target.value);
+        $('#themeTitle').addEventListener('input', e=> { workingTheme.title = e.target.value; applySim(); });
+        $('#themeSubtitle').addEventListener('input', e=> { workingTheme.subtitle = e.target.value; applySim(); });
+        $('#themeCtaText').addEventListener('input', e=> { workingTheme.cta.text = e.target.value; applySim(); });
+        $('#themeCtaUrl').addEventListener('input', e=> { workingTheme.cta.url = e.target.value; applySim(); });
+        $('#themeFont').addEventListener('change', e=> { workingTheme.font = e.target.value; applySim(); });
+        $('#themeBg1').addEventListener('input', e=> { workingTheme.colors.bg1 = e.target.value; applySim(); });
+        $('#themeBg2').addEventListener('input', e=> { workingTheme.colors.bg2 = e.target.value; applySim(); });
+        $('#themeFg').addEventListener('input', e=> { workingTheme.colors.fg = e.target.value; applySim(); });
+        $('#themeCtaBg').addEventListener('input', e=> { workingTheme.colors.ctaBg = e.target.value; applySim(); });
+        $('#themeCtaFg').addEventListener('input', e=> { workingTheme.colors.ctaFg = e.target.value; applySim(); });
+        $('#themeAlt').addEventListener('input', e=> { workingTheme.media.alt = e.target.value; });
+        // NEW: Redirect + Skip bindings
+        $('#themeDelay').addEventListener('input', e => {
+          const v = Math.max(0, Math.min(120, Number(e.target.value || 0)));
+          workingTheme.settings = workingTheme.settings || {};
+          workingTheme.settings.redirectDelay = v;
+          applySim();
+        });
+
+        $('#themeShowSkip').addEventListener('change', e => {
+          workingTheme.settings = workingTheme.settings || {};
+          workingTheme.settings.showSkip = !!e.target.checked;
+          applySim();
+        });
+
+        $('#themeSkipText').addEventListener('input', e => {
+          workingTheme.settings = workingTheme.settings || {};
+          workingTheme.settings.skipText = e.target.value || 'Skip';
+          applySim();
+        });
+
+        $('#themeMedia').addEventListener('change', async e=>{
+          const f = e.target.files?.[0]; if(!f) return;
+          const isVid = f.type.startsWith('video/');
+          const data = await captureFileAsDataURL(f);
+          workingTheme.media = { kind: isVid?'video':'image', data, alt: $('#themeAlt').value||'' };
+          applySim();
+        });
+        $('#clearMedia').addEventListener('click', ()=>{
+          workingTheme.media = {kind:'', data:'', alt:''};
+          applySim();
+          $('#themeMedia').value='';
+          $('#themeAlt').value='';
+        });
+
+        function renderThemesList(selectedId=''){
+          const list = $('#themesList'); list.innerHTML='';
+          for(const t of db.themes()){
+            const row=document.createElement('div'); row.className='item';
+            const left=document.createElement('div'); left.innerHTML = `<div><b>${t.name}</b></div><div class="muted small">${t.title||'—'}</div>`;
+            const actions=document.createElement('div'); actions.className='stack';
+            const useBtn=document.createElement('button'); useBtn.className='btn'; useBtn.textContent='Load';
+            useBtn.onclick = ()=>{ workingTheme = JSON.parse(JSON.stringify(t)); // deep-ish copy
+              // fill inputs
+              $('#themeName').value=t.name||''; $('#themeTitle').value=t.title||''; $('#themeSubtitle').value=t.subtitle||'';
+              $('#themeCtaText').value=t.cta?.text||''; $('#themeCtaUrl').value=t.cta?.url||'';
+              $('#themeFont').value=t.font||"Inter,system-ui";
+              $('#themeBg1').value=t.colors?.bg1||'#101635'; $('#themeBg2').value=t.colors?.bg2||'#0b0f23'; $('#themeFg').value=t.colors?.fg||'#f3f6ff';
+              $('#themeCtaBg').value=t.colors?.ctaBg||'#6c7dff'; $('#themeCtaFg').value=t.colors?.ctaFg||'#09122a';
+              $('#themeAlt').value=t.media?.alt||'';
+              // NEW: populate Redirect + Skip fields
+              $('#themeDelay').value = t.settings?.redirectDelay ?? 2;
+              $('#themeShowSkip').checked = t.settings?.showSkip ?? true;
+              $('#themeSkipText').value = t.settings?.skipText ?? 'Skip';
+
+              applySim();
+            };
+            const copyId=document.createElement('button'); copyId.className='btn ghost'; copyId.textContent='Copy ID';
+            copyId.onclick=()=>{ navigator.clipboard.writeText(t.id); copyId.textContent='Copied!'; setTimeout(()=>copyId.textContent='Copy ID',1000); };
+            actions.append(useBtn, copyId);
+            row.append(left, actions);
+            list.appendChild(row);
+          }
+          refreshThemeDropdown();
+          if(selectedId) $('#linkTheme').value = selectedId;
+        }
+
+        $('#saveTheme').addEventListener('click', ()=>{
+          if(!workingTheme.name.trim()){ alert('Please give your theme a name.'); return; }
+          if(!workingTheme.id) workingTheme.id = uid('theme');
+          const themes = db.themes();
+          const idx = themes.findIndex(t=>t.id===workingTheme.id);
+          const copy = JSON.parse(JSON.stringify(workingTheme));
+          if(idx>=0) themes[idx]=copy; else themes.unshift(copy);
+          db.saveThemes(themes);
+          renderThemesList(copy.id);
+        });
+
+        $('#deleteTheme').addEventListener('click', ()=>{
+          if(!workingTheme.id){ alert('Load a theme first.'); return; }
+          if(!confirm('Delete this theme?')) return;
+          db.saveThemes(db.themes().filter(t=>t.id!==workingTheme.id));
+          workingTheme = {
+            id:'', name:'', title:'', subtitle:'', font:"Inter,system-ui",
+            colors:{bg1:'#101635', bg2:'#0b0f23', fg:'#f3f6ff', ctaBg:'#6c7dff', ctaFg:'#09122a'},
+            cta:{text:'Shop Now', url:''},
+            media:{kind:'', data:'', alt:''},
+            settings:{ redirectDelay: 2, showSkip: true, skipText: 'Skip' } // keep in sync
+         };
+
+          // clear inputs
+          $('#themeName').value=''; $('#themeTitle').value=''; $('#themeSubtitle').value=''; $('#themeCtaText').value=''; $('#themeCtaUrl').value='';
+          $('#themeAlt').value=''; $('#themeMedia').value='';
+          renderThemesList();
+          applySim();
+        });
+
+        // OVERLAY COMPOSER
+        const overlayStage = $('#overlayStage');
+        const qrDrag = $('#qrDraggable');
+        const qrDragInner = $('#qrDraggableInner');
+        const qrHandle = qrDrag.querySelector('.resize-handle');
+        let overlayMediaEl = null;
+        let dragState = null;
+
+        function ensureDraggableQR(){
+          // Use current QR content; if none, synthesize from inputs
+          const linkId = ($('#linkId').value||'example');
+          const themeId = $('#linkTheme').value || '';
+          const fg = $('#qrFg').value, bg = $('#qrBg').value, ecc = $('#qrEcc').value;
+          const url = currentLandingUrl(linkId, themeId);
+          const size = Math.max(128, Math.min(1024, Math.round(qrDrag.clientWidth || 180)));
+          qrDragInner.innerHTML = '';
+          renderQRInto(qrDragInner, url, { size, bg, fg, ecc }).then(()=>{
+          $('#overlayQrPx').textContent = size;
       });
-  
-      // If autoplay is blocked, user can press play
-      el.addEventListener('loadedmetadata', () => {
-        el.play().catch(()=>{/* ignore, controls visible */});
-      }, { once: true });
-    } else {
-      el = document.createElement('img');
-      el.addEventListener('error', () => {
-        wrap.innerHTML = `<div class="placard" style="color:#ffb4b4">Image load error.</div>`;
-      });
-    }
-  
-    el.style.maxWidth = '100%';
-    el.style.maxHeight = '100%';
-    el.style.display = 'block';
-    wrap.appendChild(el);
-  
-    // Prefer object URL for large files
-    const blobUrl = URL.createObjectURL(file);
-    el.src = blobUrl;
-  
-    // Keep a ref for export snapshot
-    overlayMediaEl = el;
-  
-    // Show the QR overlay and render it
-    qrDrag.hidden = false;
-    ensureDraggableQR();
-  
-    // Revoke blob when unloaded
-    el.addEventListener('ended', () => URL.revokeObjectURL(blobUrl), { once: true });
-  }
 
-  $('#overlayFile').addEventListener('change', e=>{
-    const f = e.target.files?.[0]; if(f) loadOverlayFile(f);
-  });
-
-  overlayStage.addEventListener('dragover', e=>{ e.preventDefault(); overlayStage.style.outline='2px dashed #6c7dff'; });
-  overlayStage.addEventListener('dragleave', ()=> overlayStage.style.outline='none');
-  overlayStage.addEventListener('drop', e=>{
-    e.preventDefault(); overlayStage.style.outline='none';
-    const f = e.dataTransfer.files?.[0]; if(f) loadOverlayFile(f);
-  });
-
-  // Drag to move
-  qrDrag.addEventListener('mousedown', e=>{
-    if(e.target===qrHandle) return; // resizing handled separately
-    dragState = {type:'move', startX:e.clientX, startY:e.clientY, origLeft:qrDrag.offsetLeft, origTop:qrDrag.offsetTop};
-    document.body.style.userSelect='none';
-  });
-  // Resize
-  qrHandle.addEventListener('mousedown', e=>{
-    e.stopPropagation();
-    dragState = {type:'resize', startX:e.clientX, startY:e.clientY, origW:qrDrag.clientWidth, origH:qrDrag.clientHeight};
-    qrDrag.classList.add('resizing');
-    document.body.style.userSelect='none';
-  });
-
-  window.addEventListener('mousemove', e=>{
-    if(!dragState) return;
-    if(dragState.type==='move'){
-      const dx=e.clientX-dragState.startX, dy=e.clientY-dragState.startY;
-      qrDrag.style.left = Math.max(0, Math.min(overlayStage.clientWidth - qrDrag.clientWidth, dragState.origLeft + dx)) + 'px';
-      qrDrag.style.top  = Math.max(0, Math.min(overlayStage.clientHeight - qrDrag.clientHeight, dragState.origTop + dy)) + 'px';
-    } else {
-      const d=Math.max(120, dragState.origW + (e.clientX-dragState.startX)); // keep square
-      qrDrag.style.width = qrDrag.style.height = d+'px';
-      ensureDraggableQR();
-    }
-  });
-  window.addEventListener('mouseup', ()=>{
-    if(dragState?.type==='resize') qrDrag.classList.remove('resizing');
-    dragState=null; document.body.style.userSelect='';
-  });
-
-  $('#overlayOpacity').addEventListener('input', e=> setOverlayOpacity(e.target.value));
-  $('#overlayClear').addEventListener('click', ()=>{
-    $('#canvasBg').innerHTML=''; overlayStage.insertAdjacentHTML('afterbegin','<div class="placard">Drop image/video here or use the uploader below</div>');
-    overlayMediaEl = null; qrDrag.hidden=true; $('#overlayFile').value='';
-  });
-
-  // Export PNG snapshot (renders img/video current frame + QR)
-  $('#overlayExport').addEventListener('click', ()=>{
-    const canvas=document.createElement('canvas');
-    const rect=overlayStage.getBoundingClientRect();
-    canvas.width = rect.width; canvas.height = rect.height;
-    const ctx=canvas.getContext('2d');
-    // video readiness check
-    if (overlayMediaEl && overlayMediaEl.tagName === 'VIDEO') {
-      const v = overlayMediaEl;
-      if (!v.videoWidth || !v.videoHeight || v.readyState < 2) { // HAVE_CURRENT_DATA
-        alert('Video is not ready yet. Hit play or wait until metadata loads.');
-        return;
       }
-    }
-    // draw background
-    if(overlayMediaEl){
-      const w=overlayMediaEl.videoWidth||overlayMediaEl.naturalWidth;
-      const h=overlayMediaEl.videoHeight||overlayMediaEl.naturalHeight;
-      if(!w||!h){ alert('Media is not ready yet.'); return; }
-      // cover
-      const scale=Math.max(canvas.width/w, canvas.height/h);
-      const dw=w*scale, dh=h*scale, dx=(canvas.width-dw)/2, dy=(canvas.height-dh)/2;
-      ctx.drawImage(overlayMediaEl, dx, dy, dw, dh);
-    } else {
-      // stage bg
-      ctx.fillStyle='#0b0f23'; ctx.fillRect(0,0,canvas.width,canvas.height);
-    }
+        function setOverlayOpacity(val){
+          qrDrag.style.opacity = val;
+        }
 
-    // draw QR
-    let qrc = qrDragInner.querySelector('canvas, img');
-    if (qrc && qrc.tagName !== 'CANVAS') qrc = imageToCanvas(qrc);
-    const opacity = parseFloat($('#overlayOpacity').value||'1');
-    ctx.globalAlpha = opacity;
-    const x = qrDrag.offsetLeft, y = qrDrag.offsetTop, s = qrDrag.clientWidth;
-    ctx.drawImage(qrc, x, y, s, s);
-    ctx.globalAlpha = 1;
+        function loadOverlayFile(file){
+          const wrap = $('#canvasBg'); wrap.innerHTML='';
+          if(!file){ overlayMediaEl = null; qrDrag.hidden = true; return; }
 
-    const a=document.createElement('a');
-    a.download='overlay-snapshot.png';
-    a.href=canvas.toDataURL('image/png');
-    a.click();
-  });
+          overlayStage.querySelector('.placard')?.remove();
 
-  // IO
-  $('#exportThemes').addEventListener('click', ()=>{
-    const data = { themes: db.themes() };
-    const a=document.createElement('a'); a.download='qrstudio-themes.json';
-    a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(data,null,2));
-    a.click();
-  });
-  $('#exportLinks').addEventListener('click', ()=>{
-    const data = { links: db.links() };
-    const a=document.createElement('a'); a.download='qrstudio-links.json';
-    a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(data,null,2));
-    a.click();
-  });
-  function importPayload(obj){
-    if(obj.themes){
-      const byId = Object.fromEntries(db.themes().map(t=>[t.id,t]));
-      for(const t of obj.themes){ byId[t.id]=t; }
-      db.saveThemes(Object.values(byId));
-    }
-    if(obj.links){
-      const byId = Object.fromEntries(db.links().map(l=>[l.id,l]));
-      for(const l of obj.links){ byId[l.id]=l; }
-      db.saveLinks(Object.values(byId));
-    }
-    renderThemesList(); renderLinksList(); refreshThemeDropdown(); drawQR();
-  }
-  $('#importNow').addEventListener('click', async ()=>{
-    const f = $('#importFile').files?.[0]; if(!f){ alert('Choose a JSON file first.'); return; }
-    const txt = await f.text();
-    try{ importPayload(JSON.parse(txt)); alert('Imported.'); }catch{ alert('Invalid JSON.'); }
-  });
-  $('#importFromText').addEventListener('click', ()=>{
-    const txt = $('#importText').value.trim(); if(!txt){ alert('Paste JSON first.'); return; }
-    try{ importPayload(JSON.parse(txt)); alert('Imported.'); }catch{ alert('Invalid JSON.'); }
-  });
+          const isVideo = file.type.startsWith('video/');
+          let el;
 
-  // LEFT PANEL (contextual tips & help)
-  function renderLeft(){
-    const el = $('#leftPanel');
-    el.innerHTML = `
-      <h3 style="margin:6px 0 10px">How it works</h3>
-      <div class="small muted">
-        <ol style="padding-left:18px; line-height:1.6">
-          <li><b>Create a Theme</b> in “Theme Studio”. Upload an image or video, pick colors and CTA.</li>
-          <li><b>Create a Dynamic Link</b>: choose a Link ID, a destination URL, and (optionally) a Theme.</li>
-          <li><b>Print/Share the QR</b>. The QR points to <span class="code">landing.html</span> which resolves your Link ID and renders your Theme.</li>
-          <li><b>Change destinations later</b> by editing the Link ID — the printed QR still works. ✔️</li>
-          <li><b>Overlay</b> the QR on top of any image/video and export a PNG snapshot.</li>
-        </ol>
-        <p style="margin-top:10px">Everything is local to your browser. Use <b>Export / Import</b> to migrate or back up.</p>
-        <p class="small">Advanced: The encoded URL looks like <span class="code">landing.html?linkId={id}&themeId={theme}</span>. You can host both files on any static host.</p>
-      </div>
-    `;
-  }
+          if (isVideo) {
+            el = document.createElement('video');
+            el.controls = true;
+            el.muted = true;
+            el.autoplay = true;
+            el.loop = true;
+            el.playsInline = true;
+            el.preload = 'metadata';
 
-  // Init
-  function init(){
-    renderLeft();
-    refreshThemeDropdown();
-    renderThemesList();
-    renderLinksList();
-    drawQR();
-    ensureDraggableQR();
-    setOverlayOpacity($('#overlayOpacity').value);
-  }
-  init();
+            // Capability hint
+            const can = el.canPlayType ? (el.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"') || el.canPlayType('video/webm; codecs="vp9, opus"')) : '';
+            if (!can) {
+              console.warn('This browser may not play the chosen codec. Prefer MP4 (H.264/AAC) or WebM (VP9/Opus).');
+            }
 
-  </script>
-</body>
+            el.addEventListener('error', () => {
+              wrap.innerHTML = `<div class="placard" style="color:#ffb4b4">Video load error. Try converting to MP4 (H.264).</div>`;
+            });
+
+            // If autoplay is blocked, user can press play
+            el.addEventListener('loadedmetadata', () => {
+              el.play().catch(()=>{/* ignore, controls visible */});
+            }, { once: true });
+          } else {
+            el = document.createElement('img');
+            el.addEventListener('error', () => {
+              wrap.innerHTML = `<div class="placard" style="color:#ffb4b4">Image load error.</div>`;
+            });
+          }
+
+          el.style.maxWidth = '100%';
+          el.style.maxHeight = '100%';
+          el.style.display = 'block';
+          wrap.appendChild(el);
+
+          // Prefer object URL for large files
+          const blobUrl = URL.createObjectURL(file);
+          el.src = blobUrl;
+
+          // Keep a ref for export snapshot
+          overlayMediaEl = el;
+
+          // Show the QR overlay and render it
+          qrDrag.hidden = false;
+          ensureDraggableQR();
+
+          // Revoke blob when unloaded
+          el.addEventListener('ended', () => URL.revokeObjectURL(blobUrl), { once: true });
+        }
+
+        $('#overlayFile').addEventListener('change', e=>{
+          const f = e.target.files?.[0]; if(f) loadOverlayFile(f);
+        });
+
+        overlayStage.addEventListener('dragover', e=>{ e.preventDefault(); overlayStage.style.outline='2px dashed #6c7dff'; });
+        overlayStage.addEventListener('dragleave', ()=> overlayStage.style.outline='none');
+        overlayStage.addEventListener('drop', e=>{
+          e.preventDefault(); overlayStage.style.outline='none';
+          const f = e.dataTransfer.files?.[0]; if(f) loadOverlayFile(f);
+        });
+
+        // Drag to move
+        qrDrag.addEventListener('mousedown', e=>{
+          if(e.target===qrHandle) return; // resizing handled separately
+          dragState = {type:'move', startX:e.clientX, startY:e.clientY, origLeft:qrDrag.offsetLeft, origTop:qrDrag.offsetTop};
+          document.body.style.userSelect='none';
+        });
+        // Resize
+        qrHandle.addEventListener('mousedown', e=>{
+          e.stopPropagation();
+          dragState = {type:'resize', startX:e.clientX, startY:e.clientY, origW:qrDrag.clientWidth, origH:qrDrag.clientHeight};
+          qrDrag.classList.add('resizing');
+          document.body.style.userSelect='none';
+        });
+
+        window.addEventListener('mousemove', e=>{
+          if(!dragState) return;
+          if(dragState.type==='move'){
+            const dx=e.clientX-dragState.startX, dy=e.clientY-dragState.startY;
+            qrDrag.style.left = Math.max(0, Math.min(overlayStage.clientWidth - qrDrag.clientWidth, dragState.origLeft + dx)) + 'px';
+            qrDrag.style.top  = Math.max(0, Math.min(overlayStage.clientHeight - qrDrag.clientHeight, dragState.origTop + dy)) + 'px';
+          } else {
+            const d=Math.max(120, dragState.origW + (e.clientX-dragState.startX)); // keep square
+            qrDrag.style.width = qrDrag.style.height = d+'px';
+            ensureDraggableQR();
+          }
+        });
+        window.addEventListener('mouseup', ()=>{
+          if(dragState?.type==='resize') qrDrag.classList.remove('resizing');
+          dragState=null; document.body.style.userSelect='';
+        });
+
+        $('#overlayOpacity').addEventListener('input', e=> setOverlayOpacity(e.target.value));
+        $('#overlayClear').addEventListener('click', ()=>{
+          $('#canvasBg').innerHTML=''; overlayStage.insertAdjacentHTML('afterbegin','<div class="placard">Drop image/video here or use the uploader below</div>');
+          overlayMediaEl = null; qrDrag.hidden=true; $('#overlayFile').value='';
+        });
+
+        // Export PNG snapshot (renders img/video current frame + QR)
+        $('#overlayExport').addEventListener('click', ()=>{
+          const canvas=document.createElement('canvas');
+          const rect=overlayStage.getBoundingClientRect();
+          canvas.width = rect.width; canvas.height = rect.height;
+          const ctx=canvas.getContext('2d');
+          // video readiness check
+          if (overlayMediaEl && overlayMediaEl.tagName === 'VIDEO') {
+            const v = overlayMediaEl;
+            if (!v.videoWidth || !v.videoHeight || v.readyState < 2) { // HAVE_CURRENT_DATA
+              alert('Video is not ready yet. Hit play or wait until metadata loads.');
+              return;
+            }
+          }
+          // draw background
+          if(overlayMediaEl){
+            const w=overlayMediaEl.videoWidth||overlayMediaEl.naturalWidth;
+            const h=overlayMediaEl.videoHeight||overlayMediaEl.naturalHeight;
+            if(!w||!h){ alert('Media is not ready yet.'); return; }
+            // cover
+            const scale=Math.max(canvas.width/w, canvas.height/h);
+            const dw=w*scale, dh=h*scale, dx=(canvas.width-dw)/2, dy=(canvas.height-dh)/2;
+            ctx.drawImage(overlayMediaEl, dx, dy, dw, dh);
+          } else {
+            // stage bg
+            ctx.fillStyle='#0b0f23'; ctx.fillRect(0,0,canvas.width,canvas.height);
+          }
+
+          // draw QR
+          let qrc = qrDragInner.querySelector('canvas, img');
+          if (qrc && qrc.tagName !== 'CANVAS') qrc = imageToCanvas(qrc);
+          const opacity = parseFloat($('#overlayOpacity').value||'1');
+          ctx.globalAlpha = opacity;
+          const x = qrDrag.offsetLeft, y = qrDrag.offsetTop, s = qrDrag.clientWidth;
+          ctx.drawImage(qrc, x, y, s, s);
+          ctx.globalAlpha = 1;
+
+          const a=document.createElement('a');
+          a.download='overlay-snapshot.png';
+          a.href=canvas.toDataURL('image/png');
+          a.click();
+        });
+
+        // IO
+        $('#exportThemes').addEventListener('click', ()=>{
+          const data = { themes: db.themes() };
+          const a=document.createElement('a'); a.download='qrstudio-themes.json';
+          a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(data,null,2));
+          a.click();
+        });
+        $('#exportLinks').addEventListener('click', ()=>{
+          const data = { links: db.links() };
+          const a=document.createElement('a'); a.download='qrstudio-links.json';
+          a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(data,null,2));
+          a.click();
+        });
+        function importPayload(obj){
+          if(obj.themes){
+            const byId = Object.fromEntries(db.themes().map(t=>[t.id,t]));
+            for(const t of obj.themes){ byId[t.id]=t; }
+            db.saveThemes(Object.values(byId));
+          }
+          if(obj.links){
+            const byId = Object.fromEntries(db.links().map(l=>[l.id,l]));
+            for(const l of obj.links){ byId[l.id]=l; }
+            db.saveLinks(Object.values(byId));
+          }
+          renderThemesList(); renderLinksList(); refreshThemeDropdown(); drawQR();
+        }
+        $('#importNow').addEventListener('click', async ()=>{
+          const f = $('#importFile').files?.[0]; if(!f){ alert('Choose a JSON file first.'); return; }
+          const txt = await f.text();
+          try{ importPayload(JSON.parse(txt)); alert('Imported.'); }catch{ alert('Invalid JSON.'); }
+        });
+        $('#importFromText').addEventListener('click', ()=>{
+          const txt = $('#importText').value.trim(); if(!txt){ alert('Paste JSON first.'); return; }
+          try{ importPayload(JSON.parse(txt)); alert('Imported.'); }catch{ alert('Invalid JSON.'); }
+        });
+
+        // LEFT PANEL (contextual tips & help)
+        function renderLeft(){
+          const el = $('#leftPanel');
+          el.innerHTML = `
+            <h3 style="margin:6px 0 10px">How it works</h3>
+            <div class="small muted">
+              <ol style="padding-left:18px; line-height:1.6">
+                <li><b>Create a Theme</b> in “Theme Studio”. Upload an image or video, pick colors and CTA.</li>
+                <li><b>Create a Dynamic Link</b>: choose a Link ID, a destination URL, and (optionally) a Theme.</li>
+                <li><b>Print/Share the QR</b>. The QR points to <span class="code">landing.html</span> which resolves your Link ID and renders your Theme.</li>
+                <li><b>Change destinations later</b> by editing the Link ID — the printed QR still works. ✔️</li>
+                <li><b>Overlay</b> the QR on top of any image/video and export a PNG snapshot.</li>
+              </ol>
+              <p style="margin-top:10px">Everything is local to your browser. Use <b>Export / Import</b> to migrate or back up.</p>
+              <p class="small">Advanced: The encoded URL looks like <span class="code">landing.html?linkId={id}&themeId={theme}</span>. You can host both files on any static host.</p>
+            </div>
+          `;
+        }
+
+        // Init
+        function init(){
+          renderLeft();
+          refreshThemeDropdown();
+          renderThemesList();
+          renderLinksList();
+          drawQR();
+          ensureDraggableQR();
+          setOverlayOpacity($('#overlayOpacity').value);
+        }
+        init();
+    </script>
+  </body>
 </html>
