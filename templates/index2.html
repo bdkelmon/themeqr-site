@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ThemeQR — Dynamic QR + Themes + Overlays</title>
-    <link rel="icon" href="data:," />
+    <link rel="icon" href="https://themeqr.com/images/TQR_Dude_Sm.png" />
     <style>
       :root {
         --bg: #0f1220;
@@ -317,6 +317,7 @@
         font-family: var(--lp-font, var(--sans));
       }
       .landing-sim .media {
+        position: relative;
         display: grid;
         place-items: center;
         overflow: hidden;
@@ -368,8 +369,8 @@
         border: 2px solid #000;
         border-radius: 50%;
         position: absolute;
-        right: -8px;
-        bottom: -8px;
+        right: 6px;
+        bottom: 6px;
         cursor: se-resize;
         z-index: 10;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
@@ -1490,6 +1491,61 @@
         handle.addEventListener("touchstart", down, { passive: false });
       }
 
+      function ensureMediaControls(mwrap) {
+        let bar = document.getElementById("simMediaControls");
+        if (!bar) {
+          bar = document.createElement("div");
+          bar.id = "simMediaControls";
+          bar.className = "small";
+          bar.style.display = "flex";
+          bar.style.gap = "8px";
+          bar.style.alignItems = "center";
+          bar.style.marginTop = "6px";
+          bar.innerHTML = `
+      <label class="pill small" style="display:flex;gap:6px;align-items:center">
+        Size
+        <input id="simMediaRange" type="range" min="120" step="1" style="width:200px">
+      </label>
+      <button id="simFit" class="btn">Fit</button>
+      <button id="simReset" class="btn ghost">320px</button>
+    `;
+          // place controls just under the media area
+          mwrap.parentElement.appendChild(bar);
+        }
+        const box = document.getElementById("simMediaBox");
+        const range = document.getElementById("simMediaRange");
+        const maxW = mwrap.clientWidth;
+
+        range.max = maxW;
+        range.value = parseInt(box.style.width, 10) || box.clientWidth;
+
+        const saveW = (w) => {
+          workingTheme.settings = workingTheme.settings || {};
+          workingTheme.settings.mediaBox = {
+            ...(workingTheme.settings.mediaBox || {}),
+            w: Math.round(w),
+          };
+        };
+
+        range.oninput = (e) => {
+          const w = Math.max(120, Math.min(maxW, +e.target.value));
+          box.style.width = w + "px";
+          saveW(w);
+        };
+        document.getElementById("simFit").onclick = () => {
+          const w = Math.max(120, Math.min(maxW, Math.round(maxW * 0.95)));
+          box.style.width = w + "px";
+          range.value = w;
+          saveW(w);
+        };
+        document.getElementById("simReset").onclick = () => {
+          const w = Math.min(maxW, 320);
+          box.style.width = w + "px";
+          range.value = w;
+          saveW(w);
+        };
+      }
+
       function applySim() {
         const s = workingTheme;
         const root = $("#landingSim").style;
@@ -1546,8 +1602,17 @@
           const wrap = document.createElement("div");
           wrap.className = "resizable";
           wrap.id = "simMediaBox";
-          const savedW = Number(workingTheme.settings?.mediaBox?.w || 320);
-          wrap.style.width = Math.max(120, savedW) + "px";
+
+          // Width logic: use saved width if present, else 90% of the preview width
+          const parentW = mwrap.clientWidth || 360;
+          const savedW = Number(workingTheme.settings?.mediaBox?.w);
+          const initial = Number.isFinite(savedW)
+            ? savedW
+            : Math.round(parentW * 0.9);
+
+          // Clamp so it always starts fully visible
+          const clamped = Math.max(120, Math.min(parentW - 12, initial));
+          wrap.style.width = clamped + "px";
           wrap.style.maxWidth = "100%";
           return wrap;
         };
@@ -1571,6 +1636,7 @@
               };
             },
           });
+          ensureMediaControls(mwrap);
         } else if (s.media.kind === "video" && s.media.data) {
           const wrap = createWrapper();
           const vid = document.createElement("video");
@@ -1627,6 +1693,7 @@
               };
             },
           });
+          ensureMediaControls(mwrap);
         } else {
           mwrap.innerHTML =
             '<div class="placard">Upload media to preview…</div>';
