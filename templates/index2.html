@@ -1152,12 +1152,8 @@
        * Our fallback renderer below will handle the no-lib case.
        */
       (function () {
-        if (!window.QRCode) {
-          console.warn(
-            "[QR] CDN library not found yet; will use fallback renderer."
-          );
-          return; // leave window.u undefined; fallback will take over
-        }
+        // Define u() **only** if QRCode is available
+        if (!window.QRCode) return;
         const ECC = { L: "low", M: "medium", Q: "quartile", H: "high" };
         window.u = function (opts) {
           const size = opts?.size || 512;
@@ -1194,7 +1190,17 @@
           }
         },
         set(key, val) {
-          localStorage.setItem(key, JSON.stringify(val));
+          try {
+            localStorage.setItem(key, JSON.stringify(val));
+          } catch (err) {
+            if (err && err.name === "QuotaExceededError") {
+              alert(
+                "Storage is full. Compress images more, remove large media, or use cloud storage."
+              );
+            } else {
+              console.error(err);
+            }
+          }
         },
       };
       const db = {
@@ -1254,14 +1260,15 @@
 
       /* ========== Robust renderer with fallback ========== */
       function hasU() {
-        return typeof window.u === "function";
+        return (
+          typeof window.u === "function" && typeof window.QRCode !== "undefined"
+        );
       }
       function hexNoHash(c) {
         return String(c || "#000000").replace("#", "");
       }
 
-      /** Render a QR into a container. Returns Promise<{type:'canvas'|'img', el:HTMLElement}> */
-      function renderQRInto(
+      /** Render a QR into a container. Returns Promise<{type:'canvas'|'img', el:HTMLElement}> */ async function renderQRInto(
         host,
         text,
         { size = 512, bg = "#ffffff", fg = "#000000", ecc = "M" } = {}
@@ -1270,16 +1277,17 @@
 
         if (hasU()) {
           try {
-            const r = window.u({ size, bg, fg });
-            const c = r.toCanvas(String(text || ""), ecc);
+            const c = window
+              .u({ size, bg, fg })
+              .toCanvas(String(text || ""), ecc);
             host.appendChild(c);
-            return Promise.resolve({ type: "canvas", el: c });
+            return { type: "canvas", el: c };
           } catch (e) {
             console.warn(
               "[QR] u().toCanvas failed; falling back to image API.",
               e
             );
-            // continues to image fallback…
+            // continue to fallback…
           }
         }
 
@@ -1289,16 +1297,43 @@
         img.width = size;
         img.height = size;
         img.crossOrigin = "anonymous";
-        const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&ecc=${encodeURIComponent(
-          ecc
-        )}&color=${hexNoHash(fg)}&bgcolor=${hexNoHash(
-          bg
-        )}&qzone=0&data=${encodeURIComponent(String(text || ""))}`;
-        img.src = url;
+        img.src =
+          `https://api.qrserver.com/v1/create-qr-code/?` +
+          `size=${size}x${size}` +
+          `&ecc=${encodeURIComponent(ecc)}` +
+          `&color=${hexNoHash(fg)}` +
+          `&bgcolor=${hexNoHash(bg)}` +
+          `&qzone=0` +
+          `&data=${encodeURIComponent(String(text || ""))}`;
+
         host.appendChild(img);
-        return (img.decode ? img.decode() : Promise.resolve())
-          .then(() => ({ type: "img", el: img }))
-          .catch(() => ({ type: "img", el: img }));
+        // decode() isn’t supported everywhere; guard it
+        if (typeof img.decode === "function") {
+          try {
+            await img.decode();
+          } catch (_) {}
+        }
+        return { type: "img", el: img };
+      }
+
+      async function compressImage(file, { maxW = 1280, quality = 0.8 } = {}) {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        await new Promise((res, rej) => {
+          img.onload = res;
+          img.onerror = rej;
+          img.src = url;
+        });
+        const scale = Math.min(1, maxW / img.width);
+        const w = Math.round(img.width * scale),
+          h = Math.round(img.height * scale);
+        const c = document.createElement("canvas");
+        c.width = w;
+        c.height = h;
+        c.getContext("2d").drawImage(img, 0, 0, w, h);
+        const data = c.toDataURL("image/jpeg", quality);
+        URL.revokeObjectURL(url);
+        return data;
       }
 
       /** Convert <img> to <canvas> (for downloads/overlay export) */
@@ -1422,10 +1457,10 @@
           return;
         }
         const canvas = node.tagName === "CANVAS" ? node : imageToCanvas(node);
-        const a = document.createElement("a");
-        a.download = `qr-${$("#linkId").value || "link"}.png`;
-        a.href = canvas.toDataURL("image/png");
-        a.click();
+        const dl = document.createElement("a");
+        dl.download = `qr-${$("#linkId").value || "link"}.png`;
+        dl.href = canvas.toDataURL("image/png");
+        dl.click();
       });
 
       // THEME STUDIO
@@ -1780,7 +1815,9 @@
         const f = e.target.files?.[0];
         if (!f) return;
         const isVid = f.type.startsWith("video/");
-        const data = await captureFileAsDataURL(f);
+        const data = isVid
+          ? await captureFileAsDataURL(f)
+          : await compressImage(f, { maxW: 1280, quality: 0.8 });
         workingTheme.media = {
           kind: isVid ? "video" : "image",
           data,
@@ -2152,27 +2189,27 @@
         ctx.drawImage(qrc, x, y, s, s);
         ctx.globalAlpha = 1;
 
-        const a = document.createElement("a");
-        a.download = "overlay-snapshot.png";
-        a.href = canvas.toDataURL("image/png");
-        a.click();
+        const dl = document.createElement("a");
+        dl.download = "overlay-snapshot.png";
+        dl.href = canvas.toDataURL("image/png");
+        dl.click();
       });
 
       // IO
       $("#exportThemes").addEventListener("click", () => {
         const data = { themes: db.themes() };
-        const a = document.createElement("a");
-        a.download = "qrstudio-themes.json";
-        a.href =
+        const dl = document.createElement("a");
+        dl.download = "qrstudio-themes.json";
+        dl.href =
           "data:application/json;charset=utf-8," +
           encodeURIComponent(JSON.stringify(data, null, 2));
         a.click();
       });
       $("#exportLinks").addEventListener("click", () => {
         const data = { links: db.links() };
-        const a = document.createElement("a");
-        a.download = "qrstudio-links.json";
-        a.href =
+        const dl = document.createElement("a");
+        dl.download = "qrstudio-links.json";
+        dl.href =
           "data:application/json;charset=utf-8," +
           encodeURIComponent(JSON.stringify(data, null, 2));
         a.click();
