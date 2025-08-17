@@ -1,165 +1,401 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>QR Landing</title>
-<style>
-  :root{
-    --bg1:#101635; --bg2:#0b0f23; --fg:#f3f6ff; --cta-bg:#6c7dff; --cta-fg:#09122a;
-    --font: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
-  }
-  *{box-sizing:border-box} html,body{height:100%}
-  body{
-    margin:0; color:var(--fg); font-family:var(--font);
-    background:linear-gradient(140deg,var(--bg1),var(--bg2));
-    display:grid; min-height:100vh; grid-template-rows:auto 1fr auto;
-  }
-  header, footer{padding:14px 18px; opacity:.9}
-  header{display:flex;align-items:center;gap:10px}
-  .dot{width:10px;height:10px;border-radius:50%;background:conic-gradient(from 200deg, #6c7dff, #2de6c5)}
-  main{display:grid; grid-template-columns:minmax(280px, 860px); justify-content:center; padding:14px}
-  .card{
-    background:rgba(6,9,24,.5); border:1px solid rgba(255,255,255,.08); border-radius:14px; overflow:hidden;
-    backdrop-filter:saturate(110%) blur(8px);
-  }
-  .media{height:52vh; min-height:240px; display:grid; place-items:center; background:#070a18}
-  .media img,.media video{width:100%;height:100%;object-fit:cover}
-  .content{padding:16px}
-  h1{margin:0 0 6px 0}
-  .muted{color:#bac2ffb3}
-  .cta{display:inline-block;margin-top:10px;padding:11px 16px;border-radius:12px;background:var(--cta-bg);color:var(--cta-fg);
-       text-decoration:none;font-weight:700; box-shadow:0 6px 20px rgba(108,125,255,.3)}
-  .ghost{background:transparent; color:var(--fg); border:1px solid rgba(255,255,255,.2); box-shadow:none}
-  .small{font-size:12px}
-  .note{margin-top:10px}
-  .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-</style>
-</head>
-<body>
-  <header><div class="dot"></div><div class="muted small">QR Landing</div></header>
-  <main>
-    <div class="card">
-      <div class="media" id="media"><div class="muted">No media in theme.</div></div>
-      <div class="content">
-        <h1 id="title">Hello 👋</h1>
-        <div id="subtitle" class="muted">Welcome!</div>
-        <div class="actions">
-          <a id="cta" class="cta" href="#" target="_blank" rel="noopener">Open link</a>
-          <a id="skipBtn" class="cta ghost" href="#" style="display:none">Skip</a>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>QR Landing</title>
+    <style>
+      :root {
+        --bg1: #101635;
+        --bg2: #0b0f23;
+        --fg: #f3f6ff;
+        --cta-bg: #6c7dff;
+        --cta-fg: #09122a;
+        --font: Inter, system-ui, -apple-system, Segoe UI, Roboto,
+          "Helvetica Neue", Arial, "Noto Sans";
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        color: var(--fg);
+        font-family: var(--font);
+        background: linear-gradient(140deg, var(--bg1), var(--bg2));
+        display: grid;
+        min-height: 100vh;
+        grid-template-rows: auto 1fr auto;
+      }
+      header,
+      footer {
+        padding: 14px 18px;
+        opacity: 0.9;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: conic-gradient(from 200deg, #6c7dff, #2de6c5);
+      }
+      main {
+        display: grid;
+        grid-template-columns: minmax(280px, 860px);
+        justify-content: center;
+        padding: 14px;
+      }
+      .card {
+        background: rgba(6, 9, 24, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        overflow: hidden;
+        backdrop-filter: saturate(110%) blur(8px);
+      }
+      .media {
+        height: 52vh;
+        min-height: 240px;
+        display: grid;
+        place-items: center;
+        background: #070a18;
+        position: relative;
+      }
+      .media img,
+      .media video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .content {
+        padding: 16px;
+      }
+      h1 {
+        margin: 0 0 6px 0;
+      }
+      .muted {
+        color: #bac2ffb3;
+      }
+      .cta {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 11px 16px;
+        border-radius: 12px;
+        background: var(--cta-bg);
+        color: var(--cta-fg);
+        text-decoration: none;
+        font-weight: 700;
+        box-shadow: 0 6px 20px rgba(108, 125, 255, 0.3);
+      }
+      .small {
+        font-size: 12px;
+      }
+      /* Live landing QR overlay */
+      .qr-overlay {
+        position: absolute;
+        left: 16px;
+        top: 16px;
+        width: 160px;
+        height: 160px;
+        display: grid;
+        place-items: center;
+        z-index: 5;
+        opacity: 1;
+        -webkit-user-drag: none;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="dot"></div>
+      <div class="muted small">QR Landing</div>
+    </header>
+    <main>
+      <div class="card">
+        <div class="media" id="media">
+          <div class="muted">No media in theme.</div>
         </div>
-        <div id="note" class="small muted note"></div>
+        <div class="content">
+          <h1 id="title">Hello 👋</h1>
+          <div id="subtitle" class="muted">Welcome!</div>
+          <a id="cta" class="cta" href="#" target="_blank" rel="noopener"
+            >Learn more</a
+          >
+          <div id="note" class="small muted" style="margin-top: 10px"></div>
+        </div>
       </div>
-    </div>
-  </main>
-  <footer class="small muted" id="foot">Powered by ThemeQR</footer>
+    </main>
+    <footer class="small muted" id="foot">Powered by ThemeQR</footer>
 
-<script>
-/* ===== URL Normalizer: ensures absolute URLs even if user entered "www.example.com" ===== */
-function normalizeTarget(u){
-  if(!u) return null;
-  u = u.trim();
-  if(/^https?:\/\//i.test(u)) return u;
-  if(/^\/\//.test(u)) return location.protocol + u;
-  return 'https://' + u.replace(/^\/*/, '');
-}
+    <!-- QRCode CDN for live overlay -->
+    <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script>
+      const qs = new URLSearchParams(location.search);
+      const linkId = qs.get("linkId") || "";
+      const themeId = qs.get("themeId") || "";
 
-/* ===== Data loaders: localStorage first, then optional JSON files when hosted ===== */
-const LS = { get(k){ try{ return JSON.parse(localStorage.getItem(k) || 'null') }catch{ return null } } };
-async function fetchJson(path){ try{ const r=await fetch(path,{cache:'no-store'}); return r.ok? await r.json(): null }catch{ return null } }
-async function loadAll(){
-  let themes = LS.get('qrstudio.themes');
-  let links  = LS.get('qrstudio.links');
-  if(!themes){ const j = await fetchJson('./qrstudio-themes.json'); themes = j?.themes ?? []; }
-  if(!links){  const j = await fetchJson('./qrstudio-links.json');  links  = j?.links  ?? []; }
-  return {themes, links};
-}
+      function normalizeHttpUrl(input) {
+        if (!input) return "";
+        const u = String(input).trim();
+        if (u.startsWith("//")) return "https:" + u;
+        if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(u)) return u;
+        return "https://" + u.replace(/^\/+/, "");
+      }
 
-/* ===== Apply Theme ===== */
-function applyTheme(theme){
-  if(!theme) return;
-  const root = document.documentElement.style;
-  root.setProperty('--bg1', theme.colors?.bg1 || '#101635');
-  root.setProperty('--bg2', theme.colors?.bg2 || '#0b0f23');
-  root.setProperty('--fg',  theme.colors?.fg  || '#f3f6ff');
-  root.setProperty('--cta-bg', theme.colors?.ctaBg || '#6c7dff');
-  root.setProperty('--cta-fg', theme.colors?.ctaFg || '#09122a');
-  root.setProperty('--font', theme.font || "Inter, system-ui");
+      const store = {
+        get(key) {
+          try {
+            return JSON.parse(localStorage.getItem(key));
+          } catch {
+            return null;
+          }
+        },
+      };
 
-  document.getElementById('title').textContent = theme.title || 'Hello 👋';
-  document.getElementById('subtitle').textContent = theme.subtitle || 'Welcome!';
-  const cta = document.getElementById('cta');
-  cta.textContent = theme.cta?.text || 'Open link';
-  cta.href = theme.cta?.url || '#';
+      async function fetchFallback(path) {
+        try {
+          const r = await fetch(path, { cache: "no-store" });
+          if (!r.ok) return null;
+          return await r.json();
+        } catch {
+          return null;
+        }
+      }
+      async function loadData() {
+        let themes = store.get("qrstudio.themes");
+        let links = store.get("qrstudio.links");
+        if (!themes) {
+          const j = await fetchFallback("./qrstudio-themes.json");
+          themes = j?.themes ?? [];
+        }
+        if (!links) {
+          const j = await fetchFallback("./qrstudio-links.json");
+          links = j?.links ?? [];
+        }
+        return { themes, links };
+      }
 
-  const media = document.getElementById('media'); media.innerHTML='';
-  if(theme.media?.kind === 'image' && theme.media.data){
-    const img=document.createElement('img'); img.src=theme.media.data; img.alt=theme.media.alt || '';
-    media.appendChild(img);
-  } else if(theme.media?.kind === 'video' && theme.media.data){
-    const v=document.createElement('video'); v.src=theme.media.data;
-    v.autoplay=true; v.loop=true; v.muted=true; v.playsInline=true; v.controls=false; v.preload='metadata';
-    media.appendChild(v);
-  } else {
-    media.innerHTML = '<div class="muted">No media in theme.</div>';
-  }
-}
+      function applyTheme(theme) {
+        if (!theme) return;
+        document.documentElement.style.setProperty(
+          "--bg1",
+          theme.colors?.bg1 || "#101635"
+        );
+        document.documentElement.style.setProperty(
+          "--bg2",
+          theme.colors?.bg2 || "#0b0f23"
+        );
+        document.documentElement.style.setProperty(
+          "--fg",
+          theme.colors?.fg || "#f3f6ff"
+        );
+        document.documentElement.style.setProperty(
+          "--cta-bg",
+          theme.colors?.ctaBg || "#6c7dff"
+        );
+        document.documentElement.style.setProperty(
+          "--cta-fg",
+          theme.colors?.ctaFg || "#09122a"
+        );
+        document.documentElement.style.setProperty(
+          "--font",
+          theme.font || "Inter, system-ui"
+        );
 
-/* ===== Main: resolve link + handle redirect timing + skip ===== */
-(async function start(){
-  const qs = new URLSearchParams(location.search);
-  const linkId = qs.get('linkId') || '';
-  const explicitThemeId = qs.get('themeId') || '';
-  const {themes, links} = await loadAll();
+        const title = document.getElementById("title");
+        const subtitle = document.getElementById("subtitle");
+        const cta = document.getElementById("cta");
+        title.textContent = theme.title || "Hello 👋";
+        subtitle.textContent = theme.subtitle || "Welcome!";
+        cta.textContent = theme.cta?.text || "Learn more";
+        cta.href = normalizeHttpUrl(theme.cta?.url || "#");
 
-  const link = links.find(l => l.id === linkId);
-  const theme = explicitThemeId
-    ? themes.find(t => t.id === explicitThemeId)
-    : (link?.themeId ? themes.find(t => t.id === link.themeId) : null);
+        const media = document.getElementById("media");
+        media.innerHTML = "";
+        if (theme.media?.kind === "image" && theme.media.data) {
+          const img = document.createElement("img");
+          img.src = theme.media.data;
+          img.alt = theme.media.alt || "";
+          media.appendChild(img);
+        } else if (theme.media?.kind === "video" && theme.media.data) {
+          const v = document.createElement("video");
+          v.src = theme.media.data;
+          v.autoplay = true;
+          v.loop = true;
+          v.muted = true;
+          v.playsInline = true;
+          v.controls = false;
+          media.appendChild(v);
+        } else {
+          media.innerHTML = '<div class="muted">No media in theme.</div>';
+        }
+      }
 
-  applyTheme(theme);
+      function renderQRTo(host, text, size, fg = "#000000", bg = "#ffffff00") {
+        host.innerHTML = "";
+        const c = document.createElement("canvas");
+        c.width = c.height = Math.max(64, size || 160);
+        if (window.QRCode && QRCode.toCanvas) {
+          QRCode.toCanvas(c, String(text || ""), {
+            errorCorrectionLevel: "medium",
+            color: { dark: fg, light: bg },
+            width: c.width,
+            margin: 0,
+          });
+          host.appendChild(c);
+          return;
+        }
+        const img = new Image();
+        img.width = img.height = c.width;
+        img.crossOrigin = "anonymous";
+        const hex = (x) => String(x || "#000").replace("#", "");
+        img.src =
+          "https://api.qrserver.com/v1/create-qr-code/?" +
+          `size=${c.width}x${c.height}&ecc=M&color=${hex(fg)}&bgcolor=${hex(
+            "ffffff"
+          )}` +
+          `&data=${encodeURIComponent(String(text || ""))}`;
+        host.appendChild(img);
+      }
 
-  const note = document.getElementById('note');
-  const skipBtn = document.getElementById('skipBtn');
+      function placeOverlay(theme, link) {
+        const ov = theme?.settings?.overlay;
+        if (!ov || ov.show === false) return;
+        const media = document.getElementById("media");
+        if (!media) return;
 
-  if(!linkId){ note.textContent = 'Missing linkId in URL.'; return; }
-  if(!link){   note.textContent = `No saved link found for “${linkId}”.`; return; }
+        const box = document.createElement("div");
+        box.className = "qr-overlay";
+        box.style.opacity = String(ov.opacity ?? 1);
+        const size = Math.max(64, ov.size || 160);
+        box.style.width = box.style.height = size + "px";
 
-  const target = normalizeTarget(link.url);
-  if(!target){ note.textContent = `The link “${linkId}” has no destination URL set.`; return; }
+        // Prefer dynamic link destination; else CTA; else current page
+        const dest = normalizeHttpUrl(
+          link?.url || theme?.cta?.url || location.href
+        );
 
-  // Read theme settings
-  const delaySec = Number(theme?.settings?.redirectDelay ?? 2);
-  const showSkip = (theme?.settings?.showSkip ?? true);
-  const skipText = theme?.settings?.skipText || 'Skip';
+        const inner = document.createElement("div");
+        box.appendChild(inner);
+        media.appendChild(box);
 
-  document.title = (theme?.name || 'QR') + ' • ' + linkId;
+        function positionBox() {
+          const pad = 16;
+          const W = media.clientWidth;
+          const H = media.clientHeight;
+          let x = ov.x ?? pad,
+            y = ov.y ?? pad;
+          if (ov.pos !== "custom") {
+            const map = {
+              "top-left": { x: pad, y: pad },
+              "top-right": { x: W - size - pad, y: pad },
+              "bottom-left": { x: pad, y: H - size - pad },
+              "bottom-right": { x: W - size - pad, y: H - size - pad },
+            };
+            const p = map[ov.pos] || map["bottom-right"];
+            x = p.x;
+            y = p.y;
+          }
+          box.style.left = x + "px";
+          box.style.top = y + "px";
+        }
+        positionBox();
+        renderQRTo(inner, dest, size, "#000000", "#ffffff00");
 
-  // Skip button (immediate go-to target)
-  skipBtn.textContent = skipText;
-  skipBtn.style.display = showSkip ? 'inline-block' : 'none';
-  skipBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    location.replace(target);
-  });
+        const child = media.querySelector("img,video");
+        if (child) {
+          const once = () => positionBox();
+          child.addEventListener("loadedmetadata", once, { once: true });
+          child.addEventListener("load", once, { once: true });
+        }
+        window.addEventListener("resize", () => {
+          if ((ov.pos || "") !== "custom") positionBox();
+        });
+      }
 
-  // Countdown + redirect (if delay > 0)
-  if (delaySec > 0) {
-    let s = delaySec;
-    note.innerHTML = `Redirecting to <span class="muted">${target}</span> in <b id="sec">${s}</b>… <a href="#" id="stay">stay here</a>`;
-    const tick = setInterval(() => {
-      s--; document.getElementById('sec').textContent = s;
-      if (s <= 0) { clearInterval(tick); location.replace(target); }
-    }, 1000);
-    document.getElementById('stay').addEventListener('click', e => {
-      e.preventDefault(); clearInterval(tick); note.textContent = 'Redirection cancelled.';
-    });
-  } else {
-    // No auto-redirect; show hint
-    note.innerHTML = `Auto-redirect is <b>off</b>. Use the buttons above to continue.`;
-  }
-})();
-</script>
-</body>
+      // Redirect countdown with optional Skip
+      function resolveLink(link, theme) {
+        const note = document.getElementById("note");
+        if (!link || !link.url) {
+          note.textContent = "";
+          return;
+        }
+
+        const delay = Number(theme?.settings?.redirectDelay ?? 0);
+        const showSkip = theme?.settings?.showSkip ?? true;
+        const skipText = theme?.settings?.skipText || "Skip";
+
+        const dest = normalizeHttpUrl(link.url);
+        if (delay <= 0) {
+          // No delay; but still show CTA/note if you want (keeping minimal)
+          return;
+        }
+
+        // Build message
+        note.innerHTML =
+          `Redirecting to <span class="muted">${dest}</span> in <b id="sec">${delay}</b>s…` +
+          (showSkip
+            ? ` <a href="#" id="skipNow" class="cta" style="padding:6px 10px; margin-left:8px">${skipText}</a>`
+            : ` <a href="#" id="stay" class="muted">stay here</a>`);
+
+        let s = delay;
+        const id = setInterval(() => {
+          s--;
+          const secEl = document.getElementById("sec");
+          if (secEl) secEl.textContent = Math.max(0, s);
+          if (s <= 0) {
+            clearInterval(id);
+            location.assign(dest);
+          }
+        }, 1000);
+
+        const skip = document.getElementById("skipNow");
+        if (skip) {
+          skip.onclick = (e) => {
+            e.preventDefault();
+            clearInterval(id);
+            location.assign(dest);
+          };
+        }
+        const stay = document.getElementById("stay");
+        if (stay) {
+          stay.onclick = (e) => {
+            e.preventDefault();
+            clearInterval(id);
+            note.textContent = "";
+          };
+        }
+      }
+
+      (async function start() {
+        const { themes, links } = await loadData();
+        const chosenTheme = themeId
+          ? themes.find((t) => t.id === themeId)
+          : null;
+        const link = linkId ? links.find((l) => l.id === linkId) : null;
+        const themeToUse =
+          chosenTheme ||
+          (link?.themeId ? themes.find((t) => t.id === link.themeId) : null);
+
+        applyTheme(themeToUse);
+        if (link) {
+          document.title = (themeToUse?.name || "QR") + " • " + link.id;
+        }
+
+        // Place QR overlay using saved theme settings
+        placeOverlay(themeToUse, link);
+
+        // Redirect handling with Skip UI
+        resolveLink(link, themeToUse);
+      })();
+    </script>
+  </body>
 </html>
-

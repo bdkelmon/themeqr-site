@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ThemeQR — Coming Soon</title>
+  <link rel="icon" href="https://themeqr.com/images/TQR_Dude_Sm.png" />
+  <meta name="description" content="ThemeQR: dynamic QR codes, live scene switching, themes & overlays. Launching soon." />
+  <meta property="og:title" content="ThemeQR — Coming Soon" />
+  <meta property="og:description" content="Dynamic QR + Event Mode + Social Mode. Join the waitlist." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://themeqr.com/images/TQR_Dude_Sm.png" />
+  <meta name="theme-color" content="#0f1220" />
+  <style>
+    :root{
+      --bg: #0f1220;
+      --bg-soft: #0b0f23;
+      --panel:#171a2b;
+      --muted:#8c93b2;
+      --text:#e8ebff;
+      --accent:#6c7dff;
+      --accent-2:#2de6c5;
+      --danger:#ff6b6b;
+      --radius:16px;
+      --shadow: 0 12px 34px rgba(0,0,0,.35);
+      --sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--text);
+      font-family:var(--sans);
+      background:
+        radial-gradient(1100px 600px at 70% -10%, #4fc724 0%, transparent 55%) fixed,
+        radial-gradient(900px 500px at -10% 100%, rgba(108,125,255,.25) 0%, transparent 60%) fixed,
+        linear-gradient(180deg, #0f1220, #0a0d1d 65%, #0b0f23);
+      min-height:100vh;
+      display:grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    header{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:16px 20px; border-bottom:1px solid #232741;
+      background:linear-gradient(180deg,#15182a,#12162a);
+      position:sticky; top:0; z-index:10;
+    }
+    .logo{display:flex; gap:10px; align-items:center; font-weight:800}
+    .dot{width:12px;height:12px;border-radius:50%;
+      background:conic-gradient(from 200deg, var(--accent), var(--accent-2));}
+
+    .wrap{
+      max-width:1100px; width:100%; margin:0 auto; padding:22px;
+    }
+    .hero{
+      display:grid; grid-template-columns: 1.2fr .8fr; gap:18px; align-items:stretch;
+    }
+    .card{
+      background:rgba(18,22,43,.6);
+      border:1px solid #232741; border-radius:var(--radius);
+      box-shadow:var(--shadow); overflow:hidden;
+    }
+    .pad{padding:18px}
+    h1{margin:0 0 8px 0; font-size: clamp(28px, 5vw, 48px); line-height:1.05}
+    .lead{color:#cfd6ff; font-size: clamp(14px, 2.4vw, 18px)}
+    .pill{display:inline-block; padding:6px 10px; border:1px solid #2a2e4d; border-radius:999px; background:#121632; color:#cdd3ff; font-size:12px}
+
+    /* Countdown */
+    .count{
+      display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;
+    }
+    .tbox{
+      background:#0b0f23;border:1px solid #232741;border-radius:12px; padding:10px 12px; min-width:84px; text-align:center;
+    }
+    .num{font-size:26px; font-weight:900}
+    .lab{font-size:11px; color:#a6aed8}
+
+    /* Form */
+    form.waitlist{margin-top:14px; display:grid; grid-template-columns: 1fr 1fr auto; gap:10px}
+    input[type="email"], input[type="text"], input[type="tel"]{
+      width:100%; padding:12px; border:1px solid #2a2e4d; background:#13182e; color:var(--text); border-radius:12px; font-size:14px;
+    }
+    .btn{
+      appearance:none; border:1px solid #2b2f4e; background:#171b34; color:#e8ebff;
+      border-radius:12px; padding:12px 14px; cursor:pointer; font-weight:700;
+    }
+    .btn.primary{background:linear-gradient(180deg,#3b47ff,#6c7dff); border-color:#5563ff}
+    .btn.ghost{background:#13182e}
+    .small{font-size:12px; color:var(--muted)}
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .ok{color:#7fffb2}
+    .err{color:#ffb3b3}
+
+    /* Right column */
+    .side{
+      display:grid; gap:12px;
+    }
+    .k{
+      display:flex; gap:10px; align-items:flex-start; background:#0b0f23; border:1px solid #232741; border-radius:12px; padding:12px;
+    }
+    .k .ic{font-size:18px}
+    .ul{margin:0; padding-left:18px}
+    .qrbox{
+      display:grid; place-items:center; background:#0b0f23; border:1px solid #232741; border-radius:12px; padding:12px;
+    }
+    .qrbox img{width:160px; height:160px; image-rendering: pixelated; border-radius:8px}
+
+    footer{padding:14px 22px; border-top:1px solid #232741; color:#95a0d8; display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between}
+    .links{display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+    .links a{color:#cfd6ff; text-decoration:none}
+    .links a:hover{color:#fff; text-decoration:underline}
+
+    /* Responsive */
+    @media (max-width: 900px){
+      .hero{ grid-template-columns: 1fr; }
+      form.waitlist{ grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <span class="dot"></span>
+      <span>ThemeQR</span>
+      <span class="pill">Coming Soon</span>
+    </div>
+    <div class="row">
+      <a class="btn ghost" href="./index.html">Back to App</a>
+      <a class="btn ghost" href="./themeqr-merch.html" target="_blank">Merch Studio ↗</a>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <!-- Left: pitch + countdown + waitlist -->
+      <div class="card pad">
+        <h1>Dynamic QR — now with <span style="color:var(--accent-2)">Event</span> + <span style="color:var(--accent)">Social</span> Modes</h1>
+        <p class="lead">
+          Switch your landing page live at rallies, concerts, and games. Or turn it into a meme-powered social moment with reactions and submissions. All from one QR.
+        </p>
+
+        <div class="count" aria-live="polite">
+          <div class="tbox"><div id="d" class="num">—</div><div class="lab">Days</div></div>
+          <div class="tbox"><div id="h" class="num">—</div><div class="lab">Hours</div></div>
+          <div class="tbox"><div id="m" class="num">—</div><div class="lab">Minutes</div></div>
+          <div class="tbox"><div id="s" class="num">—</div><div class="lab">Seconds</div></div>
+        </div>
+
+        <form id="waitlist" class="waitlist" autocomplete="on" novalidate>
+          <input id="email" type="email" placeholder="you@example.com" required aria-label="Email" />
+          <input id="name" type="text" placeholder="Your name (optional)" aria-label="Name" />
+          <button id="joinBtn" class="btn primary" type="submit">Join Waitlist</button>
+          <label class="row" style="grid-column: 1 / -1; margin-top:-6px">
+            <input id="consent" type="checkbox" aria-label="Consent" />
+            <span class="small">I agree to receive launch updates. I can unsubscribe anytime.</span>
+          </label>
+          <div id="msg" class="small" style="grid-column:1 / -1"></div>
+        </form>
+
+        <div class="row" style="margin-top:10px">
+          <a class="btn ghost" id="icsBtn">Add Launch to Calendar</a>
+          <button class="btn" id="shareBtn" type="button">Share</button>
+        </div>
+      </div>
+
+      <!-- Right: highlights + QR -->
+      <div class="side">
+        <div class="k">
+          <div class="ic">⚡</div>
+          <div>
+            <b>Event Mode</b>
+            <div class="small">Tap to switch scenes live: map → merch → raffle → afterparty. One QR, endless moments.</div>
+          </div>
+        </div>
+        <div class="k">
+          <div class="ic">🎉</div>
+          <div>
+            <b>Social Mode</b>
+            <div class="small">Memes, reactions (🔥😂👍), and submissions with one-tap approvals. Build a crowd around your QR.</div>
+          </div>
+        </div>
+        <div class="k">
+          <div class="ic">👕</div>
+          <div>
+            <b>Merch Studio</b>
+            <div class="small">Design shirts with embedded QR + 3-month Starter bundle. Perfect for vendors & teams.</div>
+          </div>
+        </div>
+
+        <div class="qrbox">
+          <div>
+            <div class="small" style="text-align:center; margin-bottom:6px">Scan to open this page</div>
+            <img id="qr" alt="QR to ThemeQR Coming Soon" />
+            <div class="small" style="text-align:center; margin-top:6px">
+              <code style="font-family:var(--mono); background:#0b0f23; padding:2px 6px; border-radius:8px; border:1px solid #232741">
+                coming-soon.html
+              </code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="links small">
+      <span>© <span id="yr"></span> ThemeQR</span>
+      <span>•</span>
+      <a href="#" id="privacy">Privacy</a>
+      <span>•</span>
+      <a href="mailto:hello@themeqr.com">Contact</a>
+    </div>
+    <div class="links small">
+      <a href="#" id="x">X</a>
+      <a href="#" id="ig">Instagram</a>
+      <a href="#" id="yt">YouTube</a>
+    </div>
+  </footer>
+
+  <noscript>
+    <div style="padding:12px; text-align:center; color:#ffbcbc; background:#2a0f0f; border-top:1px solid #512">
+      JavaScript is required for the countdown and waitlist form. Please enable it.
+    </div>
+  </noscript>
+
+  <script>
+    // =================== CONFIG ===================
+    const BRAND = {
+      name: "ThemeQR",
+      site: location.href.replace(/[#?].*$/,''),
+      socials: {
+        x: "https://x.com/yourhandle",
+        ig: "https://instagram.com/yourhandle",
+        yt: "https://youtube.com/@yourhandle"
+      },
+      contact: "hello@themeqr.com"
+    };
+    // Launch timestamp — set your actual date/time (America/New_York). Example: Oct 1, 2025 5:00 PM ET
+    // Convert to UTC to avoid client timezone differences.
+    const LAUNCH_AT = Date.UTC(2025, 9, 1, 21, 0, 0); // 2025-10-01 21:00:00Z
+
+    // Optional: POST collected emails to your backend (Supabase Edge/Netlify function/etc.)
+    // Leave empty "" to use local-only storage.
+    const FORM = { ACTION_URL: "" }; // e.g., "https://your-endpoint.example.com/waitlist"
+
+    // ================ UTILITIES ===================
+    const $ = sel => document.querySelector(sel);
+    const fmt = n => String(Math.max(0, n)).padStart(2,'0');
+
+    function updateCountdown() {
+      const now = Date.now();
+      let diff = Math.max(0, LAUNCH_AT - now);
+      const d = Math.floor(diff / 86400000); diff -= d*86400000;
+      const h = Math.floor(diff / 3600000);  diff -= h*3600000;
+      const m = Math.floor(diff / 60000);    diff -= m*60000;
+      const s = Math.floor(diff / 1000);
+      $("#d").textContent = d;
+      $("#h").textContent = fmt(h);
+      $("#m").textContent = fmt(m);
+      $("#s").textContent = fmt(s);
+    }
+
+    function toast(el, msg, ok=true){
+      el.textContent = msg;
+      el.className = "small " + (ok ? "ok" : "err");
+    }
+
+    // Basic email check
+    function validEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); }
+
+    // Create an .ics file for the launch and download it
+    function downloadICS() {
+      const start = new Date(LAUNCH_AT);
+      const end = new Date(LAUNCH_AT + 3600000); // +1h
+      function toICS(dt){
+        const pad = n=>String(n).padStart(2,'0');
+        const y=dt.getUTCFullYear(), m=pad(dt.getUTCMonth()+1), d=pad(dt.getUTCDate());
+        const h=pad(dt.getUTCHours()), mi=pad(dt.getUTCMinutes()), s=pad(dt.getUTCSeconds());
+        return `${y}${m}${d}T${h}${mi}${s}Z`;
+      }
+      const ics =
+`BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//ThemeQR//ComingSoon//EN
+BEGIN:VEVENT
+UID:${crypto.randomUUID()}@themeqr
+DTSTAMP:${toICS(new Date())}
+DTSTART:${toICS(start)}
+DTEND:${toICS(end)}
+SUMMARY:ThemeQR Launch
+DESCRIPTION:Dynamic QR with Event + Social Modes. themeqr.com
+END:VEVENT
+END:VCALENDAR`;
+      const blob = new Blob([ics], {type:"text/calendar"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "ThemeQR-Launch.ics";
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+    }
+
+    function buildQR(url){
+      const safe = encodeURIComponent(url);
+      // Uses a public QR image API for convenience. Replace with your own generator if desired.
+      $("#qr").src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${safe}`;
+    }
+
+    // ================ INIT & BINDINGS ===================
+    (function init(){
+      // Year + socials
+      $("#yr").textContent = new Date().getFullYear();
+      $("#x").href = BRAND.socials.x;
+      $("#ig").href = BRAND.socials.ig;
+      $("#yt").href = BRAND.socials.yt;
+      $("#privacy").onclick = (e)=>{ e.preventDefault(); alert("We store your email for launch updates only. No spam. Delete anytime by emailing " + BRAND.contact); };
+
+      // Countdown
+      updateCountdown();
+      setInterval(updateCountdown, 1000);
+
+      // QR to this page
+      buildQR(BRAND.site);
+
+      // Share button
+      $("#shareBtn").onclick = async () => {
+        const shareData = {
+          title: "ThemeQR — Coming Soon",
+          text: "Dynamic QR with Event + Social Modes. Join the waitlist!",
+          url: BRAND.site
+        };
+        try{
+          if (navigator.share) await navigator.share(shareData);
+          else {
+            await navigator.clipboard.writeText(BRAND.site);
+            alert("Link copied to clipboard!");
+          }
+        }catch(_){}
+      };
+
+      // Calendar
+      $("#icsBtn").onclick = (e)=>{ e.preventDefault(); downloadICS(); };
+
+      // Waitlist form
+      $("#waitlist").addEventListener("submit", async (e)=>{
+        e.preventDefault();
+        const email = $("#email").value.trim();
+        const name = $("#name").value.trim();
+        const consent = $("#consent").checked;
+        const msg = $("#msg");
+        if(!validEmail(email)) return toast(msg, "Please enter a valid email.", false);
+        if(!consent) return toast(msg, "Please check the consent box.", false);
+
+        // Save locally (works offline)
+        try{
+          const key = "themeqr.waitlist";
+          const arr = JSON.parse(localStorage.getItem(key) || "[]");
+          arr.push({ id: crypto.randomUUID(), email, name, ts: Date.now(), page: location.href });
+          localStorage.setItem(key, JSON.stringify(arr));
+        }catch(_){}
+
+        // Optional remote POST
+        if (FORM.ACTION_URL){
+          try{
+            const r = await fetch(FORM.ACTION_URL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, name, consent:true, source:"coming-soon", page: location.href })
+            });
+            if (!r.ok) throw new Error("Network");
+          }catch(_){
+            // keep silent; local save already done
+          }
+        }
+
+        toast(msg, "You're on the list! 🎉", true);
+        $("#joinBtn").disabled = true;
+        if (navigator.vibrate) navigator.vibrate(20);
+        e.target.reset();
+      });
+    })();
+  </script>
+</body>
+</html>
