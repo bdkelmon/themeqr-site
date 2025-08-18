@@ -161,7 +161,7 @@ function populateDecks(decks) {
       ? `
         <div class="video-wrapper">
           <div class="video-section">
-            <video id="deck-video-${deck.id}" class="theme-video" width="200" height="150"
+            <video id="deck-video-${deck.id}" class="theme-video"  
                    style="display:none;" muted playsinline webkit-playsinline controls preload="metadata"></video>
             <div id="deck-novideo-${deck.id}" class="no-video" style="display:none; color:red;">No Video</div>
           </div>
@@ -271,7 +271,7 @@ function populateThemes(themes) {
       ? `
         <div class="video-wrapper">
           <div class="video-section">
-            <iframe id="video-${theme.id}" class="theme-video" width="200" height="150"
+            <iframe id="video-${theme.id}" class="theme-video"  
                     src="${theme.wrapper_url}"
                     frameborder="0"
                     allow="autoplay; encrypted-media"
@@ -287,7 +287,7 @@ function populateThemes(themes) {
         <div class="video-wrapper">
           <div class="video-section">
             <!-- NOTE: no <source> tag; we set .src in JS -->
-            <video id="video-${theme.id}" class="theme-video" width="200" height="150"
+            <video id="video-${theme.id}" class="theme-video" 
                    style="display:none;"
                    muted
                    playsinline
@@ -535,8 +535,6 @@ async function createDeck() {
     createDeckBtn.disabled = false;
   }
 }
-
-
 
   document.addEventListener('DOMContentLoaded', async () => {
       showLoading(true);

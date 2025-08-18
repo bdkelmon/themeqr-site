@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>ThemeQR – QR Codes That Entertain</title>
+  <link rel="stylesheet" href="https://themeqr.com/static/css/styles.css">
+  <link rel="icon" href="https://themeqr.com/images/TQR_Dude_Sm.png">
+</head>
+<body>
+  <header>
+    <h1>ThemeQR</h1>
+    <p>QR Codes That Do More Than Link – They Entertain</p>
+    <div class="auth-controls" id="user-nav"></div>
+  </header>
+
+  <section class="hero">
+    <h2>Create QR Codes with Video Personality</h2>
+    <p>ThemeQR lets you wrap your QR codes in viral memes, stylish videos, and branded themes. Update your QR destination anytime with just a tap.</p>
+    <a href="https://themeqr-backend.onrender.com/signup" class="btn">Get Early Access</a>
+  </section>
+
+  <section class="video-wrapper">
+    <h2>📽️ See It In Action</h2>
+    <video autoplay loop muted playsinline width="100%">
+      <source src="https://res.cloudinary.com/themeqr-test/video/upload/v1752014993/themeqr/wrappers/obsg01o6dfzl6du5bsaa.mp4" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+  </section>
+
+  <section class="section">
+    <div>
+      <h2>🌐 Curious about dynamic QR switching in action</h2>
+      <a href="https://themeqr-backend.onrender.com/editor" class="btn">Click Here!</a>
+    </div>
+    <div style="margin: 2rem 0;">
+      <h3>📷 QR Code</h3>
+      <img src="https://res.cloudinary.com/themeqr-test/image/upload/v1752014973/themeqr/qr_codes/kulzt9rsgzjg75mezbde.png" alt="QR Code" style="width: 200px; border: 1px solid #ccc; border-radius: 8px;">
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>🚀 Why ThemeQR?</h2>
+    <div class="features">
+      <div>
+        <h3>🎥 Video Wrappers</h3>
+        <p>Play a funny or branded video around your QR scan.</p>
+      </div>
+      <div>
+        <h3>🔁 Dynamic Links</h3>
+        <p>Change where your QR points, anytime, even after printing.</p>
+      </div>
+      <div>
+        <h3>🎨 Custom Themes</h3>
+        <p>Pick from memes, categories, or upload your own.</p>
+      </div>
+      <div>
+        <h3>📊 Use for Marketing</h3>
+        <p>Perfect for campaigns, events, promotions, birthdays.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="signup" id="signup">
+    <h2>📬 Get Notified When We Launch</h2>
+    <p>Join our waitlist to get early access to ThemeQR.</p>
+    <a href="https://themeqr-backend.onrender.com/signup" class="btn">Join the Waitlist</a>
+  </section>
+
+  <footer class="footer">
+    © 2025 ThemeQR. All rights reserved.
+  </footer>
+
+  <script>
+    function updateUserNav() {
+      const cookies = document.cookie.split('; ').reduce((acc, cookie) => {
+        const [name, value] = cookie.split('=');
+        acc[name] = value;
+        return acc;
+      }, {});
+      const user = cookies.user ? JSON.parse(decodeURIComponent(cookies.user)) : null;
+
+      const navDiv = document.getElementById('user-nav');
+      if (user && user.email) {
+        navDiv.innerHTML = `
+          <span>Hello, ${user.email}!</span>
+          <a href="/logout" class="logout-btn">Log Out</a>
+        `;
+      } else {
+        navDiv.innerHTML = `
+          <a href="https://themeqr-backend.onrender.com/login">Log In</a>
+          <a href="https://themeqr-backend.onrender.com/signup">Sign Up</a>
+        `;
+      }
+
+      const logoutBtn = navDiv.querySelector('.logout-btn');
+      if (logoutBtn && !logoutBtn.dataset.eventListener) {
+        logoutBtn.addEventListener('click', () => {
+          document.cookie = 'user=; Max-Age=0; path=/';
+          window.location.href = '/logout';
+        });
+        logoutBtn.dataset.eventListener = 'true';
+      }
+    }
+
+    window.addEventListener('load', updateUserNav);
+    window.addEventListener('popstate', () => {
+      window.location.reload();
+    });
+
+    function setVideo(url) {
+      const video = document.getElementById("qrVideo");
+      const source = document.getElementById("videoSource");
+      source.src = url;
+      video.load();
+      video.play();
+    }
+
+    function setLanding(url) {
+      window.location.href = url;
+    }
+  </script>
+</body>
+</html> 
