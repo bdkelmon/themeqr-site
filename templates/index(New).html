@@ -25,7 +25,7 @@
     background:linear-gradient(180deg, #15182a, #12162a); position:sticky; top:0; z-index:5;
   }
   .logo{display:flex; gap:12px; align-items:center; font-weight:700}
-  .logo .dot{width:12px;height:12px;border-radius:50%;background: conic-gradient(from 200deg, var(--accent), var(--accent-2));}
+
   main{
     display:grid; grid-template-columns: 240px 1fr; gap:18px; padding:18px; max-width:1400px; margin:0 auto;
   }
@@ -117,13 +117,14 @@
   .list{display:flex; flex-direction:column; gap:10px}
   .item{border:1px dashed #2a2e4d; border-radius:12px; padding:10px; display:flex; justify-content:space-between; align-items:center}
   /* Highlight the selected saved theme */
+/* Selected saved theme row = same visual language as nav .active */
 #themesList .item.selected {
-  border: 1px solid #4fc724 !important;   /* solid green border */
+  border: 1px solid var(--accent) !important;
   box-shadow:
-    0 0 0 2px rgba(79, 199, 36, 0.25) inset,
-    0 0 16px rgba(79, 199, 36, 0.45);      /* glow */
-  background: linear-gradient(180deg, rgba(79,199,36,0.08), transparent);
-}
+    0 0 0 2px rgba(108, 125, 255, 0.25) inset,
+    0 0 16px rgba(108, 125, 255, 0.35);
+  background: linear-gradient(180deg, rgba(108,125,255,0.08), transparent);
+}}
   .table{width:100%; border-collapse:collapse}
   .table th, .table td{border-bottom:1px dashed #2a2e4d; padding:8px; text-align:left}
   .table th{color:#aab1d6; font-weight:600}
@@ -150,15 +151,15 @@
 </style>
 </head>
 <body>
-  <header>
-    <div class="logo"><span class="dot"></span><span>ThemeQR</span><span class="muted small">Studio</span></div>
-  </header>
+  <div class="logo">
+    <img class="icon" src="themeqr-site/images/favicon-32x32.png" alt="ThemeQR" width="16" height="16" />
+    <span>ThemeQR</span><span class="muted small"></span>
+  </div>
 
   <main>
     <!-- LEFT NAV -->
     <aside id="sidebar">
-      <div class="nav-title">Workspace</div>
-      <div class="nav-group" id="navWork">
+        <div class="nav-group" id="navWork">
         <button class="nav-btn active" data-tab="qr">QR Studio</button>
         <button class="nav-btn" data-tab="themes">Theme Studio</button>
         <button class="nav-btn" data-tab="overlay">QR Overlay</button>
@@ -166,11 +167,7 @@
         <button class="nav-btn" data-tab="analytics">Analytics</button>
         <button class="nav-btn" data-tab="io">Export / Import</button>
         <button class="nav-btn" data-tab="help">Help</button>
-      </div>
-
-      <div class="nav-title">Shortcuts</div>
-      <div class="nav-group" id="navLinks">
-        <a class="nav-btn link" href="./landing.html" target="_blank" rel="noopener">QR Demo <small>↗</small></a>
+        <button class="btn nav-btn" id="btnQrDemo">QR Demo</button> 
         <a class="nav-btn link" href="./themeqr-merch.html" target="_blank" rel="noopener">ThemeQR Merch <small>↗</small></a>
       </div>
     </aside>
@@ -535,6 +532,33 @@
     if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(u)) return u;
     return "https://" + u.replace(/^\/+/, "");
   }
+
+  document.getElementById("btnQrDemo").addEventListener("click", (e) => {
+  e.preventDefault();
+  openQrDemoWithSelection();
+});
+
+function getSelectedThemeId() {
+  const selRow = document.querySelector("#themesList .item.selected");
+  if (selRow?.dataset.id) return selRow.dataset.id;
+
+  const dd = document.getElementById("linkTheme");
+  if (dd?.value) return dd.value;
+
+  if (workingTheme?.id) return workingTheme.id;
+
+  return "";
+}
+
+function openQrDemoWithSelection() {
+  const linkId = (document.getElementById("linkId")?.value || "").trim();
+  const themeId = getSelectedThemeId();
+  const url = new URL("landing.html", location.href);
+  if (linkId) url.searchParams.set("linkId", linkId);
+  if (themeId) url.searchParams.set("themeId", themeId);
+  window.open(url.toString(), "_blank", "noopener");
+}
+
 
   const store = {
     get(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)) ?? fallback }catch{ return fallback } },
