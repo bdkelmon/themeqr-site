@@ -538,6 +538,62 @@
           width: 180px;
         }
       }
+      /* Auth area (top-right of header) */
+      .auth-right {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: nowrap;
+      }
+      .auth-link {
+        color: var(--text);
+        text-decoration: none;
+        font-size: 13px;
+        opacity: 0.95;
+      }
+      .auth-link:hover {
+        color: #6c7dff;
+        text-decoration: underline;
+      }
+      .auth-sep {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      /* Top-right auth links (fixed, no header needed) */
+      .auth-fixed {
+        position: fixed;
+        top: 12px;
+        right: 16px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        z-index: 1000; /* above page chrome */
+      }
+      .auth-link {
+        color: var(--text);
+        text-decoration: none;
+        font-size: 13px;
+        opacity: 0.95;
+      }
+      .auth-link:hover {
+        color: #6c7dff;
+        text-decoration: underline;
+      }
+      .auth-sep {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      @media (max-width: 600px) {
+        .auth-fixed {
+          top: 8px;
+          right: 8px;
+          gap: 10px;
+        }
+        .auth-link {
+          font-size: 12px;
+        }
+      }
     </style>
   </head>
 
@@ -552,7 +608,8 @@
       />
       <span>ThemeQR</span><span class="muted small"></span>
     </div>
-
+    <!-- Top-right auth nav -->
+    <div id="authNavFixed" class="auth-fixed"></div>
     <main>
       <!-- LEFT NAV -->
       <aside id="sidebar">
@@ -2800,6 +2857,68 @@
         const { data } = await sb.auth.getSession();
         return data.session || null;
       }
+      function escapeHtml(s) {
+        return String(s).replace(
+          /[&<>"']/g,
+          (m) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            }[m])
+        );
+      }
+
+      (function () {
+        // Reuse existing client if present, else create one
+        const hasClient = !!(
+          window.sb &&
+          window.sb.auth &&
+          typeof window.sb.auth.getSession === "function"
+        );
+        const sb = hasClient
+          ? window.sb
+          : supabase.createClient(
+              "https://YOUR-PROJECT.supabase.co", // ← fill in
+              "YOUR-ANON-KEY" // ← fill in
+            );
+        window.sb = sb;
+
+        function renderAuthNav(session) {
+          const el = document.getElementById("authNavFixed");
+          if (!el) return;
+
+          if (!session) {
+            el.innerHTML = `
+        <a class="auth-link" href="/login">Log in</a>
+        <span class="auth-sep">•</span>
+        <a class="auth-link" href="/login?mode=signup">Sign up</a>
+      `;
+            return;
+          }
+          const email = session.user?.email || "Account";
+          el.innerHTML = `
+      <span class="auth-link" id="signedAs"></span>
+      <span class="auth-sep">•</span>
+      <a class="auth-link" href="#" id="lnkLogout">Log out</a>
+    `;
+          document.getElementById(
+            "signedAs"
+          ).textContent = `Signed in as ${email}`;
+          document.getElementById("lnkLogout").onclick = async (e) => {
+            e.preventDefault();
+            await sb.auth.signOut();
+            renderAuthNav(null);
+            // optional: window.location.href = "/login?logged_out=1";
+          };
+        }
+
+        // Initial + live updates
+        sb.auth.getSession().then(({ data }) => renderAuthNav(data.session));
+        sb.auth.onAuthStateChange((_e, session) => renderAuthNav(session));
+      })();
     </script>
   </body>
 </html>
