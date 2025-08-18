@@ -1,0 +1,14 @@
+{
+  "rewrites": [
+    { "source": "/studio", "destination": "/index(New).html" },
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/merch", "destination": "/themeqr-merch.html" },
+    { "source": "/landing", "destination": "/landing.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+    }
+  ]
+}
