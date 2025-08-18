@@ -4,10 +4,14 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Login • ThemeQR</title>
+
+  <!-- Use a root-relative path so it works from /login/ -->
+  <link rel="icon" href="/themeqr-site/images/favicon-32x32.png"/>
+
   <style>
     :root{
       --bg:#0f1220; --panel:#171a2b; --muted:#8c93b2; --text:#e8ebff;
-      --accent:#6c7dff; --accent-2:#2de6c5; --success:#4fc724;
+      --accent:#6c7dff; --success:#4fc724;
       --radius:14px; --shadow:0 10px 30px rgba(0,0,0,.35);
       --sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
     }
@@ -45,63 +49,85 @@
       background:linear-gradient(180deg, #3b47ff, #6c7dff);
       border-color:#5563ff; font-weight:700;
     }
-    .stack{display:flex; gap:8px; flex-wrap:wrap}
-    .error{color:#ffd6d6; margin-top:8px}
+    .stack{display:flex; gap:10px; flex-wrap:wrap; margin-top:8px}
+    .error{color:#ffd6d6; margin-top:8px; min-height:18px}
     .fine{font-size:12px}
+    a.inline{color:#aeb6ff; text-decoration:none}
+    a.inline:hover{text-decoration:underline}
   </style>
 </head>
 <body>
   <div class="card">
     <div class="brand">
-      <img src="themeqr-site/images/favicon-32x32.png" alt="ThemeQR"/>
+      <img src="/themeqr-site/images/favicon-32x32.png" alt="ThemeQR"/>
       <span>ThemeQR</span> <span class="muted">• Login</span>
     </div>
     <p class="muted fine">Log in to sync Themes & Links to the cloud.</p>
 
-    <label>Email</label>
-    <input id="email" type="email" placeholder="you@example.com"/>
+    <!-- Put inputs inside a form so Enter works and warning disappears -->
+    <form id="authForm" novalidate>
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required/>
 
-    <label>Password</label>
-    <input id="password" type="password" placeholder="••••••••"/>
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" placeholder="********" autocomplete="current-password" required/>
 
-    <button class="btn primary" id="btnLogin">Log in</button>
-    <button class="btn" id="btnSignup">Create account</button>
-    <div id="msg" class="error"></div>
+      <button class="btn primary" type="submit">Log in</button>
+      <div class="stack">
+        <button class="btn" type="button" id="btnSignup">Create account</button>
+        <a class="btn inline" href="/studio" style="text-align:center; line-height:36px">Skip to Studio</a>
+      </div>
+      <div id="msg" class="error"></div>
+    </form>
 
-    <p class="muted fine" style="margin-top:12px">After logging in, go to <a href="/studio" style="color:#aeb6ff">/studio</a>.</p>
+    <p class="muted fine" style="margin-top:10px">
+      After login you will be sent to <a class="inline" href="/studio">/studio</a>.
+    </p>
   </div>
 
+  <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // 👉 Fill with your real values
+    // 1) Fill these with your real values:
+    //    Supabase > Project Settings > API
     const SUPABASE_URL = "https://hvfqdrfdefgfqbfdikpn.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9zOUjFu7fi-4oRVY-D61NCJU
-
-";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9zOUjFu7fi-4oRVY-D61NCJU";
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // 2) Helpers
     const $ = (s)=>document.querySelector(s);
     const msg = $("#msg");
+    function showError(text){ msg.textContent = text || ""; }
 
-    async function go(fn){
-      msg.textContent = "";
-      try { await fn(); location.href="/studio"; }
-      catch(e){ msg.textContent = e.message || "Something went wrong."; }
+    function redirectToStudio(){
+      // If you use vercel.json rewrite: "/studio" -> "index(New).html"
+      // Otherwise, change this to "/index(New).html"
+      window.location.href = "/studio";
     }
 
-    $("#btnLogin").onclick = ()=> go(async ()=>{
+    // 3) Log in (form submit)
+    $("#authForm").addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      showError("");
       const email = $("#email").value.trim();
       const password = $("#password").value;
+      if(!email || !password){ showError("Please enter email and password."); return; }
       const { error } = await sb.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      if (error) { showError(error.message); return; }
+      redirectToStudio();
     });
 
-    $("#btnSignup").onclick = ()=> go(async ()=>{
+    // 4) Sign up (button)
+    $("#btnSignup").addEventListener("click", async ()=>{
+      showError("");
       const email = $("#email").value.trim();
       const password = $("#password").value;
+      if(!email || !password){ showError("Please enter email and password."); return; }
       const { error } = await sb.auth.signUp({ email, password });
-      if (error) throw error;
+      if (error) { showError(error.message); return; }
+      redirectToStudio();
     });
   </script>
 </body>
 </html>
+
