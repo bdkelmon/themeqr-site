@@ -594,6 +594,33 @@
           font-size: 12px;
         }
       }
+      /* Make the preview media truly resizable inside the wrapper */
+      .landing-sim .media .resizable img,
+      .landing-sim .media .resizable video {
+        width: 100%;
+        height: auto !important; /* override previous 100% */
+        object-fit: contain !important; /* override previous cover */
+      }
+
+      /* Resizer handle (ensure it's visible and clickable) */
+      .resizable {
+        position: relative;
+        display: inline-block;
+        max-width: 100%;
+      }
+      .resizer.se {
+        width: 12px;
+        height: 12px;
+        border: 2px solid #000;
+        border-radius: 50%;
+        background: #fff;
+        position: absolute;
+        right: 6px;
+        bottom: 6px;
+        cursor: se-resize;
+        z-index: 10;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+      }
     </style>
   </head>
 
@@ -1674,66 +1701,88 @@
         const mwrap = $("#simMedia");
         mwrap.innerHTML = "";
 
+        const s = workingTheme;
+        const errBox = (msg) => {
+          mwrap.innerHTML = `<div class="placard" style="color:#ffb4b4">${msg}</div>`;
+        };
+
         const createWrapper = () => {
           const wrap = document.createElement("div");
           wrap.className = "resizable";
           wrap.id = "simMediaBox";
           const parentW = mwrap.clientWidth || 360;
-          const savedW = Number(workingTheme.settings?.mediaBox?.w);
+          const savedW = Number(s.settings?.mediaBox?.w);
           const initial = Number.isFinite(savedW)
             ? savedW
             : Math.round(parentW * 0.9);
           const clamped = Math.max(120, Math.min(parentW - 12, initial));
           wrap.style.width = clamped + "px";
           wrap.style.maxWidth = "100%";
-          wrap.style.display = "inline-block"; // important for width to take effect
           return wrap;
         };
 
-        // IMAGE
-        if (s.media.kind === "image" && s.media.data) {
+        if (s.media?.kind === "image" && s.media?.data) {
           const wrap = createWrapper();
           const img = document.createElement("img");
           img.src = s.media.data;
           img.alt = s.media.alt || "";
+          img.onerror = () => errBox("Image failed to load.");
           wrap.appendChild(img);
           mwrap.appendChild(wrap);
 
           makeResizable(wrap, {
             onChange: (w) => {
-              workingTheme.settings = workingTheme.settings || {};
-              workingTheme.settings.mediaBox = {
-                ...(workingTheme.settings.mediaBox || {}),
-                w: Math.round(w),
-              };
+              s.settings = s.settings || {};
+              s.settings.mediaBox = s.settings.mediaBox || {};
+              s.settings.mediaBox.w = Math.round(w);
             },
           });
           ensureMediaControls(mwrap);
-        }
-        // VIDEO
-        else if (s.media.kind === "video" && s.media.data) {
+        } else if (s.media?.kind === "video" && s.media?.data) {
           const wrap = createWrapper();
           const vid = document.createElement("video");
           vid.src = s.media.data;
           vid.muted = true;
           vid.loop = true;
           vid.playsInline = true;
+          vid.preload = "metadata";
           vid.controls = false;
+
+          const tryPlay = () =>
+            vid.play().catch(() => {
+              const btn = document.createElement("button");
+              btn.className = "btn";
+              btn.style.position = "absolute";
+              btn.style.zIndex = "3";
+              btn.textContent = "Tap to play";
+              btn.onclick = () => {
+                vid.play().catch(() => {});
+                btn.remove();
+              };
+              wrap.style.position = "relative";
+              wrap.appendChild(btn);
+            });
+          vid.addEventListener("loadedmetadata", tryPlay, { once: true });
+          vid.onerror = () => errBox("Video failed to load (codec/format?).");
+
           wrap.appendChild(vid);
           mwrap.appendChild(wrap);
 
           makeResizable(wrap, {
             onChange: (w) => {
-              workingTheme.settings = workingTheme.settings || {};
-              workingTheme.settings.mediaBox = {
-                ...(workingTheme.settings.mediaBox || {}),
-                w: Math.round(w),
-              };
+              s.settings = s.settings || {};
+              s.settings.mediaBox = s.settings.mediaBox || {};
+              s.settings.mediaBox.w = Math.round(w);
             },
           });
           ensureMediaControls(mwrap);
+        } else {
+          mwrap.innerHTML =
+            '<div class="placard">Upload media to preview…</div>';
         }
       }
+      //Endof applySim
+
       $("#themeName").addEventListener(
         "input",
         (e) => (workingTheme.name = e.target.value)
@@ -2785,42 +2834,132 @@
 
       cloudSyncDown().catch(console.warn);
       function makeResizable(wrapper, { onChange } = {}) {
-        const handle = document.createElement("div");
-        handle.className = "resizer se"; // ← matches CSS ".resizer.se"
-        wrapper.appendChild(handle);
+        // ensure a handle exists
+        let handle = wrapper.querySelector(".resizer.se");
+        if (!handle) {
+          handle = document.createElement("div");
+          handle.className = "resizer se";
+          wrapper.appendChild(handle);
+        }
+        let startX = 0,
+          startW = 0;
 
-        let startX, startW;
-
-        const move = (e) => {
-          const cx = e.touches ? e.touches[0].clientX : e.clientX;
+        const move = (clientX) => {
+          const parentW =
+            wrapper.parentElement.clientWidth || window.innerWidth;
           const newW = Math.max(
             120,
-            Math.min(wrapper.parentElement.clientWidth, startW + (cx - startX))
+            Math.min(parentW - 12, startW + (clientX - startX))
           );
           wrapper.style.width = newW + "px";
-          if (onChange) onChange(newW);
+          onChange && onChange(newW);
         };
-        const up = () => {
-          document.removeEventListener("mousemove", move);
-          document.removeEventListener("mouseup", up);
-          document.removeEventListener("touchmove", move);
-          document.removeEventListener("touchend", up);
-        };
-        const down = (e) => {
+
+        const onMouseMove = (e) => {
           e.preventDefault();
-          startX = e.touches ? e.touches[0].clientX : e.clientX;
+          move(e.clientX);
+        };
+        const onTouchMove = (e) => {
+          if (!e.touches?.[0]) return;
+          e.preventDefault();
+          move(e.touches[0].clientX);
+        };
+
+        const end = () => {
+          document.removeEventListener("mousemove", onMouseMove);
+          document.removeEventListener("mouseup", end);
+          document.removeEventListener("touchmove", onTouchMove, {
+            passive: false,
+          });
+          document.removeEventListener("touchend", end);
+          document.body.style.userSelect = "";
+        };
+
+        const start = (clientX, e) => {
+          e.preventDefault();
+          startX = clientX;
           startW =
             parseInt(getComputedStyle(wrapper).width, 10) ||
             wrapper.clientWidth;
-          document.addEventListener("mousemove", move);
-          document.addEventListener("mouseup", up);
-          document.addEventListener("touchmove", move, { passive: false });
-          document.addEventListener("touchend", up);
+          document.addEventListener("mousemove", onMouseMove);
+          document.addEventListener("mouseup", end);
+          document.addEventListener("touchmove", onTouchMove, {
+            passive: false,
+          });
+          document.addEventListener("touchend", end);
+          document.body.style.userSelect = "none";
         };
 
-        handle.addEventListener("mousedown", down);
-        handle.addEventListener("touchstart", down, { passive: false });
+        handle.addEventListener("mousedown", (e) => start(e.clientX, e));
+        handle.addEventListener(
+          "touchstart",
+          (e) => start(e.touches[0].clientX, e),
+          { passive: false }
+        );
       }
+
+      function ensureMediaControls(mwrap) {
+        let bar = document.getElementById("simMediaControls");
+        if (!bar) {
+          bar = document.createElement("div");
+          bar.id = "simMediaControls";
+          bar.className = "small";
+          bar.style.display = "flex";
+          bar.style.gap = "8px";
+          bar.style.alignItems = "center";
+          bar.style.marginTop = "6px";
+          bar.innerHTML = `
+      <label class="pill small" style="display:flex;gap:6px;align-items:center">
+        Size <input id="simMediaRange" type="range" min="120" step="1" style="width:200px">
+      </label>
+      <button id="simFit" class="btn">Fit</button>
+      <button id="simReset" class="btn ghost">320px</button>
+    `;
+          // Append under the media container
+          mwrap.parentElement.appendChild(bar);
+        }
+
+        const box = document.getElementById("simMediaBox");
+        const range = document.getElementById("simMediaRange");
+        const maxW = mwrap.clientWidth || 360;
+
+        range.max = String(maxW);
+        // current width
+        const curW =
+          parseInt(getComputedStyle(box).width, 10) ||
+          box.clientWidth ||
+          Math.min(maxW, 320);
+        range.value = String(curW);
+
+        const saveW = (w) => {
+          window.workingTheme = window.workingTheme || {};
+          const s = (workingTheme.settings = workingTheme.settings || {});
+          s.mediaBox = s.mediaBox || {};
+          s.mediaBox.w = Math.round(w);
+        };
+
+        range.oninput = (e) => {
+          const w = Math.max(
+            120,
+            Math.min(maxW, Number(e.target.value || curW))
+          );
+          box.style.width = w + "px";
+          saveW(w);
+        };
+        document.getElementById("simFit").onclick = () => {
+          const w = Math.max(120, Math.min(maxW, Math.round(maxW * 0.95)));
+          box.style.width = w + "px";
+          range.value = String(w);
+          saveW(w);
+        };
+        document.getElementById("simReset").onclick = () => {
+          const w = Math.min(maxW, 320);
+          box.style.width = w + "px";
+          range.value = String(w);
+          saveW(w);
+        };
+      }
+
       function openMerchWithSelection() {
         const linkId = (document.getElementById("linkId")?.value || "").trim();
         const themeId = getSelectedThemeId(); // reuses your current selection logic
@@ -2881,8 +3020,8 @@
         const sb = hasClient
           ? window.sb
           : supabase.createClient(
-              "https://YOUR-PROJECT.supabase.co", // ← fill in
-              "YOUR-ANON-KEY" // ← fill in
+              "https://hvfqdrfdefgfqbfdikpn.supabase.co",
+              "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9zOUjFu7fi-4oRVY-D61NCJU" // ← fill in
             );
         window.sb = sb;
 
