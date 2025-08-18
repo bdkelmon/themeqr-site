@@ -116,6 +116,14 @@
   /* List/table small helpers */
   .list{display:flex; flex-direction:column; gap:10px}
   .item{border:1px dashed #2a2e4d; border-radius:12px; padding:10px; display:flex; justify-content:space-between; align-items:center}
+  /* Highlight the selected saved theme */
+#themesList .item.selected {
+  border: 1px solid #4fc724 !important;   /* solid green border */
+  box-shadow:
+    0 0 0 2px rgba(79, 199, 36, 0.25) inset,
+    0 0 16px rgba(79, 199, 36, 0.45);      /* glow */
+  background: linear-gradient(180deg, rgba(79,199,36,0.08), transparent);
+}
   .table{width:100%; border-collapse:collapse}
   .table th, .table td{border-bottom:1px dashed #2a2e4d; padding:8px; text-align:left}
   .table th{color:#aab1d6; font-weight:600}
@@ -783,42 +791,77 @@
     workingTheme.media = { kind:"", data:"", alt:"" }; $("#themeMedia").value=""; $("#themeAlt").value=""; applySim();
   });
 
-  function renderThemesList(selectedId=""){
-    const list = $("#themesList"); list.innerHTML = "";
-    for(const t of db.themes()){
-      const row = document.createElement("div"); row.className="item";
-      const left = document.createElement("div");
-      left.innerHTML = `<div><b>${t.name}</b></div><div class="muted small">${t.title || "—"}</div>`;
-      const actions = document.createElement("div"); actions.className="stack";
-      const useBtn = document.createElement("button"); useBtn.className="btn"; useBtn.textContent="Load";
-      useBtn.onclick = ()=>{
-        workingTheme = JSON.parse(JSON.stringify(t));
-        $("#themeName").value = t.name || "";
-        $("#themeTitle").value = t.title || "";
-        $("#themeSubtitle").value = t.subtitle || "";
-        $("#themeCtaText").value = t.cta?.text || "";
-        $("#themeCtaUrl").value = t.cta?.url || "";
-        $("#themeFont").value = t.font || "Inter,system-ui";
-        $("#themeBg1").value = t.colors?.bg1 || "#101635";
-        $("#themeBg2").value = t.colors?.bg2 || "#0b0f23";
-        $("#themeFg").value = t.colors?.fg || "#f3f6ff";
-        $("#themeCtaBg").value = t.colors?.ctaBg || "#6c7dff";
-        $("#themeCtaFg").value = t.colors?.ctaFg || "#09122a";
-        $("#themeAlt").value = t.media?.alt || "";
-        $("#themeDelay").value = t.settings?.redirectDelay ?? 2;
-        $("#themeShowSkip").checked = t.settings?.showSkip ?? true;
-        $("#themeSkipText").value = t.settings?.skipText ?? "Skip";
-        applySim();
-      };
-      const copyId = document.createElement("button"); copyId.className="btn ghost"; copyId.textContent="Copy ID";
-      copyId.onclick = ()=>{ navigator.clipboard.writeText(t.id || ""); copyId.textContent="Copied!"; setTimeout(()=>copyId.textContent="Copy ID", 1000) };
-      actions.append(useBtn, copyId);
-      row.append(left, actions);
-      list.appendChild(row);
+function renderThemesList(selectedId = "") {
+  const list = $("#themesList");
+  list.innerHTML = "";
+
+  const currentId = selectedId || (workingTheme?.id || "");
+
+  for (const t of db.themes()) {
+    const row = document.createElement("div");
+    row.className = "item";
+    row.dataset.id = t.id;                  // ← track which theme this row is
+
+    if (t.id === currentId) {
+      row.classList.add("selected");        // ← glow the selected row
     }
-    refreshThemeDropdown();
-    if (selectedId) $("#linkTheme").value = selectedId;
+
+    const left = document.createElement("div");
+    left.innerHTML = `
+      <div><b>${t.name}</b></div>
+      <div class="muted small">${t.title || "—"}</div>
+    `;
+
+    const actions = document.createElement("div");
+    actions.className = "stack";
+
+    const useBtn = document.createElement("button");
+    useBtn.className = "btn";
+    useBtn.textContent = "Load";
+    useBtn.onclick = () => {
+      // load into workingTheme + inputs
+      workingTheme = JSON.parse(JSON.stringify(t));
+      $("#themeName").value = t.name || "";
+      $("#themeTitle").value = t.title || "";
+      $("#themeSubtitle").value = t.subtitle || "";
+      $("#themeCtaText").value = t.cta?.text || "";
+      $("#themeCtaUrl").value = t.cta?.url || "";
+      $("#themeFont").value = t.font || "Inter,system-ui";
+      $("#themeBg1").value = t.colors?.bg1 || "#101635";
+      $("#themeBg2").value = t.colors?.bg2 || "#0b0f23";
+      $("#themeFg").value = t.colors?.fg || "#f3f6ff";
+      $("#themeCtaBg").value = t.colors?.ctaBg || "#6c7dff";
+      $("#themeCtaFg").value = t.colors?.ctaFg || "#09122a";
+      $("#themeAlt").value = t.media?.alt || "";
+      $("#themeDelay").value = t.settings?.redirectDelay ?? 2;
+      $("#themeShowSkip").checked = t.settings?.showSkip ?? true;
+      $("#themeSkipText").value = t.settings?.skipText ?? "Skip";
+
+      applySim();
+
+      // re-render list so the selected row glows
+      renderThemesList(t.id);
+    };
+
+    const copyId = document.createElement("button");
+    copyId.className = "btn ghost";
+    copyId.textContent = "Copy ID";
+    copyId.onclick = () => {
+      navigator.clipboard.writeText(t.id || "");
+      copyId.textContent = "Copied!";
+      setTimeout(() => (copyId.textContent = "Copy ID"), 1000);
+    };
+
+    actions.append(useBtn, copyId);
+    row.append(left, actions);
+    list.appendChild(row);
   }
+
+  // Keep the QR section dropdown synced
+  refreshThemeDropdown();
+  if (currentId) $("#linkTheme").value = currentId;
+}
+
 
   $("#saveTheme").addEventListener("click", ()=>{
     if (!workingTheme.name.trim()){ alert("Please give your theme a name."); return; }
