@@ -14,13 +14,8 @@
         --font: Inter, system-ui, -apple-system, Segoe UI, Roboto,
           "Helvetica Neue", Arial, "Noto Sans";
       }
-      * {
-        box-sizing: border-box;
-      }
-      html,
-      body {
-        height: 100%;
-      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
       body {
         margin: 0;
         color: var(--fg);
@@ -30,28 +25,12 @@
         min-height: 100vh;
         grid-template-rows: auto 1fr auto;
       }
-      header,
-      footer {
-        padding: 14px 18px;
-        opacity: 0.9;
-      }
-      header {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: conic-gradient(from 200deg, #6c7dff, #2de6c5);
-      }
-      main {
-        display: grid;
-        grid-template-columns: minmax(280px, 860px);
-        justify-content: center;
-        padding: 14px;
-      }
+      header, footer { padding: 14px 18px; opacity: 0.9; }
+      header { display: flex; align-items: center; gap: 10px; }
+      .dot { width: 10px; height: 10px; border-radius: 50%;
+        background: conic-gradient(from 200deg, #6c7dff, #2de6c5); }
+      main { display: grid; grid-template-columns: minmax(280px, 860px);
+        justify-content: center; padding: 14px; }
       .card {
         background: rgba(6, 9, 24, 0.5);
         border: 1px solid rgba(255, 255, 255, 0.08);
@@ -59,57 +38,39 @@
         overflow: hidden;
         backdrop-filter: saturate(110%) blur(8px);
       }
+      /* Key fix: clamp height so media never gets too tall */
       .media {
-        height: var(--media-h, 44vh); /* default smaller than 52vh */
-        min-height: 240px;
-        display: grid;
-        place-items: center;
+        height: clamp(220px, var(--media-h, 38vh), 520px);
+        display: grid; place-items: center;
         background: #070a18;
         position: relative;
       }
-      .media img,
-      .media video {
+      .media img, .media video {
         width: 100%;
         height: 100%;
-        object-fit: cover;
+        object-fit: contain; /* fit inside the box, don't crop */
       }
-      .content {
-        padding: 16px;
-      }
-      h1 {
-        margin: 0 0 6px 0;
-      }
-      .muted {
-        color: #bac2ffb3;
-      }
+      .content { padding: 16px; }
+      h1 { margin: 0 0 6px 0; }
+      .muted { color: #bac2ffb3; }
       .cta {
-        display: inline-block;
-        margin-top: 10px;
-        padding: 11px 16px;
-        border-radius: 12px;
-        background: var(--cta-bg);
-        color: var(--cta-fg);
-        text-decoration: none;
-        font-weight: 700;
+        display: inline-block; margin-top: 10px; padding: 11px 16px;
+        border-radius: 12px; background: var(--cta-bg); color: var(--cta-fg);
+        text-decoration: none; font-weight: 700;
         box-shadow: 0 6px 20px rgba(108, 125, 255, 0.3);
       }
-      .small {
-        font-size: 12px;
-      }
+      .small { font-size: 12px; }
+
       /* Live landing QR overlay */
       .qr-overlay {
         position: absolute;
-        left: 16px;
-        top: 16px;
-        width: 160px;
-        height: 160px;
-        display: grid;
-        place-items: center;
-        z-index: 5;
-        opacity: 1;
+        left: 16px; top: 16px;
+        width: 160px; height: 160px;
+        display: grid; place-items: center;
+        z-index: 5; opacity: 1;
         -webkit-user-drag: none;
-        user-select: none;
-        -webkit-user-select: none;
+        user-select: none; -webkit-user-select: none;
+        pointer-events: auto;
       }
     </style>
   </head>
@@ -126,9 +87,7 @@
         <div class="content">
           <h1 id="title">Hello 👋</h1>
           <div id="subtitle" class="muted">Welcome!</div>
-          <a id="cta" class="cta" href="#" target="_blank" rel="noopener"
-            >Learn more</a
-          >
+          <a id="cta" class="cta" href="#" target="_blank" rel="noopener">Learn more</a>
           <div id="note" class="small muted" style="margin-top: 10px"></div>
         </div>
       </div>
@@ -139,7 +98,7 @@
     <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script>
       const qs = new URLSearchParams(location.search);
-      const linkId = qs.get("linkId") || "";
+      const linkId  = qs.get("linkId")  || "";
       const themeId = qs.get("themeId") || "";
 
       function normalizeHttpUrl(input) {
@@ -149,81 +108,41 @@
         if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(u)) return u;
         return "https://" + u.replace(/^\/+/, "");
       }
-      // Map the Studio's saved preview width (settings.mediaBox.w) → landing height in vh
-      function computeMediaVh(theme) {
-        const w = Number(theme?.settings?.mediaBox?.w || 0);
-        if (w && w <= 320) return 34; // small preview → small height
-        if (w && w <= 420) return 40;
-        if (w && w <= 520) return 46;
-        return 52; // large / unknown → larger height
-      }
+
+      // Map Studio preview width → a sensible vh; final size is clamped in CSS
       function computeMediaVh(theme) {
         const w = Number(theme?.settings?.mediaBox?.w || 0);
         if (w && w <= 320) return 34;
-        if (w && w <= 420) return 40;
-        if (w && w <= 520) return 46;
-        return 52;
+        if (w && w <= 420) return 38;
+        if (w && w <= 520) return 42;
+        return 46; // slightly smaller default
       }
 
       const store = {
-        get(key) {
-          try {
-            return JSON.parse(localStorage.getItem(key));
-          } catch {
-            return null;
-          }
-        },
+        get(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } },
       };
 
       async function fetchFallback(path) {
-        try {
-          const r = await fetch(path, { cache: "no-store" });
-          if (!r.ok) return null;
-          return await r.json();
-        } catch {
-          return null;
-        }
+        try { const r = await fetch(path, { cache: "no-store" }); if (!r.ok) return null; return await r.json(); }
+        catch { return null; }
       }
       async function loadData() {
         let themes = store.get("qrstudio.themes");
-        let links = store.get("qrstudio.links");
-        if (!themes) {
-          const j = await fetchFallback("./qrstudio-themes.json");
-          themes = j?.themes ?? [];
-        }
-        if (!links) {
-          const j = await fetchFallback("./qrstudio-links.json");
-          links = j?.links ?? [];
-        }
+        let links  = store.get("qrstudio.links");
+        if (!themes) { const j = await fetchFallback("./qrstudio-themes.json"); themes = j?.themes ?? []; }
+        if (!links)  { const j = await fetchFallback("./qrstudio-links.json");  links  = j?.links  ?? []; }
         return { themes, links };
       }
 
       function applyTheme(theme) {
         if (!theme) return;
-        document.documentElement.style.setProperty(
-          "--bg1",
-          theme.colors?.bg1 || "#101635"
-        );
-        document.documentElement.style.setProperty(
-          "--bg2",
-          theme.colors?.bg2 || "#0b0f23"
-        );
-        document.documentElement.style.setProperty(
-          "--fg",
-          theme.colors?.fg || "#f3f6ff"
-        );
-        document.documentElement.style.setProperty(
-          "--cta-bg",
-          theme.colors?.ctaBg || "#6c7dff"
-        );
-        document.documentElement.style.setProperty(
-          "--cta-fg",
-          theme.colors?.ctaFg || "#09122a"
-        );
-        document.documentElement.style.setProperty(
-          "--font",
-          theme.font || "Inter, system-ui"
-        );
+        const root = document.documentElement.style;
+        root.setProperty("--bg1",   theme.colors?.bg1  || "#101635");
+        root.setProperty("--bg2",   theme.colors?.bg2  || "#0b0f23");
+        root.setProperty("--fg",    theme.colors?.fg   || "#f3f6ff");
+        root.setProperty("--cta-bg",theme.colors?.ctaBg|| "#6c7dff");
+        root.setProperty("--cta-fg",theme.colors?.ctaFg|| "#09122a");
+        root.setProperty("--font",  theme.font || "Inter, system-ui");
 
         const title = document.getElementById("title");
         const subtitle = document.getElementById("subtitle");
@@ -232,24 +151,31 @@
         subtitle.textContent = theme.subtitle || "Welcome!";
         cta.textContent = theme.cta?.text || "Learn more";
         cta.href = normalizeHttpUrl(theme.cta?.url || "#");
+
+        // Set preferred vh (CSS will clamp height anyway)
         const vh = computeMediaVh(theme);
-        
-        document.documentElement.style.setProperty("--media-h", `${vh}vh`);
+        root.setProperty("--media-h", `${vh}vh`);
+
+        // Render media
         const media = document.getElementById("media");
         media.innerHTML = "";
+        const onReadyReposition = () => {
+          // Reposition overlay once media dimensions are known
+          const evt = new Event("media-ready");
+          media.dispatchEvent(evt);
+        };
+
         if (theme.media?.kind === "image" && theme.media.data) {
           const img = document.createElement("img");
           img.src = theme.media.data;
           img.alt = theme.media.alt || "";
+          img.addEventListener("load", onReadyReposition, { once: true });
           media.appendChild(img);
         } else if (theme.media?.kind === "video" && theme.media.data) {
           const v = document.createElement("video");
           v.src = theme.media.data;
-          v.autoplay = true;
-          v.loop = true;
-          v.muted = true;
-          v.playsInline = true;
-          v.controls = false;
+          v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true; v.controls = false;
+          v.addEventListener("loadedmetadata", onReadyReposition, { once: true });
           media.appendChild(v);
         } else {
           media.innerHTML = '<div class="muted">No media in theme.</div>';
@@ -264,8 +190,7 @@
           QRCode.toCanvas(c, String(text || ""), {
             errorCorrectionLevel: "medium",
             color: { dark: fg, light: bg },
-            width: c.width,
-            margin: 0,
+            width: c.width, margin: 0,
           });
           host.appendChild(c);
           return;
@@ -276,9 +201,7 @@
         const hex = (x) => String(x || "#000").replace("#", "");
         img.src =
           "https://api.qrserver.com/v1/create-qr-code/?" +
-          `size=${c.width}x${c.height}&ecc=M&color=${hex(fg)}&bgcolor=${hex(
-            "ffffff"
-          )}` +
+          `size=${c.width}x${c.height}&ecc=M&color=${hex(fg)}&bgcolor=${hex("ffffff")}` +
           `&data=${encodeURIComponent(String(text || ""))}`;
         host.appendChild(img);
       }
@@ -286,6 +209,7 @@
       function placeOverlay(theme, link) {
         const ov = theme?.settings?.overlay;
         if (!ov || ov.show === false) return;
+
         const media = document.getElementById("media");
         if (!media) return;
 
@@ -296,9 +220,7 @@
         box.style.width = box.style.height = size + "px";
 
         // Prefer dynamic link destination; else CTA; else current page
-        const dest = normalizeHttpUrl(
-          link?.url || theme?.cta?.url || location.href
-        );
+        const dest = normalizeHttpUrl(link?.url || theme?.cta?.url || location.href);
 
         const inner = document.createElement("div");
         box.appendChild(inner);
@@ -308,65 +230,48 @@
           const pad = 16;
           const W = media.clientWidth;
           const H = media.clientHeight;
-          let x = ov.x ?? pad,
-            y = ov.y ?? pad;
+          let x = ov.x ?? pad, y = ov.y ?? pad;
           if (ov.pos !== "custom") {
             const map = {
-              "top-left": { x: pad, y: pad },
+              "top-left": { x: pad,           y: pad },
               "top-right": { x: W - size - pad, y: pad },
-              "bottom-left": { x: pad, y: H - size - pad },
+              "bottom-left": { x: pad,           y: H - size - pad },
               "bottom-right": { x: W - size - pad, y: H - size - pad },
             };
             const p = map[ov.pos] || map["bottom-right"];
-            x = p.x;
-            y = p.y;
+            x = p.x; y = p.y;
           }
           box.style.left = x + "px";
-          box.style.top = y + "px";
+          box.style.top  = y + "px";
         }
+
+        // Initial position + render QR
         positionBox();
         renderQRTo(inner, dest, size, "#000000", "#ffffff00");
 
-        const child = media.querySelector("img,video");
-        if (child) {
-          const once = () => positionBox();
-          child.addEventListener("loadedmetadata", once, { once: true });
-          child.addEventListener("load", once, { once: true });
-        }
-        window.addEventListener("resize", () => {
-          if ((ov.pos || "") !== "custom") positionBox();
-        });
+        // Reposition after media is ready and on resize
+        media.addEventListener("media-ready", () => positionBox());
+        window.addEventListener("resize", () => { if ((ov.pos || "") !== "custom") positionBox(); });
       }
 
       // Redirect countdown with optional Skip
       function resolveLink(link, theme) {
         const note = document.getElementById("note");
-        if (!link || !link.url) {
-          note.textContent = "";
-          return;
-        }
+        if (!link || !link.url) { note.textContent = ""; return; }
 
-        const dest = normalizeHttpUrl(link.url);
-        const delay = Number(theme?.settings?.redirectDelay ?? 0);
+        const dest     = normalizeHttpUrl(link.url);
+        const delay    = Number(theme?.settings?.redirectDelay ?? 0);
         const showSkip = theme?.settings?.showSkip ?? true;
         const skipText = theme?.settings?.skipText || "Skip now";
 
-        // Build the UI chunks
         const parts = [];
         if (delay > 0) {
-          parts.push(
-            `Redirecting to <span class="muted">${dest}</span> in <b id="sec">${delay}</b>s…`
-          );
+          parts.push(`Redirecting to <span class="muted">${dest}</span> in <b id="sec">${delay}</b>s…`);
         } else {
           parts.push(`Destination: <span class="muted">${dest}</span>`);
         }
-        if (showSkip)
-          parts.push(
-            `<a href="#" id="skipNow" class="cta" style="padding:6px 10px; margin-left:8px">${skipText}</a>`
-          );
-        parts.push(
-          `<a href="#" id="stay" class="muted" style="margin-left:8px">Stay here</a>`
-        );
+        if (showSkip) parts.push(`<a href="#" id="skipNow" class="cta" style="padding:6px 10px; margin-left:8px">${skipText}</a>`);
+        parts.push(`<a href="#" id="stay" class="muted" style="margin-left:8px">Stay here</a>`);
         note.innerHTML = parts.join(" ");
 
         let timerId = null;
@@ -376,51 +281,28 @@
             s--;
             const secEl = document.getElementById("sec");
             if (secEl) secEl.textContent = Math.max(0, s);
-            if (s <= 0) {
-              clearInterval(timerId);
-              location.assign(dest);
-            }
+            if (s <= 0) { clearInterval(timerId); location.assign(dest); }
           }, 1000);
         }
 
-        // Skip = go immediately
-        const skip = document.getElementById("skipNow");
-        if (skip)
-          skip.onclick = (e) => {
-            e.preventDefault();
-            if (timerId) clearInterval(timerId);
-            location.assign(dest);
-          };
-
-        // Stay = cancel timer / keep page
-        const stay = document.getElementById("stay");
-        if (stay)
-          stay.onclick = (e) => {
-            e.preventDefault();
-            if (timerId) clearInterval(timerId);
-            note.textContent = ""; // clear message
-          };
+        document.getElementById("skipNow")?.addEventListener("click", (e) => {
+          e.preventDefault(); if (timerId) clearInterval(timerId); location.assign(dest);
+        });
+        document.getElementById("stay")?.addEventListener("click", (e) => {
+          e.preventDefault(); if (timerId) clearInterval(timerId); note.textContent = "";
+        });
       }
 
       (async function start() {
         const { themes, links } = await loadData();
-        const chosenTheme = themeId
-          ? themes.find((t) => t.id === themeId)
-          : null;
+        const chosenTheme = themeId ? themes.find((t) => t.id === themeId) : null;
         const link = linkId ? links.find((l) => l.id === linkId) : null;
-        const themeToUse =
-          chosenTheme ||
-          (link?.themeId ? themes.find((t) => t.id === link.themeId) : null);
+        const themeToUse = chosenTheme || (link?.themeId ? themes.find((t) => t.id === link.themeId) : null);
 
         applyTheme(themeToUse);
-        if (link) {
-          document.title = (themeToUse?.name || "QR") + " • " + link.id;
-        }
+        if (link) document.title = (themeToUse?.name || "QR") + " • " + link.id;
 
-        // Place QR overlay using saved theme settings
         placeOverlay(themeToUse, link);
-
-        // Redirect handling with Skip UI
         resolveLink(link, themeToUse);
       })();
     </script>
