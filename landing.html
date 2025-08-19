@@ -50,6 +50,9 @@
         padding: 14px;
       }
       .card {
+        display: inline-block;
+        max-width: min(95vw, 860px);
+        margin: 0 auto;
         background: rgba(6, 9, 24, 0.5);
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 14px;
@@ -60,6 +63,7 @@
       .media {
         background: #070a18;
         position: relative;
+        height: auto;
       }
       .media img,
       .media video {
@@ -68,7 +72,23 @@
         height: auto;
         object-fit: contain; /* fit inside the box, don't crop */
       }
-
+      .media .box {
+        display: inline-block;
+        width: var(--media-w, auto); /* set from JS: e.g., 320px */
+        max-width: min(95vw, 860px); /* never overflow the page */
+      }
+      /* Actual media: fill the wrapper width, keep aspect, never overflow vertically */
+      .media .box img,
+      .media .box video {
+        display: block;
+        width: 100%;
+        height: auto; /* keep aspect ratio */
+        object-fit: contain; /* avoid cropping */
+        max-height: var(
+          --media-maxh,
+          70vh
+        ); /* set from JS so whole card fits on screen */
+      }
       .media .placeholder {
         padding: 40px 12px;
         text-align: center;
@@ -140,320 +160,367 @@
 
     <!-- QRCode CDN for live overlay -->
     <!-- QRCode CDN for live overlay (keep this) -->
-<script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
 
-<!-- REPLACE THE ENTIRE MODULE SCRIPT WITH THIS -->
-<script type="module">
-  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+    <!-- REPLACE THE ENTIRE MODULE SCRIPT WITH THIS -->
+    <script type="module">
+        import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-  /* ===================== CONFIG: Supabase ===================== */
-  const SUPABASE_URL = "https://hvfqdrfdefgfqbfdikpn.supabase.co";          // <-- replace
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9zOUjFu7fi-4oRVY-D61NCJU";                 // <-- replace
-  const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        /* ===================== CONFIG: Supabase ===================== */
+        const SUPABASE_URL = "https://hvfqdrfdefgfqbfdikpn.supabase.co";          // <-- replace
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9zOUjFu7fi-4oRVY-D61NCJU";                 // <-- replace
+        const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  /* ===================== QS params ===================== */
-  const qs = new URLSearchParams(location.search);
-  const linkId = qs.get("linkId") || "";
-  const themeId = qs.get("themeId") || "";
+        /* ===================== QS params ===================== */
+        const qs = new URLSearchParams(location.search);
+        const linkId = qs.get("linkId") || "";
+        const themeId = qs.get("themeId") || "";
 
-  /* ===================== Helpers ===================== */
-  const isNumericId = (v) => /^\d+$/.test(String(v || ""));
-  function normalizeHttpUrl(input) {
-    if (!input) return "";
-    const u = String(input).trim();
-    if (u.startsWith("//")) return "https:" + u;
-    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(u)) return u;
-    return "https://" + u.replace(/^\/+/, "");
-  }
-  const store = {
-    get(key) {
-      try {
-        return JSON.parse(localStorage.getItem(key));
-      } catch {
-        return null;
-      }
-    },
-  };
-  async function fetchJson(path) {
-    try {
-      const r = await fetch(path, { cache: "no-store" });
-      if (!r.ok) return null;
-      return await r.json();
-    } catch {
-      return null;
-    }
-  }
-
-  /* ===================== UI: apply theme, overlay, redirect ===================== */
-  function applyTheme(theme) {
-    if (!theme) return;
-    const root = document.documentElement.style;
-    root.setProperty("--bg1", theme.colors?.bg1 || "#101635");
-    root.setProperty("--bg2", theme.colors?.bg2 || "#0b0f23");
-    root.setProperty("--fg", theme.colors?.fg || "#f3f6ff");
-    root.setProperty("--cta-bg", theme.colors?.ctaBg || "#6c7dff");
-    root.setProperty("--cta-fg", theme.colors?.ctaFg || "#09122a");
-    root.setProperty("--font", theme.font || "Inter, system-ui");
-
-    const title = document.getElementById("title");
-    const subtitle = document.getElementById("subtitle");
-    const cta = document.getElementById("cta");
-    title.textContent = theme.title || "Hello 👋";
-    subtitle.textContent = theme.subtitle || "Welcome!";
-    cta.textContent = theme.cta?.text || "Learn more";
-    cta.href = normalizeHttpUrl(theme.cta?.url || "#");
-
-    const media = document.getElementById("media");
-    media.innerHTML = "";
-
-    const onReady = () => {
-      const evt = new Event("media-ready");
-      media.dispatchEvent(evt);
-    };
-
-    if (theme.media?.kind === "image" && theme.media.data) {
-      const img = document.createElement("img");
-      img.src = theme.media.data;
-      img.alt = theme.media.alt || "";
-      img.addEventListener("load", onReady, { once: true });
-      media.appendChild(img);
-    } else if (theme.media?.kind === "video" && theme.media.data) {
-      const v = document.createElement("video");
-      v.src = theme.media.data;
-      v.autoplay = true;
-      v.loop = true;
-      v.muted = true;
-      v.playsInline = true;
-      v.controls = false;
-      v.addEventListener("loadedmetadata", onReady, { once: true });
-      media.appendChild(v);
-    } else {
-      media.innerHTML = '<div class="muted">No media in theme.</div>';
-    }
-  }
-
-  function renderQRTo(host, text, size, fg = "#000000", bg = "#ffffff00") {
-    host.innerHTML = "";
-    const c = document.createElement("canvas");
-    c.width = c.height = Math.max(64, size || 160);
-    if (window.QRCode?.toCanvas) {
-      QRCode.toCanvas(c, String(text || ""), {
-        errorCorrectionLevel: "medium",
-        color: { dark: fg, light: bg },
-        width: c.width,
-        margin: 0,
-      });
-      host.appendChild(c);
-    } else {
-      const img = new Image();
-      img.width = img.height = c.width;
-      img.crossOrigin = "anonymous";
-      const hex = (x) => String(x || "#000").replace("#", "");
-      img.src =
-        "https://api.qrserver.com/v1/create-qr-code/?" +
-        `size=${c.width}x${c.height}&ecc=M&color=${hex(fg)}&bgcolor=${hex("ffffff")}` +
-        `&data=${encodeURIComponent(String(text || ""))}`;
-      host.appendChild(img);
-    }
-  }
-
-  function placeOverlay(theme, link) {
-    const ov = theme?.settings?.overlay;
-    if (!ov || ov.show === false) return;
-
-    const media = document.getElementById("media");
-    if (!media) return;
-
-    const box = document.createElement("div");
-    box.className = "qr-overlay";
-    box.style.opacity = String(ov.opacity ?? 1);
-    const size = Math.max(64, ov.size || 160);
-    box.style.width = box.style.height = size + "px";
-
-    const dest = normalizeHttpUrl(link?.url || theme?.cta?.url || location.href);
-    const inner = document.createElement("div");
-    box.appendChild(inner);
-    media.appendChild(box);
-
-    function positionBox() {
-      const pad = 16;
-      const W = media.clientWidth;
-      const H = media.clientHeight;
-      let x = ov.x ?? pad,
-        y = ov.y ?? pad;
-      if (ov.pos !== "custom") {
-        const map = {
-          "top-left": { x: pad, y: pad },
-          "top-right": { x: W - size - pad, y: pad },
-          "bottom-left": { x: pad, y: H - size - pad },
-          "bottom-right": { x: W - size - pad, y: H - size - pad },
-        };
-        const p = map[ov.pos] || map["bottom-right"];
-        x = p.x;
-        y = p.y;
-      }
-      box.style.left = x + "px";
-      box.style.top = y + "px";
-    }
-
-    positionBox();
-    renderQRTo(inner, dest, size, "#000000", "#ffffff00");
-    media.addEventListener("media-ready", () => positionBox());
-    window.addEventListener("resize", () => {
-      if ((ov.pos || "") !== "custom") positionBox();
-    });
-  }
-
-  function resolveLink(link, theme) {
-    const note = document.getElementById("note");
-    if (!link || !link.url) {
-      note.textContent = "";
-      return;
-    }
-    const dest = normalizeHttpUrl(link.url);
-    const delay = Number(theme?.settings?.redirectDelay ?? 0);
-    const showSkip = theme?.settings?.showSkip ?? true;
-    const skipText = theme?.settings?.skipText || "Skip now";
-
-    const parts = [];
-    if (delay > 0) {
-      parts.push(
-        `Redirecting to <span class="muted">${dest}</span> in <b id="sec">${delay}</b>s…`
-      );
-    } else {
-      parts.push(`Destination: <span class="muted">${dest}</span>`);
-    }
-    if (showSkip)
-      parts.push(
-        `<a href="#" id="skipNow" class="cta" style="padding:6px 10px; margin-left:8px">${skipText}</a>`
-      );
-    parts.push(`<a href="#" id="stay" class="muted" style="margin-left:8px">Stay here</a>`);
-    note.innerHTML = parts.join(" ");
-
-    let timerId = null;
-    if (delay > 0) {
-      let s = delay;
-      timerId = setInterval(() => {
-        s--;
-        const secEl = document.getElementById("sec");
-        if (secEl) secEl.textContent = Math.max(0, s);
-        if (s <= 0) {
-          clearInterval(timerId);
-          location.assign(dest);
+        /* ===================== Helpers ===================== */
+        const isNumericId = (v) => /^\d+$/.test(String(v || ""));
+        function normalizeHttpUrl(input) {
+          if (!input) return "";
+          const u = String(input).trim();
+          if (u.startsWith("//")) return "https:" + u;
+          if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(u)) return u;
+          return "https://" + u.replace(/^\/+/, "");
         }
-      }, 1000);
-    }
-    document.getElementById("skipNow")?.addEventListener("click", (e) => {
-      e.preventDefault();
-      if (timerId) clearInterval(timerId);
-      location.assign(dest);
-    });
-    document.getElementById("stay")?.addEventListener("click", (e) => {
-      e.preventDefault();
-      if (timerId) clearInterval(timerId);
-      note.textContent = "";
-    });
-  }
-
-  /* ===================== Data loaders (single, unified) ===================== */
-
-  // Try to enrich from Supabase, using linkId and/or themeId when present
-  async function loadDataViaSupabase(linkId, themeId) {
-    let link = null;
-    if (linkId) {
-      const { data, error } = await sb
-        .from("links")
-        .select("*")
-        .eq("id", linkId)
-        .maybeSingle();
-      if (!error && data) link = data;
-    }
-
-    let theme = null;
-    const resolvedThemeId = themeId || link?.theme_id || link?.themeId;
-    if (resolvedThemeId) {
-      const wantedId = isNumericId(resolvedThemeId)
-        ? Number(resolvedThemeId)
-        : resolvedThemeId;
-      const { data, error } = await sb
-        .from("themes")
-        .select("*")
-        .eq("id", wantedId)
-        .maybeSingle();
-      if (!error && data) {
-        // Your schema stores theme fields directly in columns
-        theme = {
-          id: data.id,
-          name: data.name,
-          title: data.title,
-          subtitle: data.subtitle,
-          font: data.font,
-          colors: data.colors || {},
-          cta: data.cta || {},
-          media: data.media || {},
-          settings:
-            data.settings ||
-            { redirectDelay: 2, showSkip: true, skipText: "Skip" },
+        const store = {
+          get(key) {
+            try {
+              return JSON.parse(localStorage.getItem(key));
+            } catch {
+              return null;
+            }
+          },
         };
+        async function fetchJson(path) {
+          try {
+            const r = await fetch(path, { cache: "no-store" });
+            if (!r.ok) return null;
+            return await r.json();
+          } catch {
+            return null;
+          }
+        }
+
+        /* ===================== UI: apply theme, overlay, redirect ===================== */
+        function applyTheme(theme) {
+          if (!theme) return;
+          const root = document.documentElement.style;
+          root.setProperty("--bg1", theme.colors?.bg1 || "#101635");
+          root.setProperty("--bg2", theme.colors?.bg2 || "#0b0f23");
+          root.setProperty("--fg", theme.colors?.fg || "#f3f6ff");
+          root.setProperty("--cta-bg", theme.colors?.ctaBg || "#6c7dff");
+          root.setProperty("--cta-fg", theme.colors?.ctaFg || "#09122a");
+          root.setProperty("--font", theme.font || "Inter, system-ui");
+
+          const title = document.getElementById("title");
+          const subtitle = document.getElementById("subtitle");
+          const cta = document.getElementById("cta");
+          title.textContent = theme.title || "Hello 👋";
+          subtitle.textContent = theme.subtitle || "Welcome!";
+          cta.textContent = theme.cta?.text || "Learn more";
+          cta.href = normalizeHttpUrl(theme.cta?.url || "#");
+
+      const media = document.getElementById('media');
+      media.innerHTML = "";
+
+      // Build a width-controlled wrapper that honors Theme Studio preview width
+      const box = document.createElement("div");
+      box.className = "box";
+
+      // Saved preview width from Theme Studio
+      const savedW = Number(theme?.settings?.mediaBox?.w);
+      if (Number.isFinite(savedW) && savedW > 0) {
+        media.style.setProperty("--media-w", savedW + "px");
+        box.style.setProperty("--media-w", savedW + "px");
       }
-    }
 
-    const themes = theme ? [theme] : [];
-    const links = link
-      ? [{ id: link.id, url: link.url, themeId: link.theme_id ?? link.themeId }]
-      : [];
-    return { themes, links, theme };
-  }
+      // Helper: after media is ready, cap its max-height so the whole card fits on screen
+      function fitToViewport() {
+        // Rough layout measurements
+        const headerH = document.querySelector("header")?.offsetHeight ?? 0;
+        const footerH = document.querySelector("footer")?.offsetHeight ?? 0;
 
-  // SINGLE unified loader used by the page
-  async function loadData() {
-    // 1) localStorage
-    let themes = store.get("qrstudio.themes");
-    let links = store.get("qrstudio.links");
+        // Space used by the title/subtitle/cta/note area (below media)
+        const contentEl = document.querySelector(".content");
+        // Temporarily remove max-height to measure natural content height
+        const prevMax = getComputedStyle(media).getPropertyValue("--media-maxh");
+        media.style.setProperty("--media-maxh", "none");
+        const contentBelow = contentEl ? (contentEl.offsetHeight - media.offsetHeight) : 0;
 
-    // 2) Supabase enrichment/fallback (works on phones where localStorage is empty)
-    const sbData = await loadDataViaSupabase(linkId, themeId);
+        // Available vertical space for media so the whole card fits within the viewport
+        const pad = 24; // little breathing room
+        const available = Math.max(
+          160,
+          window.innerHeight - headerH - footerH - contentBelow - pad
+        );
 
-    // Merge: prefer Supabase theme if it exists
-    const theme = sbData.theme || null;
-    if (!Array.isArray(themes)) themes = sbData.themes.length ? sbData.themes : null;
-    if (!Array.isArray(links)) links = sbData.links.length ? sbData.links : null;
+        // Apply it (CSS uses this var on img/video)
+        media.style.setProperty("--media-maxh", Math.round(available) + "px");
 
-    // 3) Hosted JSON as final fallback
-    if (!Array.isArray(themes)) {
-      const j = await fetchJson("/qrstudio-themes.json");
-      themes = j?.themes ?? [];
-    }
-    if (!Array.isArray(links)) {
-      const j = await fetchJson("/qrstudio-links.json");
-      links = j?.links ?? [];
-    }
+        // Restore if we changed it earlier
+        if (prevMax && prevMax !== "none") {
+          media.style.setProperty("--media-maxh", prevMax);
+        }
+      }
 
-    return { themes, links, theme };
-  }
+      // Create the media element, append into the width-controlled box
+      const onReady = () => {
+        fitToViewport();
+        // If overlay is used elsewhere, let it reposition after sizing
+        media.dispatchEvent(new Event("media-ready"));
+      };
 
-  /* ===================== Boot ===================== */
-  (async function start() {
-    const { themes, links, theme } = await loadData();
-    const link = linkId ? links.find((l) => l.id === linkId) : null;
+      // Insert appropriate media
+      if (theme.media?.kind === "image" && theme.media.data) {
+        const img = document.createElement("img");
+        img.src = theme.media.data;
+        img.alt = theme.media.alt || "";
+        img.addEventListener("load", onReady, { once: true });
+        box.appendChild(img);
+        media.appendChild(box);
+      } else if (theme.media?.kind === "video" && theme.media.data) {
+        const v = document.createElement("video");
+        v.src = theme.media.data;
+        v.autoplay = true;
+        v.loop = true;
+        v.muted = true;
+        v.playsInline = true;
+        v.controls = false;
+        v.addEventListener("loadedmetadata", onReady, { once: true });
+        box.appendChild(v);
+        media.appendChild(box);
+      } else {
+        media.innerHTML = '<div class="muted">No media in theme.</div>';
+      }
 
-    // Decide which theme to use:
-    let chosenTheme =
-      theme || // explicit Supabase theme
-      (themeId
-        ? (themes || []).find((t) => String(t.id ?? t.remoteId) === String(themeId))
-        : null) ||
-      (link?.themeId
-        ? (themes || []).find((t) => String(t.id ?? t.remoteId) === String(link.themeId))
-        : null) ||
-      null;
+      // Refit on resize/orientation changes
+      window.addEventListener("resize", fitToViewport);
+      window.addEventListener("orientationchange", () => setTimeout(fitToViewport, 50));
 
-    applyTheme(chosenTheme);
-    placeOverlay(chosenTheme, link);
-    if (link) resolveLink(link, chosenTheme);
-  })();
-</script>
 
+        function renderQRTo(host, text, size, fg = "#000000", bg = "#ffffff00") {
+          host.innerHTML = "";
+          const c = document.createElement("canvas");
+          c.width = c.height = Math.max(64, size || 160);
+          if (window.QRCode?.toCanvas) {
+            QRCode.toCanvas(c, String(text || ""), {
+              errorCorrectionLevel: "medium",
+              color: { dark: fg, light: bg },
+              width: c.width,
+              margin: 0,
+            });
+            host.appendChild(c);
+          } else {
+            const img = new Image();
+            img.width = img.height = c.width;
+            img.crossOrigin = "anonymous";
+            const hex = (x) => String(x || "#000").replace("#", "");
+            img.src =
+              "https://api.qrserver.com/v1/create-qr-code/?" +
+              `size=${c.width}x${c.height}&ecc=M&color=${hex(fg)}&bgcolor=${hex("ffffff")}` +
+              `&data=${encodeURIComponent(String(text || ""))}`;
+            host.appendChild(img);
+          }
+        }
+
+        function placeOverlay(theme, link) {
+          const ov = theme?.settings?.overlay;
+          if (!ov || ov.show === false) return;
+
+          const media = document.getElementById("media");
+          if (!media) return;
+
+          const box = document.createElement("div");
+          box.className = "qr-overlay";
+          box.style.opacity = String(ov.opacity ?? 1);
+          const size = Math.max(64, ov.size || 160);
+          box.style.width = box.style.height = size + "px";
+
+          const dest = normalizeHttpUrl(link?.url || theme?.cta?.url || location.href);
+          const inner = document.createElement("div");
+          box.appendChild(inner);
+          media.appendChild(box);
+
+          function positionBox() {
+            const pad = 16;
+            const W = media.clientWidth;
+            const H = media.clientHeight;
+            let x = ov.x ?? pad,
+              y = ov.y ?? pad;
+            if (ov.pos !== "custom") {
+              const map = {
+                "top-left": { x: pad, y: pad },
+                "top-right": { x: W - size - pad, y: pad },
+                "bottom-left": { x: pad, y: H - size - pad },
+                "bottom-right": { x: W - size - pad, y: H - size - pad },
+              };
+              const p = map[ov.pos] || map["bottom-right"];
+              x = p.x;
+              y = p.y;
+            }
+            box.style.left = x + "px";
+            box.style.top = y + "px";
+          }
+
+          positionBox();
+          renderQRTo(inner, dest, size, "#000000", "#ffffff00");
+          media.addEventListener("media-ready", () => positionBox());
+          window.addEventListener("resize", () => {
+            if ((ov.pos || "") !== "custom") positionBox();
+          });
+        }
+
+        function resolveLink(link, theme) {
+          const note = document.getElementById("note");
+          if (!link || !link.url) {
+            note.textContent = "";
+            return;
+          }
+          const dest = normalizeHttpUrl(link.url);
+          const delay = Number(theme?.settings?.redirectDelay ?? 0);
+          const showSkip = theme?.settings?.showSkip ?? true;
+          const skipText = theme?.settings?.skipText || "Skip now";
+
+          const parts = [];
+          if (delay > 0) {
+            parts.push(
+              `Redirecting to <span class="muted">${dest}</span> in <b id="sec">${delay}</b>s…`
+            );
+          } else {
+            parts.push(`Destination: <span class="muted">${dest}</span>`);
+          }
+          if (showSkip)
+            parts.push(
+              `<a href="#" id="skipNow" class="cta" style="padding:6px 10px; margin-left:8px">${skipText}</a>`
+            );
+          parts.push(`<a href="#" id="stay" class="muted" style="margin-left:8px">Stay here</a>`);
+          note.innerHTML = parts.join(" ");
+
+          let timerId = null;
+          if (delay > 0) {
+            let s = delay;
+            timerId = setInterval(() => {
+              s--;
+              const secEl = document.getElementById("sec");
+              if (secEl) secEl.textContent = Math.max(0, s);
+              if (s <= 0) {
+                clearInterval(timerId);
+                location.assign(dest);
+              }
+            }, 1000);
+          }
+          document.getElementById("skipNow")?.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (timerId) clearInterval(timerId);
+            location.assign(dest);
+          });
+          document.getElementById("stay")?.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (timerId) clearInterval(timerId);
+            note.textContent = "";
+          });
+        }
+
+        /* ===================== Data loaders (single, unified) ===================== */
+
+        // Try to enrich from Supabase, using linkId and/or themeId when present
+        async function loadDataViaSupabase(linkId, themeId) {
+          let link = null;
+          if (linkId) {
+            const { data, error } = await sb
+              .from("links")
+              .select("*")
+              .eq("id", linkId)
+              .maybeSingle();
+            if (!error && data) link = data;
+          }
+
+          let theme = null;
+          const resolvedThemeId = themeId || link?.theme_id || link?.themeId;
+          if (resolvedThemeId) {
+            const wantedId = isNumericId(resolvedThemeId)
+              ? Number(resolvedThemeId)
+              : resolvedThemeId;
+            const { data, error } = await sb
+              .from("themes")
+              .select("*")
+              .eq("id", wantedId)
+              .maybeSingle();
+            if (!error && data) {
+              // Your schema stores theme fields directly in columns
+              theme = {
+                id: data.id,
+                name: data.name,
+                title: data.title,
+                subtitle: data.subtitle,
+                font: data.font,
+                colors: data.colors || {},
+                cta: data.cta || {},
+                media: data.media || {},
+                settings:
+                  data.settings ||
+                  { redirectDelay: 2, showSkip: true, skipText: "Skip" },
+              };
+            }
+          }
+
+          const themes = theme ? [theme] : [];
+          const links = link
+            ? [{ id: link.id, url: link.url, themeId: link.theme_id ?? link.themeId }]
+            : [];
+          return { themes, links, theme };
+        }
+
+        // SINGLE unified loader used by the page
+        async function loadData() {
+          // 1) localStorage
+          let themes = store.get("qrstudio.themes");
+          let links = store.get("qrstudio.links");
+
+          // 2) Supabase enrichment/fallback (works on phones where localStorage is empty)
+          const sbData = await loadDataViaSupabase(linkId, themeId);
+
+          // Merge: prefer Supabase theme if it exists
+          const theme = sbData.theme || null;
+          if (!Array.isArray(themes)) themes = sbData.themes.length ? sbData.themes : null;
+          if (!Array.isArray(links)) links = sbData.links.length ? sbData.links : null;
+
+          // 3) Hosted JSON as final fallback
+          if (!Array.isArray(themes)) {
+            const j = await fetchJson("/qrstudio-themes.json");
+            themes = j?.themes ?? [];
+          }
+          if (!Array.isArray(links)) {
+            const j = await fetchJson("/qrstudio-links.json");
+            links = j?.links ?? [];
+          }
+
+          return { themes, links, theme };
+        }
+
+        /* ===================== Boot ===================== */
+        (async function start() {
+          const { themes, links, theme } = await loadData();
+          const link = linkId ? links.find((l) => l.id === linkId) : null;
+
+          // Decide which theme to use:
+          let chosenTheme =
+            theme || // explicit Supabase theme
+            (themeId
+              ? (themes || []).find((t) => String(t.id ?? t.remoteId) === String(themeId))
+              : null) ||
+            (link?.themeId
+              ? (themes || []).find((t) => String(t.id ?? t.remoteId) === String(link.themeId))
+              : null) ||
+            null;
+
+          applyTheme(chosenTheme);
+          placeOverlay(chosenTheme, link);
+          if (link) resolveLink(link, chosenTheme);
+        })();
     </script>
   </body>
 </html>
