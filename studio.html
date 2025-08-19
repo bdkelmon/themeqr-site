@@ -405,14 +405,6 @@
         /* don't clamp by parent */
       }
 
-      /* Improve drag handle behavior on touch */
-      .resizer.se {
-        touch-action: none;
-        /* allow touch-drag without scrolling */
-        cursor: se-resize;
-        z-index: 10;
-      }
-
       .landing-sim .content {
         padding: 16px;
       }
@@ -1275,6 +1267,44 @@
       const $ = (sel) => document.querySelector(sel);
       const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
+      async function dataUrlToFile(dataUrl, filename = "media.jpg") {
+        const res = await fetch(dataUrl);
+        const blob = await res.blob();
+        return new File([blob], filename, {
+          type: blob.type || "application/octet-stream",
+        });
+      }
+
+      /** Upload data:URL media → Supabase Storage; swap to public URL */
+      async function maybeUploadMedia(theme) {
+        if (!window.sb) return theme;
+        const m = theme?.media;
+        if (!m?.data || !String(m.data).startsWith("data:")) return theme;
+
+        const mime = (m.data.match(/^data:(.*?);/) || [, "image/jpeg"])[1];
+        const ext = (mime.split("/")[1] || "bin").toLowerCase();
+        const file = await dataUrlToFile(m.data, `media.${ext}`);
+
+        const path = `themes/${
+          theme.remoteId || theme.id || "tmp"
+        }/${Date.now()}.${ext}`;
+        const { data: up, error } = await sb.storage
+          .from("themeqr")
+          .upload(path, file, {
+            upsert: true,
+            cacheControl: "3600",
+            contentType: file.type,
+          });
+        if (error) {
+          console.warn("Storage upload failed; keeping data URL", error);
+          return theme;
+        }
+
+        const { data: pub } = sb.storage.from("themeqr").getPublicUrl(up.path);
+        theme.media = { ...theme.media, data: pub.publicUrl, uploaded: true };
+        return theme;
+      }
+
       function normalizeHttpUrl(input) {
         if (!input) return "";
         const u = String(input).trim();
@@ -1493,10 +1523,10 @@
       }
 
       function currentLandingUrl(linkId, themeId) {
-        const url = new URL("landing.html", location.href);
-        const p = url.searchParams;
-        p.set("linkId", linkId);
-        if (themeId) p.set("themeId", themeId);
+        const base = "https://www.themeqr.com/landing.html";
+        const url = new URL(base);
+        url.searchParams.set("linkId", linkId);
+        if (themeId) url.searchParams.set("themeId", themeId);
         return url.toString();
       }
 
@@ -1552,7 +1582,7 @@
           openBtn.target = "_blank";
           const editBtn = document.createElement("button");
           editBtn.className = "btn";
-          editBtn.textContent = "Edit";
+          editBtn.textContent = "Load";
           editBtn.onclick = () => {
             $("#linkId").value = link.id;
             $("#linkUrl").value = link.url;
@@ -1574,27 +1604,55 @@
         }
         refreshAnalyticsSelectors();
       }
-
-      $("#saveLink").addEventListener("click", () => {
+      $("#saveLink").addEventListener("click", async () => {
         const id = ($("#linkId").value || "").trim();
-        const urlRaw = ($("#linkUrl").value || "").trim();
-        const url = normalizeHttpUrl(urlRaw);
+        const url = normalizeHttpUrl(($("#linkUrl").value || "").trim());
         $("#linkUrl").value = url;
+        if (!id) return alert("Please provide a Link ID");
 
-        const themeId = $("#linkTheme").value || "";
-        if (!id) {
-          alert("Please provide a Link ID");
-          return;
-        }
+        const selectedThemeVal = $("#linkTheme").value || "";
+        const chosenTheme = db
+          .themes()
+          .find((t) => (t.remoteId ?? t.id) == selectedThemeVal);
+
+        // For Supabase: numeric theme_id if we have remoteId, else null
+        const theme_id = chosenTheme?.remoteId ?? null;
+
+        // Local storage (for QR creation in the studio)
+        // Store string in themeId so QR URL can carry it
         const links = db.links();
+        const rec = {
+          id,
+          url,
+          themeId: String(selectedThemeVal),
+          updated: Date.now(),
+        };
         const idx = links.findIndex((l) => l.id === id);
-        const rec = { id, url, themeId, updated: Date.now() };
         if (idx >= 0) links[idx] = rec;
         else links.unshift(rec);
         db.saveLinks(links);
-        cloudSaveLink(rec).catch(console.warn);
         renderLinksList();
         drawQR();
+
+        // Supabase upsert (optional but recommended)
+        if (window.sb) {
+          let userId = null;
+          try {
+            const { data } = await sb.auth.getUser();
+            userId = data?.user?.id ?? null;
+          } catch {}
+          const row = {
+            id,
+            user_id: userId,
+            url,
+            theme_id,
+            updated: new Date().toISOString(),
+          };
+          const { error } = await sb
+            .from("links")
+            .upsert(row, { onConflict: "id" });
+          if (error) console.warn("Supabase links upsert failed", error);
+        }
       });
 
       $("#downloadQR").addEventListener("click", () => {
@@ -1624,7 +1682,7 @@
         sel.innerHTML = `<option value="">— None —</option>`;
         for (const t of db.themes()) {
           const opt = document.createElement("option");
-          opt.value = t.id;
+          opt.value = t.remoteId ?? t.id; // prefer remote bigint id
           opt.textContent = t.name;
           sel.appendChild(opt);
         }
@@ -1701,7 +1759,7 @@
         const mwrap = $("#simMedia");
         mwrap.innerHTML = "";
 
-          const errBox = (msg) => {
+        const errBox = (msg) => {
           mwrap.innerHTML = `<div class="placard" style="color:#ffb4b4">${msg}</div>`;
         };
 
@@ -1962,59 +2020,87 @@
         if (currentId) $("#linkTheme").value = currentId;
       }
 
-      $("#saveTheme").addEventListener("click", () => {
-        if (!workingTheme.name.trim()) {
-          alert("Please give your theme a name.");
-          return;
-        }
-        if (!workingTheme.id) workingTheme.id = uid("theme");
-        const themes = db.themes();
-        const idx = themes.findIndex((t) => t.id === workingTheme.id);
+      $("#saveTheme").addEventListener("click", async () => {
+        if (!workingTheme.name.trim())
+          return alert("Please give your theme a name.");
+        if (!workingTheme.id) workingTheme.id = uid("theme"); // local id stays a string
+
+        // Deep copy then upload media if it's a data URL
         const copy = JSON.parse(JSON.stringify(workingTheme));
+        try {
+          await maybeUploadMedia(copy);
+        } catch (e) {
+          console.warn(e);
+        }
+
+        // Build row for your schema
+        const nowISO = new Date().toISOString();
+        let userId = null;
+        try {
+          const { data } = await sb.auth.getUser();
+          userId = data?.user?.id ?? null;
+        } catch {}
+
+        const row = {
+          user_id: userId,
+          name: copy.name || "",
+          title: copy.title || "",
+          subtitle: copy.subtitle || "",
+          font: copy.font || "Inter,system-ui",
+          colors: copy.colors || {},
+          cta: copy.cta || {},
+          media: copy.media || {},
+          updated: nowISO,
+        };
+
+        // If we already have a remoteId → UPDATE, else INSERT (let DB create bigint id)
+        try {
+          if (copy.remoteId) {
+            const { error } = await sb
+              .from("themes")
+              .update(row)
+              .eq("id", copy.remoteId);
+            if (error) console.warn("Supabase update failed:", error);
+          } else {
+            const { data, error } = await sb
+              .from("themes")
+              .insert(row)
+              .select("id")
+              .single();
+            if (!error && data?.id) {
+              copy.remoteId = data.id; // <- BIGINT id from Supabase
+            } else if (error) {
+              console.warn("Supabase insert failed:", error);
+            }
+          }
+        } catch (e) {
+          console.warn("Supabase upsert error:", e);
+        }
+
+        // Save locally (unchanged)
+        const themes = db.themes();
+        const idx = themes.findIndex((t) => t.id === copy.id);
         if (idx >= 0) themes[idx] = copy;
         else themes.unshift(copy);
         db.saveThemes(themes);
-        cloudSaveTheme(copy).catch(console.warn);
+
         renderThemesList(copy.id);
+        applySim?.();
+        alert("Theme saved.");
       });
 
-      $("#deleteTheme").addEventListener("click", () => {
-        if (!workingTheme.id) {
-          alert("Load a theme first.");
-          return;
-        }
+      $("#deleteTheme").addEventListener("click", async () => {
+        if (!workingTheme.id) return alert("Load a theme first.");
         if (!confirm("Delete this theme?")) return;
+
+        if (workingTheme.remoteId && window.sb) {
+          try {
+            await sb.from("themes").delete().eq("id", workingTheme.remoteId);
+          } catch {}
+        }
+        // local delete as you already do…
         db.saveThemes(db.themes().filter((t) => t.id !== workingTheme.id));
-        workingTheme = {
-          id: "",
-          name: "",
-          title: "",
-          subtitle: "",
-          font: "Inter,system-ui",
-          colors: {
-            bg1: "#101635",
-            bg2: "#0b0f23",
-            fg: "#f3f6ff",
-            ctaBg: "#6c7dff",
-            ctaFg: "#09122a",
-          },
-          cta: { text: "Shop Now", url: "" },
-          media: { kind: "", data: "", alt: "" },
-          settings: {
-            redirectDelay: 2,
-            showSkip: true,
-            skipText: "Skip",
-            mediaBox: { w: 320 },
-          },
-        };
-        $("#themeName").value =
-          $("#themeTitle").value =
-          $("#themeSubtitle").value =
-          $("#themeCtaText").value =
-          $("#themeCtaUrl").value =
-          $("#themeAlt").value =
-            "";
-        $("#themeMedia").value = "";
+        // reset workingTheme and inputs (unchanged)
         renderThemesList();
         applySim();
       });

@@ -18,7 +18,6 @@
         box-sizing: border-box;
       }
       html,
-   
       body {
         margin: 0;
         color: var(--fg);
@@ -141,10 +140,156 @@
 
     <!-- QRCode CDN for live overlay -->
     <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
-    <script>
-      const qs = new URLSearchParams(location.search);
-      const linkId = qs.get("linkId") || "";
-      const themeId = qs.get("themeId") || "";
+
+    <script type="module">
+      import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+      const sb = createClient(
+        "https://YOUR-PROJECT.supabase.co",
+        "YOUR_PUBLIC_ANON_KEY"
+      );
+
+      async function fetchThemeById(id) {
+        // numeric check
+        if (!/^\d+$/.test(String(id))) return null;
+        const { data, error } = await sb
+          .from("themes")
+          .select("*")
+          .eq("id", id)
+          .maybeSingle();
+        if (error || !data) return null;
+        // Your schema stores the full JSON split across columns
+        return {
+          id, // remote id
+          name: data.name,
+          title: data.title,
+          subtitle: data.subtitle,
+          font: data.font,
+          colors: data.colors || {},
+          cta: data.cta || {},
+          media: data.media || {},
+          // settings weren’t in your table—keep defaults if missing:
+          settings: data.settings || {
+            redirectDelay: 2,
+            showSkip: true,
+            skipText: "Skip",
+          },
+        };
+      }
+
+      async function loadData() {
+        // 1) localStorage first (desktop dev)
+        let themes = null,
+          links = null;
+        try {
+          themes = JSON.parse(localStorage.getItem("qrstudio.themes"));
+        } catch {}
+        try {
+          links = JSON.parse(localStorage.getItem("qrstudio.links"));
+        } catch {}
+
+        // 2) Supabase theme by numeric themeId (works on phones)
+        let theme = null;
+        if (themeId) theme = await fetchThemeById(themeId);
+
+        // 3) Hosted JSON fallback
+        if (!Array.isArray(themes)) {
+          try {
+            const r = await fetch("/qrstudio-themes.json", {
+              cache: "no-store",
+            });
+            themes = (await r.json())?.themes ?? [];
+          } catch {}
+        }
+        if (!Array.isArray(links)) {
+          try {
+            const r = await fetch("/qrstudio-links.json", {
+              cache: "no-store",
+            });
+            links = (await r.json())?.links ?? [];
+          } catch {}
+        }
+
+        return { themes, links, theme };
+      }
+
+      (async () => {
+        const { themes, links, theme } = await loadData();
+        // prefer Supabase theme if available, else use themeId/links mapping from local/JSON
+        let chosenTheme = theme;
+        if (!chosenTheme) {
+          const explicit = themeId
+            ? (themes || []).find((t) => (t.remoteId ?? t.id) == themeId)
+            : null;
+          const link = linkId
+            ? (links || []).find((l) => l.id === linkId)
+            : null;
+          const byLink = link?.themeId
+            ? (themes || []).find((t) => (t.remoteId ?? t.id) == link.themeId)
+            : null;
+          chosenTheme = explicit || byLink || null;
+        }
+        // …applyTheme(chosenTheme) and resolveLink(link) as you already do…
+      })();
+
+      async function loadDataViaSupabase(linkId, themeId) {
+        if (!window.sb) return null;
+
+        let link = null;
+        if (linkId) {
+          const { data, error } = await sb
+            .from("links")
+            .select("*")
+            .eq("id", linkId)
+            .maybeSingle();
+          if (!error) link = data;
+        }
+
+        let theme = null;
+        const resolvedThemeId = themeId || link?.theme_id;
+        if (resolvedThemeId) {
+          // If you stored full theme under themes.data (json)
+          const { data, error } = await sb
+            .from("themes")
+            .select("*")
+            .eq("id", resolvedThemeId)
+            .maybeSingle();
+          if (!error && data) {
+            theme = data.data || data; // use data.data when your JSON is in a 'data' column
+          }
+        }
+
+        // Return in the same shape Studio expects
+        const themes = theme ? [theme] : [];
+        const links = link
+          ? [{ id: link.id, url: link.url, themeId: link.theme_id }]
+          : [];
+
+        return { themes, links };
+      }
+
+      // Replace your loadData() with a fallback chain:
+      // 1) localStorage → 2) Supabase → 3) hosted JSON files
+      async function loadData() {
+        const qs = new URLSearchParams(location.search);
+        const linkId = qs.get("linkId") || "";
+        const themeId = qs.get("themeId") || "";
+        const isNumericId = (v) => /^\d+$/.test(String(v || ""));
+        // 1) localStorage
+        let themes = store.get("qrstudio.themes");
+        let links = store.get("qrstudio.links");
+        if (Array.isArray(themes) && Array.isArray(links))
+          return { themes, links };
+
+        // 2) Supabase
+        const sbData = await loadDataViaSupabase(linkId, themeId);
+        if (sbData && (sbData.themes.length || sbData.links.length))
+          return sbData;
+
+        // 3) Hosted JSON
+        const j1 = await fetchJson("/qrstudio-themes.json");
+        const j2 = await fetchJson("/qrstudio-links.json");
+        return { themes: j1?.themes ?? [], links: j2?.links ?? [] };
+      }
 
       function normalizeHttpUrl(input) {
         if (!input) return "";
@@ -389,19 +534,32 @@
 
       (async function start() {
         const { themes, links } = await loadData();
-        const chosenTheme = themeId
-          ? themes.find((t) => t.id === themeId)
-          : null;
         const link = linkId ? links.find((l) => l.id === linkId) : null;
-        const themeToUse =
-          chosenTheme ||
-          (link?.themeId ? themes.find((t) => t.id === link.themeId) : null);
 
-        applyTheme(themeToUse);
-        if (link) document.title = (themeToUse?.name || "QR") + " • " + link.id;
+        let chosenTheme = null;
 
-        placeOverlay(themeToUse, link);
-        resolveLink(link, themeToUse);
+        // If the themeId in the URL looks numeric, try Supabase first
+        if (isNumericId(themeId) && window.sb) {
+          try {
+            const { data, error } = await sb
+              .from("themes")
+              .select("*")
+              .eq("id", Number(themeId))
+              .single();
+            if (!error && data) chosenTheme = data;
+          } catch {}
+        }
+
+        // Fallbacks: link’s themeId or local themes (legacy/local use)
+        if (!chosenTheme) {
+          const fallId = themeId || link?.themeId || "";
+          chosenTheme =
+            themes.find((t) => String(t.remoteId ?? t.id) === String(fallId)) ||
+            null;
+        }
+
+        applyTheme(chosenTheme);
+        if (link) resolveLink(link);
       })();
     </script>
   </body>
