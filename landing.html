@@ -327,19 +327,6 @@
           return null;
         }
       }
-      async function loadData() {
-        let themes = store.get("qrstudio.themes");
-        let links = store.get("qrstudio.links");
-        if (!themes) {
-          const j = await fetchFallback("./qrstudio-themes.json");
-          themes = j?.themes ?? [];
-        }
-        if (!links) {
-          const j = await fetchFallback("./qrstudio-links.json");
-          links = j?.links ?? [];
-        }
-        return { themes, links };
-      }
 
       function applyTheme(theme) {
         if (!theme) return;
