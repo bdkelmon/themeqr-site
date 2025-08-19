@@ -60,7 +60,7 @@
         backdrop-filter: saturate(110%) blur(8px);
       }
       .media {
-        height: 52vh;
+        height: var(--media-h, 44vh); /* default smaller than 52vh */
         min-height: 240px;
         display: grid;
         place-items: center;
@@ -149,6 +149,21 @@
         if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(u)) return u;
         return "https://" + u.replace(/^\/+/, "");
       }
+      // Map the Studio's saved preview width (settings.mediaBox.w) → landing height in vh
+      function computeMediaVh(theme) {
+        const w = Number(theme?.settings?.mediaBox?.w || 0);
+        if (w && w <= 320) return 34; // small preview → small height
+        if (w && w <= 420) return 40;
+        if (w && w <= 520) return 46;
+        return 52; // large / unknown → larger height
+      }
+      function computeMediaVh(theme) {
+        const w = Number(theme?.settings?.mediaBox?.w || 0);
+        if (w && w <= 320) return 34;
+        if (w && w <= 420) return 40;
+        if (w && w <= 520) return 46;
+        return 52;
+      }
 
       const store = {
         get(key) {
@@ -217,7 +232,9 @@
         subtitle.textContent = theme.subtitle || "Welcome!";
         cta.textContent = theme.cta?.text || "Learn more";
         cta.href = normalizeHttpUrl(theme.cta?.url || "#");
-
+        const vh = computeMediaVh(theme);
+        
+        document.documentElement.style.setProperty("--media-h", `${vh}vh`);
         const media = document.getElementById("media");
         media.innerHTML = "";
         if (theme.media?.kind === "image" && theme.media.data) {
@@ -329,50 +346,60 @@
           return;
         }
 
+        const dest = normalizeHttpUrl(link.url);
         const delay = Number(theme?.settings?.redirectDelay ?? 0);
         const showSkip = theme?.settings?.showSkip ?? true;
-        const skipText = theme?.settings?.skipText || "Skip";
+        const skipText = theme?.settings?.skipText || "Skip now";
 
-        const dest = normalizeHttpUrl(link.url);
-        if (delay <= 0) {
-          // No delay; but still show CTA/note if you want (keeping minimal)
-          return;
+        // Build the UI chunks
+        const parts = [];
+        if (delay > 0) {
+          parts.push(
+            `Redirecting to <span class="muted">${dest}</span> in <b id="sec">${delay}</b>s…`
+          );
+        } else {
+          parts.push(`Destination: <span class="muted">${dest}</span>`);
+        }
+        if (showSkip)
+          parts.push(
+            `<a href="#" id="skipNow" class="cta" style="padding:6px 10px; margin-left:8px">${skipText}</a>`
+          );
+        parts.push(
+          `<a href="#" id="stay" class="muted" style="margin-left:8px">Stay here</a>`
+        );
+        note.innerHTML = parts.join(" ");
+
+        let timerId = null;
+        if (delay > 0) {
+          let s = delay;
+          timerId = setInterval(() => {
+            s--;
+            const secEl = document.getElementById("sec");
+            if (secEl) secEl.textContent = Math.max(0, s);
+            if (s <= 0) {
+              clearInterval(timerId);
+              location.assign(dest);
+            }
+          }, 1000);
         }
 
-        // Build message
-        note.innerHTML =
-          `Redirecting to <span class="muted">${dest}</span> in <b id="sec">${delay}</b>s…` +
-          (showSkip
-            ? ` <a href="#" id="skipNow" class="cta" style="padding:6px 10px; margin-left:8px">${skipText}</a>`
-            : ` <a href="#" id="stay" class="muted">stay here</a>`);
-
-        let s = delay;
-        const id = setInterval(() => {
-          s--;
-          const secEl = document.getElementById("sec");
-          if (secEl) secEl.textContent = Math.max(0, s);
-          if (s <= 0) {
-            clearInterval(id);
-            location.assign(dest);
-          }
-        }, 1000);
-
+        // Skip = go immediately
         const skip = document.getElementById("skipNow");
-        if (skip) {
+        if (skip)
           skip.onclick = (e) => {
             e.preventDefault();
-            clearInterval(id);
+            if (timerId) clearInterval(timerId);
             location.assign(dest);
           };
-        }
+
+        // Stay = cancel timer / keep page
         const stay = document.getElementById("stay");
-        if (stay) {
+        if (stay)
           stay.onclick = (e) => {
             e.preventDefault();
-            clearInterval(id);
-            note.textContent = "";
+            if (timerId) clearInterval(timerId);
+            note.textContent = ""; // clear message
           };
-        }
       }
 
       (async function start() {
