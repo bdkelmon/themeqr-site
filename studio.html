@@ -1220,7 +1220,7 @@
           <span class="auth-sep">•</span>
           <a class="auth-link" href="#" id="lnkLogout">Log out</a>
         `;
-        document.getElementById("signedAs").textContent = \`Signed in as \${email}\`;
+        document.getElementById("signedAs").textContent = `Signed in as ${email}`;
         document.getElementById("lnkLogout").onclick = async (e) => {
           e.preventDefault();
           await sb.auth.signOut();
