@@ -826,6 +826,16 @@
               <label>Skip Button Text</label>
               <input id="themeSkipText" type="text" value="Skip" />
             </div>
+            <div style="display: flex; align-items: flex-end; gap: 8px">
+              <label class="pill small" style="margin: 0">
+                <input
+                  id="themeOverrideUrl"
+                  type="checkbox"
+                  style="vertical-align: middle; margin-right: 6px"
+                />
+                Use Theme CTA URL as redirect (override link’s URL)
+              </label>
+            </div>
           </div>
 
           <div class="row">
@@ -1312,30 +1322,33 @@
         if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(u)) return u;
         return "https://" + u.replace(/^\/+/, "");
       }
-       
+
       document.getElementById("btnQrDemo").addEventListener("click", (e) => {
         e.preventDefault();
         openQrDemoWithSelection();
       });
 
-// --- helpers (place near normalizeHttpUrl) ---
-function slugifyId(s) {
-  return String(s || "")
-    .normalize("NFKD")
-    .replace(/['’]/g, "")
-    .replace(/[^a-zA-Z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .toLowerCase()
-    .slice(0, 64);
-}
+      // --- helpers (place near normalizeHttpUrl) ---
+      function slugifyId(s) {
+        return String(s || "")
+          .normalize("NFKD")
+          .replace(/['’]/g, "")
+          .replace(/[^a-zA-Z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "")
+          .toLowerCase()
+          .slice(0, 64);
+      }
 
-function getCurrentUserId() {
-  return (async () => {
-    if (!window.sb) return null;
-    try { return (await sb.auth.getUser()).data?.user?.id ?? null; } catch { return null; }
-  })();
-}
-
+      function getCurrentUserId() {
+        return (async () => {
+          if (!window.sb) return null;
+          try {
+            return (await sb.auth.getUser()).data?.user?.id ?? null;
+          } catch {
+            return null;
+          }
+        })();
+      }
 
       function getSelectedThemeId() {
         const selRow = document.querySelector("#themesList .item.selected");
@@ -1624,54 +1637,63 @@ function getCurrentUserId() {
         refreshAnalyticsSelectors();
       }
       $("#saveLink").addEventListener("click", async () => {
-  // 1) Sanitize the Link ID (nicer URLs)
-  const idRaw = ($("#linkId").value || "").trim();
-  const id = slugifyId(idRaw);
-  $("#linkId").value = id;
+        // 1) Sanitize the Link ID (nicer URLs)
+        const idRaw = ($("#linkId").value || "").trim();
+        const id = slugifyId(idRaw);
+        $("#linkId").value = id;
 
-  // 2) Normalize URL
-  const urlRaw = ($("#linkUrl").value || "").trim();
-  const url = normalizeHttpUrl(urlRaw);
-  $("#linkUrl").value = url;
+        // 2) Normalize URL
+        const urlRaw = ($("#linkUrl").value || "").trim();
+        const url = normalizeHttpUrl(urlRaw);
+        $("#linkUrl").value = url;
 
-  // 3) Theme selection — prefer numeric Supabase id (remoteId)
-  const selectedVal = $("#linkTheme").value || ""; // dropdown value (should be numeric if remoteId exists)
-  const chosenTheme = db.themes().find(t => String(t.remoteId ?? t.id) === String(selectedVal));
-  const numericThemeId = chosenTheme?.remoteId ?? null; // for Supabase links.theme_id
+        // 3) Theme selection — prefer numeric Supabase id (remoteId)
+        const selectedVal = $("#linkTheme").value || ""; // dropdown value (should be numeric if remoteId exists)
+        const chosenTheme = db
+          .themes()
+          .find((t) => String(t.remoteId ?? t.id) === String(selectedVal));
+        const numericThemeId = chosenTheme?.remoteId ?? null; // for Supabase links.theme_id
 
-  if (!id) {
-    alert("Please provide a Link ID");
-    return;
-  }
+        if (!id) {
+          alert("Please provide a Link ID");
+          return;
+        }
 
-  // 4) Save to local (this drives the QR preview + URL param)
-  const links = db.links();
-  const rec = { id, url, themeId: String(selectedVal || ""), updated: Date.now() };
-  const i = links.findIndex(l => l.id === id);
-  if (i >= 0) links[i] = rec; else links.unshift(rec);
-  db.saveLinks(links);
-  renderLinksList();
-  drawQR(); // will encode landing.html?linkId=...&themeId=<selectedVal>
+        // 4) Save to local (this drives the QR preview + URL param)
+        const links = db.links();
+        const rec = {
+          id,
+          url,
+          themeId: String(selectedVal || ""),
+          updated: Date.now(),
+        };
+        const i = links.findIndex((l) => l.id === id);
+        if (i >= 0) links[i] = rec;
+        else links.unshift(rec);
+        db.saveLinks(links);
+        renderLinksList();
+        drawQR(); // will encode landing.html?linkId=...&themeId=<selectedVal>
 
-  // 5) Save to Supabase (optional, but recommended)
-  if (window.sb) {
-    try {
-      const userId = await getCurrentUserId();
-      const row = {
-        id,
-        user_id: userId,
-        url,
-        theme_id: numericThemeId,  // bigint FK to themes.id (or null)
-        updated: new Date().toISOString(),
-      };
-      const { error } = await sb.from("links").upsert(row, { onConflict: "id" });
-      if (error) console.warn("Supabase links upsert failed:", error);
-    } catch (e) {
-      console.warn("Supabase links upsert threw:", e);
-    }
-  }
-});
-
+        // 5) Save to Supabase (optional, but recommended)
+        if (window.sb) {
+          try {
+            const userId = await getCurrentUserId();
+            const row = {
+              id,
+              user_id: userId,
+              url,
+              theme_id: numericThemeId, // bigint FK to themes.id (or null)
+              updated: new Date().toISOString(),
+            };
+            const { error } = await sb
+              .from("links")
+              .upsert(row, { onConflict: "id" });
+            if (error) console.warn("Supabase links upsert failed:", error);
+          } catch (e) {
+            console.warn("Supabase links upsert threw:", e);
+          }
+        }
+      });
 
       $("#downloadQR").addEventListener("click", () => {
         let node = qrCanvasHost.querySelector("canvas, img");
@@ -1695,17 +1717,17 @@ function getCurrentUserId() {
         dl.click();
       });
 
-function refreshThemeDropdown() {
-  const sel = $("#linkTheme");
-  sel.innerHTML = `<option value="">— None —</option>`;
-  for (const t of db.themes()) {
-    const opt = document.createElement("option");
-    // IMPORTANT: prefer Supabase numeric id once we have it
-    opt.value = (t.remoteId ?? t.id);
-    opt.textContent = t.name || "(untitled theme)";
-    sel.appendChild(opt);
-  }
-}
+      function refreshThemeDropdown() {
+        const sel = $("#linkTheme");
+        sel.innerHTML = `<option value="">— None —</option>`;
+        for (const t of db.themes()) {
+          const opt = document.createElement("option");
+          // IMPORTANT: prefer Supabase numeric id once we have it
+          opt.value = t.remoteId ?? t.id;
+          opt.textContent = t.name || "(untitled theme)";
+          sel.appendChild(opt);
+        }
+      }
 
       /* ---------- Theme Studio ---------- */
       let workingTheme = {
@@ -1758,8 +1780,14 @@ function refreshThemeDropdown() {
           contentEl.appendChild(note);
         }
         const delay = Number(s.settings?.redirectDelay ?? 2);
+        const useThemeUrl = !!s.settings?.overrideWithThemeUrl;
+        const chosenUrl = useThemeUrl ? s.cta?.url || "" : ""; // just for note
+        // ...you already compute 'delay' and set the note text:
         note.textContent =
-          delay > 0 ? `Auto-redirect in ${delay}s…` : "No auto-redirect";
+          delay > 0
+            ? `Auto-redirect in ${delay}s…` +
+              (useThemeUrl && s.cta?.url ? ` (using Theme CTA URL)` : "")
+            : "No auto-redirect";
 
         let skip = document.getElementById("simSkip");
         if (!skip) {
@@ -1919,7 +1947,14 @@ function refreshThemeDropdown() {
         (workingTheme.settings ||= {}).skipText = e.target.value || "Skip";
         applySim();
       });
-
+      // Theme-level override flag
+      const chkOverride = document.getElementById("themeOverrideUrl");
+      chkOverride.addEventListener("change", (e) => {
+        // ensure workingTheme.settings exists
+        workingTheme.settings = workingTheme.settings || {};
+        workingTheme.settings.overrideWithThemeUrl = !!e.target.checked;
+        applySim();
+      });
       function captureFileAsDataURL(file) {
         return new Promise((res, rej) => {
           const r = new FileReader();
@@ -2010,9 +2045,16 @@ function refreshThemeDropdown() {
             $("#themeCtaBg").value = t.colors?.ctaBg || "#6c7dff";
             $("#themeCtaFg").value = t.colors?.ctaFg || "#09122a";
             $("#themeAlt").value = t.media?.alt || "";
+
+            // Redirect/Skip fields
             $("#themeDelay").value = t.settings?.redirectDelay ?? 2;
             $("#themeShowSkip").checked = t.settings?.showSkip ?? true;
             $("#themeSkipText").value = t.settings?.skipText ?? "Skip";
+ // 3) ✅ Set the checkbox state for the override flag
+  const chk = document.getElementById("themeOverrideUrl");
+  if (chk) {
+    chk.checked = !!(t.settings?.overrideWithThemeUrl);
+  }
 
             applySim();
 
@@ -2040,67 +2082,68 @@ function refreshThemeDropdown() {
       }
 
       $("#saveTheme").addEventListener("click", async () => {
-  // 1) Validate local state first
-  if (!workingTheme.name?.trim()) {
-    alert("Please give your theme a name.");
-    return;
-  }
+        // 1) Validate local state first
+        if (!workingTheme.name?.trim()) {
+          alert("Please give your theme a name.");
+          return;
+        }
 
-  // 2) Prepare the Supabase row (this is what I meant by “after you build the row”)
-  //    We build 'row' and then upsert it to Supabase BEFORE saving to local,
-  //    so we can capture data.id as remoteId and keep local & remote in sync.
-  const row = {
-    // If you want Supabase to reuse an existing numeric id, pass it; otherwise omit.
-    id: Number.isFinite(workingTheme.remoteId) ? workingTheme.remoteId : undefined,
-    user_id: await getCurrentUserId(),
-    name: workingTheme.name || "",
-    title: workingTheme.title || "",
-    subtitle: workingTheme.subtitle || "",
-    font: workingTheme.font || "Inter,system-ui",
-    colors: workingTheme.colors || {},
-    cta: workingTheme.cta || {},
-    media: workingTheme.media || {},
-    updated: new Date().toISOString(),
-  };
+        // 2) Prepare the Supabase row (this is what I meant by “after you build the row”)
+        //    We build 'row' and then upsert it to Supabase BEFORE saving to local,
+        //    so we can capture data.id as remoteId and keep local & remote in sync.
+        const row = {
+          // If you want Supabase to reuse an existing numeric id, pass it; otherwise omit.
+          id: Number.isFinite(workingTheme.remoteId)
+            ? workingTheme.remoteId
+            : undefined,
+          user_id: await getCurrentUserId(),
+          name: workingTheme.name || "",
+          title: workingTheme.title || "",
+          subtitle: workingTheme.subtitle || "",
+          font: workingTheme.font || "Inter,system-ui",
+          colors: workingTheme.colors || {},
+          cta: workingTheme.cta || {},
+          media: workingTheme.media || {},
+          updated: new Date().toISOString(),
+        };
 
-  // 3) Upsert to Supabase (SAFE: skip if sb not configured)
-  if (window.sb) {
-    try {
-      const { data, error } = await sb
-        .from("themes")
-        .upsert(row)
-        .select("id")
-        .single();
-      if (error) {
-        console.warn("Supabase themes upsert failed:", error);
-      } else if (data?.id) {
-        // CRITICAL: capture the numeric Supabase id on the local theme
-        workingTheme.remoteId = data.id;
-      }
-    } catch (e) {
-      console.warn("Supabase themes upsert threw:", e);
-    }
-  }
+        // 3) Upsert to Supabase (SAFE: skip if sb not configured)
+        if (window.sb) {
+          try {
+            const { data, error } = await sb
+              .from("themes")
+              .upsert(row)
+              .select("id")
+              .single();
+            if (error) {
+              console.warn("Supabase themes upsert failed:", error);
+            } else if (data?.id) {
+              // CRITICAL: capture the numeric Supabase id on the local theme
+              workingTheme.remoteId = data.id;
+            }
+          } catch (e) {
+            console.warn("Supabase themes upsert threw:", e);
+          }
+        }
 
-  // 4) Save to localStorage AFTER remoteId is known,
-  //    so dropdowns & links will use the numeric id
-  if (!workingTheme.id) workingTheme.id = uid("theme"); // local unique id
-  const themes = db.themes();
-  const idx = themes.findIndex((t) => t.id === workingTheme.id);
-  const copy = JSON.parse(JSON.stringify(workingTheme));
-  if (idx >= 0) themes[idx] = copy;
-  else themes.unshift(copy);
-  db.saveThemes(themes);
+        // 4) Save to localStorage AFTER remoteId is known,
+        //    so dropdowns & links will use the numeric id
+        if (!workingTheme.id) workingTheme.id = uid("theme"); // local unique id
+        const themes = db.themes();
+        const idx = themes.findIndex((t) => t.id === workingTheme.id);
+        const copy = JSON.parse(JSON.stringify(workingTheme));
+        if (idx >= 0) themes[idx] = copy;
+        else themes.unshift(copy);
+        db.saveThemes(themes);
 
-  // 5) Refresh UI
-  renderThemesList(copy.id);
-  refreshThemeDropdown();
-  applySim();
+        // 5) Refresh UI
+        renderThemesList(copy.id);
+        refreshThemeDropdown();
+        applySim();
 
-  // 6) Optional: confirm toasts
-  // alert("Theme saved!");
-});
-
+        // 6) Optional: confirm toasts
+        // alert("Theme saved!");
+      });
 
       $("#deleteTheme").addEventListener("click", async () => {
         if (!workingTheme.id) return alert("Load a theme first.");
