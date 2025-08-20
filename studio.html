@@ -1277,6 +1277,20 @@
       const $ = (sel) => document.querySelector(sel);
       const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
+      // === Link ID helpers (paste once) ===
+      function slugifyLinkId(input) {
+        return String(input || "")
+          .normalize("NFKD") // split accents
+          .replace(/[\u0300-\u036f]/g, "") // drop accents
+          .replace(/[^a-zA-Z0-9]+/g, "-") // non-alphanum -> dash
+          .replace(/^-+|-+$/g, "") // trim dashes
+          .toLowerCase();
+      }
+
+      function isNumericId(v) {
+        return /^\d+$/.test(String(v || ""));
+      }
+
       async function dataUrlToFile(dataUrl, filename = "media.jpg") {
         const res = await fetch(dataUrl);
         const blob = await res.blob();
@@ -1637,61 +1651,85 @@
         refreshAnalyticsSelectors();
       }
       $("#saveLink").addEventListener("click", async () => {
-        // 1) Sanitize the Link ID (nicer URLs)
-        const idRaw = ($("#linkId").value || "").trim();
-        const id = slugifyId(idRaw);
-        $("#linkId").value = id;
+        // 1) Read inputs
+        const rawId = ($("#linkId").value || "").trim();
+        const slug = slugifyLinkId(rawId);
 
-        // 2) Normalize URL
-        const urlRaw = ($("#linkUrl").value || "").trim();
-        const url = normalizeHttpUrl(urlRaw);
-        $("#linkUrl").value = url;
-
-        // 3) Theme selection — prefer numeric Supabase id (remoteId)
-        const selectedVal = $("#linkTheme").value || ""; // dropdown value (should be numeric if remoteId exists)
-        const chosenTheme = db
-          .themes()
-          .find((t) => String(t.remoteId ?? t.id) === String(selectedVal));
-        const numericThemeId = chosenTheme?.remoteId ?? null; // for Supabase links.theme_id
-
-        if (!id) {
-          alert("Please provide a Link ID");
+        if (!slug) {
+          alert("Please provide a Link ID (letters/numbers).");
           return;
         }
 
-        // 4) Save to local (this drives the QR preview + URL param)
+        // reflect slug back into the field so user sees the final id
+        $("#linkId").value = slug;
+
+        const urlRaw = ($("#linkUrl").value || "").trim();
+        // if you already have normalizeHttpUrl(), keep using it; otherwise just use urlRaw
+        const url =
+          typeof normalizeHttpUrl === "function"
+            ? normalizeHttpUrl(urlRaw)
+            : urlRaw;
+        $("#linkUrl").value = url;
+
+        const themeId = ($("#linkTheme").value || "").trim(); // may be "" or a numeric id string
+
+        // 2) Save locally (unchanged structure)
         const links = db.links();
-        const rec = {
-          id,
-          url,
-          themeId: String(selectedVal || ""),
-          updated: Date.now(),
-        };
-        const i = links.findIndex((l) => l.id === id);
-        if (i >= 0) links[i] = rec;
+        const idx = links.findIndex((l) => l.id === slug);
+        const rec = { id: slug, url, themeId, updated: Date.now() };
+        if (idx >= 0) links[idx] = rec;
         else links.unshift(rec);
         db.saveLinks(links);
         renderLinksList();
-        drawQR(); // will encode landing.html?linkId=...&themeId=<selectedVal>
+        drawQR();
 
-        // 5) Save to Supabase (optional, but recommended)
-        if (window.sb) {
-          try {
-            const userId = await getCurrentUserId();
-            const row = {
-              id,
-              user_id: userId,
-              url,
-              theme_id: numericThemeId, // bigint FK to themes.id (or null)
-              updated: new Date().toISOString(),
-            };
+        // 3) Save to Supabase (cloud)
+        //    - expects table: public.links with columns: link_id (text), url (text), theme_id (bigint), updated (timestamptz)
+        //    - upsert on link_id keeps one row per QR id
+        try {
+          // Prepare payload respecting your schema (mutually exclusive if you enforced the CHECK)
+          const payload = {
+            link_id: slug,
+            updated: new Date().toISOString(),
+          };
+
+          // If you enforce "either theme or url", uncomment one branch below and comment out the other:
+          // --- Branch A: allow BOTH to be set (no CHECK constraint) ---
+          payload.url = url || null;
+          payload.theme_id =
+            themeId && isNumericId(themeId) ? Number(themeId) : null;
+
+          // --- Branch B: enforce EITHER/OR (with CHECK constraint) ---
+          // if (themeId && isNumericId(themeId)) {
+          //   payload.theme_id = Number(themeId);
+          //   payload.url = null;
+          // } else {
+          //   payload.theme_id = null;
+          //   payload.url = url || null;
+          // }
+
+          if (typeof sb?.from !== "function") {
+            console.warn(
+              "Supabase client 'sb' not found. Skipping cloud save."
+            );
+          } else {
             const { error } = await sb
               .from("links")
-              .upsert(row, { onConflict: "id" });
-            if (error) console.warn("Supabase links upsert failed:", error);
-          } catch (e) {
-            console.warn("Supabase links upsert threw:", e);
+              .upsert(payload, { onConflict: "link_id" });
+            if (error) {
+              console.error("Supabase upsert failed:", error);
+              alert(
+                "Saved locally, but cloud save failed. Check console for details."
+              );
+            } else {
+              console.log("Supabase upsert OK:", payload);
+            }
           }
+        } catch (e) {
+          console.error(e);
+          alert(
+            "Saved locally, but cloud save failed. Check console for details."
+          );
         }
       });
 
@@ -2050,11 +2088,11 @@
             $("#themeDelay").value = t.settings?.redirectDelay ?? 2;
             $("#themeShowSkip").checked = t.settings?.showSkip ?? true;
             $("#themeSkipText").value = t.settings?.skipText ?? "Skip";
- // 3) ✅ Set the checkbox state for the override flag
-  const chk = document.getElementById("themeOverrideUrl");
-  if (chk) {
-    chk.checked = !!(t.settings?.overrideWithThemeUrl);
-  }
+            // 3) ✅ Set the checkbox state for the override flag
+            const chk = document.getElementById("themeOverrideUrl");
+            if (chk) {
+              chk.checked = !!t.settings?.overrideWithThemeUrl;
+            }
 
             applySim();
 
