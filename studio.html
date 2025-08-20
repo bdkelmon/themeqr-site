@@ -1343,14 +1343,14 @@
       });
 
       // --- helpers (place near normalizeHttpUrl) ---
-      function slugifyId(s) {
-        return String(s || "")
-          .normalize("NFKD")
-          .replace(/['’]/g, "")
-          .replace(/[^a-zA-Z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, "")
+      function slugifyLinkId(v) {
+        const out = String(v || "")
           .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9-]+/g, "-")
+          .replace(/^-+|-+$/g, "")
           .slice(0, 64);
+        return out || "link-" + Math.random().toString(36).slice(2, 8);
       }
 
       function getCurrentUserId() {
@@ -1650,86 +1650,116 @@
         }
         refreshAnalyticsSelectors();
       }
-      $("#saveLink").addEventListener("click", async () => {
-        // 1) Read inputs
-        const rawId = ($("#linkId").value || "").trim();
-        const slug = slugifyLinkId(rawId);
+async function syncLinksFromCloud() {
+  try {
+    const session = await sbSession();
+    const user = session?.user || null;
+    if (!user) return;
 
-        if (!slug) {
-          alert("Please provide a Link ID (letters/numbers).");
+    const { data, error } = await sb
+      .from("links")
+      .select("link_id, url, theme_id, updated")
+      .eq("user_id", user.id)
+      .order("updated", { ascending: false });
+
+    if (error) { console.warn("[links] fetch cloud error:", error); return; }
+    if (!Array.isArray(data)) return;
+
+    // Convert cloud → local shape
+    const toLocal = (r) => ({
+      id: r.link_id,
+      url: r.url || "",
+      themeId: r.theme_id != null ? String(r.theme_id) : "",
+      updated: r.updated ? new Date(r.updated).getTime() : Date.now()
+    });
+
+    const local = db.links();
+    const byId = Object.fromEntries(local.map(l => [l.id, l]));
+    for (const r of data) byId[r.link_id] = toLocal(r);
+
+    const merged = Object.values(byId).sort((a,b)=>b.updated - a.updated);
+    db.saveLinks(merged);
+    renderLinksList();
+  } catch (e) {
+    console.warn("[links] cloud sync skipped:", e);
+  }
+}
+      $("#saveLink").addEventListener("click", async () => {
+        // 1) Read + normalize inputs
+        const rawId = ($("#linkId").value || "").trim();
+        const cleanedId = slugifyLinkId(rawId);
+        if (rawId !== cleanedId) $("#linkId").value = cleanedId;
+
+        const urlRaw = ($("#linkUrl").value || "").trim();
+        const url = urlRaw ? normalizeHttpUrl(urlRaw) : "";
+        $("#linkUrl").value = url;
+
+        const themeSel = $("#linkTheme").value || ""; // could be "", "123", "theme_x"
+        const themeIdNum = /^\d+$/.test(themeSel) ? Number(themeSel) : null;
+
+        if (!cleanedId) {
+          alert("Please provide a Link ID");
           return;
         }
 
-        // reflect slug back into the field so user sees the final id
-        $("#linkId").value = slug;
-
-        const urlRaw = ($("#linkUrl").value || "").trim();
-        // if you already have normalizeHttpUrl(), keep using it; otherwise just use urlRaw
-        const url =
-          typeof normalizeHttpUrl === "function"
-            ? normalizeHttpUrl(urlRaw)
-            : urlRaw;
-        $("#linkUrl").value = url;
-
-        const themeId = ($("#linkTheme").value || "").trim(); // may be "" or a numeric id string
-
-        // 2) Save locally (unchanged structure)
+        // 2) Local storage update (unchanged)
         const links = db.links();
-        const idx = links.findIndex((l) => l.id === slug);
-        const rec = { id: slug, url, themeId, updated: Date.now() };
+        const idx = links.findIndex((l) => l.id === cleanedId);
+        const rec = {
+          id: cleanedId, // local ID = link_id
+          url, // may be ""
+          themeId: themeSel || "", // keep as-is locally; numeric theme handled for server below
+          updated: Date.now(),
+        };
         if (idx >= 0) links[idx] = rec;
         else links.unshift(rec);
         db.saveLinks(links);
         renderLinksList();
         drawQR();
 
-        // 3) Save to Supabase (cloud)
-        //    - expects table: public.links with columns: link_id (text), url (text), theme_id (bigint), updated (timestamptz)
-        //    - upsert on link_id keeps one row per QR id
+        // 3) Cloud upsert (Supabase)
         try {
-          // Prepare payload respecting your schema (mutually exclusive if you enforced the CHECK)
-          const payload = {
-            link_id: slug,
+          const session = await sbSession();
+          const user = session?.user || null;
+          if (!user) {
+            console.warn("[links] Not logged in; saved locally only.");
+            return;
+          }
+
+          // Build row to match your 'links' columns
+          // columns you shared: id(bigint PK), user_id(uuid), url(text), themeId(text), updated(timestamptz), theme_id(bigint), link_id(text)
+          const row = {
+            user_id: user.id,
+            link_id: cleanedId,
+            url: url || null, // null if empty
+            theme_id: themeIdNum ?? null, // bigint when numeric
             updated: new Date().toISOString(),
           };
 
-          // If you enforce "either theme or url", uncomment one branch below and comment out the other:
-          // --- Branch A: allow BOTH to be set (no CHECK constraint) ---
-          payload.url = url || null;
-          payload.theme_id =
-            themeId && isNumericId(themeId) ? Number(themeId) : null;
-
-          // --- Branch B: enforce EITHER/OR (with CHECK constraint) ---
-          // if (themeId && isNumericId(themeId)) {
-          //   payload.theme_id = Number(themeId);
-          //   payload.url = null;
-          // } else {
-          //   payload.theme_id = null;
-          //   payload.url = url || null;
-          // }
-
-          if (typeof sb?.from !== "function") {
+          // If you added a CHECK constraint requiring at least one:
+          // (theme_id IS NOT NULL OR url IS NOT NULL)
+          if (!row.url && row.theme_id == null) {
             console.warn(
-              "Supabase client 'sb' not found. Skipping cloud save."
+              "[links] Neither url nor theme set; skipping cloud upsert."
             );
-          } else {
-            const { error } = await sb
-              .from("links")
-              .upsert(payload, { onConflict: "link_id" });
-            if (error) {
-              console.error("Supabase upsert failed:", error);
-              alert(
-                "Saved locally, but cloud save failed. Check console for details."
-              );
-            } else {
-              console.log("Supabase upsert OK:", payload);
-            }
+            return;
           }
-        } catch (e) {
-          console.error(e);
-          alert(
-            "Saved locally, but cloud save failed. Check console for details."
-          );
+
+          const { data, error } = await sb
+            .from("links")
+            .upsert(row, { onConflict: "link_id" })
+            .select();
+
+          if (error) {
+            console.error("[links] Supabase upsert error:", error);
+            alert("Cloud save failed: " + (error.message || "unknown error"));
+            return;
+          }
+
+          console.log("[links] Upsert OK:", data);
+        } catch (err) {
+          console.error("[links] Unexpected error:", err);
+          // local save already succeeded; don't block UX
         }
       });
 
@@ -3005,7 +3035,7 @@
         setOverlayOpacity($("#overlayOpacity").value);
         refreshAnalyticsSelectors();
         seedPresetsIfEmpty();
-
+        syncLinksFromCloud();
         // Start at QR tab
         Object.entries(pages).forEach(([k, v]) => (v.hidden = k !== "qr"));
       }
@@ -3163,7 +3193,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-      // 👉 Fill these with YOUR values from Supabase > Project Settings > API
       const SUPABASE_URL = "https://hvfqdrfdefgfqbfdikpn.supabase.co";
       const SUPABASE_ANON_KEY =
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9zOUjFu7fi-4oRVY-D61NCJU";
