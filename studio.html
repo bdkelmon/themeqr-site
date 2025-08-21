@@ -10,6 +10,12 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
+      .scrollable-div {
+       height: 150px; /* Fixed height */
+       overflow-y: auto; /* Enable vertical scrollbar when content overflows */
+       border: 1px solid #ccc; /* Optional: for visual clarity */
+       padding: 10px;
+      }
       :root {
         --bg: #0f1220;
         --panel: #171a2b;
@@ -819,8 +825,10 @@
                     </div>
                   </div>
                 </div>
-                <div class="small muted" style="margin-top: 8px">
-                  This simulates <code>landing.html?themeId=…</code>
+                <div class="scrollable-div">
+                  <div class="small muted" style="margin-top: 8px">
+                    This simulates <code>landing.html?themeId=…</code>
+                  </div>
                 </div>
               </div>
             </div>
