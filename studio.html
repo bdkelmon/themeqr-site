@@ -633,7 +633,6 @@
                 >
               </div>
 
-
               <div style="margin-top: 14px">
                 <label>Saved Dynamic Links</label>
                 <div id="linksList" class="list"></div>
@@ -825,17 +824,17 @@
                 </div>
               </div>
             </div>
+          </div>
+          <div class="stack" style="margin-top: 10px">
+            <button class="btn primary" id="saveTheme">
+              Save / Update Theme
+            </button>
+            <button class="btn warn" id="deleteTheme">Delete</button>
+          </div>
 
-            <div style="width: 360px">
-              <label>Saved Themes</label>
-              <div id="themesList" class="list"></div>
-              <div class="stack" style="margin-top: 10px">
-                <button class="btn primary" id="saveTheme">
-                  Save / Update Theme
-                </button>
-                <button class="btn warn" id="deleteTheme">Delete</button>
-              </div>
-            </div>
+          <div style="width: 360px">
+            <label>Saved Themes</label>
+            <div id="themesList" class="list"></div>
           </div>
         </div>
 
@@ -1191,7 +1190,7 @@
       // Reuse if already present (avoid multiple GoTrueClient instances)
       if (!window.sb) {
         window.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-          auth: { persistSession: true }
+          auth: { persistSession: true },
         });
       }
 
@@ -1220,7 +1219,9 @@
           <span class="auth-sep">•</span>
           <a class="auth-link" href="#" id="lnkLogout">Log out</a>
         `;
-        document.getElementById("signedAs").textContent = `Signed in as ${email}`;
+        document.getElementById(
+          "signedAs"
+        ).textContent = `Signed in as ${email}`;
         document.getElementById("lnkLogout").onclick = async (e) => {
           e.preventDefault();
           await sb.auth.signOut();
@@ -1246,18 +1247,30 @@
           .replace(/^-+|-+$/g, "")
           .toLowerCase();
       }
-      function isNumericId(v) { return /^\d+$/.test(String(v || "")); }
+      function isNumericId(v) {
+        return /^\d+$/.test(String(v || ""));
+      }
 
       function escapeHtml(s) {
-        return String(s).replace(/[&<>\"']/g, (m) => ({
-          "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-        }[m]));
+        return String(s).replace(
+          /[&<>\"']/g,
+          (m) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            }[m])
+        );
       }
 
       async function dataUrlToFile(dataUrl, filename = "media.jpg") {
         const res = await fetch(dataUrl);
         const blob = await res.blob();
-        return new File([blob], filename, { type: blob.type || "application/octet-stream" });
+        return new File([blob], filename, {
+          type: blob.type || "application/octet-stream",
+        });
       }
 
       /** Upload data:URL media → Supabase Storage; swap to public URL */
@@ -1270,10 +1283,16 @@
         const ext = (mime.split("/")[1] || "bin").toLowerCase();
         const file = await dataUrlToFile(m.data, `media.${ext}`);
 
-        const path = `themes/${theme.remoteId || theme.id || "tmp"}/${Date.now()}.${ext}`;
-        const { data: up, error } = await sb.storage.from("themeqr").upload(path, file, {
-          upsert: true, cacheControl: "3600", contentType: file.type
-        });
+        const path = `themes/${
+          theme.remoteId || theme.id || "tmp"
+        }/${Date.now()}.${ext}`;
+        const { data: up, error } = await sb.storage
+          .from("themeqr")
+          .upload(path, file, {
+            upsert: true,
+            cacheControl: "3600",
+            contentType: file.type,
+          });
         if (error) {
           console.warn("Storage upload failed; keeping data URL", error);
           return theme;
@@ -1299,7 +1318,11 @@
       function getCurrentUserId() {
         return (async () => {
           if (!window.sb) return null;
-          try { return (await sb.auth.getUser()).data?.user?.id ?? null; } catch { return null; }
+          try {
+            return (await sb.auth.getUser()).data?.user?.id ?? null;
+          } catch {
+            return null;
+          }
         })();
       }
 
@@ -1322,16 +1345,36 @@
       }
 
       const store = {
-        get(key, fallback){ try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } },
-        set(key, val){ try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){ if (e?.name==="QuotaExceededError") alert("Storage full. Remove large media."); else console.error(e); } }
+        get(key, fallback) {
+          try {
+            return JSON.parse(localStorage.getItem(key)) ?? fallback;
+          } catch {
+            return fallback;
+          }
+        },
+        set(key, val) {
+          try {
+            localStorage.setItem(key, JSON.stringify(val));
+          } catch (e) {
+            if (e?.name === "QuotaExceededError")
+              alert("Storage full. Remove large media.");
+            else console.error(e);
+          }
+        },
       };
       const db = {
         themes: () => store.get("qrstudio.themes", []),
-        links:  () => store.get("qrstudio.links", []),
-        scans:  () => store.get("qrstudio.scans", []),
-        saveThemes(arr){ store.set("qrstudio.themes", arr); },
-        saveLinks(arr){ store.set("qrstudio.links", arr); },
-        saveScans(arr){ store.set("qrstudio.scans", arr); }
+        links: () => store.get("qrstudio.links", []),
+        scans: () => store.get("qrstudio.scans", []),
+        saveThemes(arr) {
+          store.set("qrstudio.themes", arr);
+        },
+        saveLinks(arr) {
+          store.set("qrstudio.links", arr);
+        },
+        saveScans(arr) {
+          store.set("qrstudio.scans", arr);
+        },
       };
 
       // ===== Cloud sync (Supabase) =====
@@ -1340,31 +1383,50 @@
         if (!session) return; // guests use local only
         const uid = session.user.id;
 
-        const { data: themes } = await sb.from("themes").select("*").eq("user_id", uid).order("updated",{ascending:false});
-        const { data: links }  = await sb.from("links").select("*").eq("user_id", uid).order("updated",{ascending:false});
+        const { data: themes } = await sb
+          .from("themes")
+          .select("*")
+          .eq("user_id", uid)
+          .order("updated", { ascending: false });
+        const { data: links } = await sb
+          .from("links")
+          .select("*")
+          .eq("user_id", uid)
+          .order("updated", { ascending: false });
 
         if (themes) db.saveThemes(themes);
-        if (links)  db.saveLinks(links);
+        if (links) db.saveLinks(links);
 
         if (typeof renderThemesList === "function") renderThemesList();
-        if (typeof renderLinksList  === "function") renderLinksList();
+        if (typeof renderLinksList === "function") renderLinksList();
         if (typeof refreshThemeDropdown === "function") refreshThemeDropdown();
         if (typeof drawQR === "function") drawQR();
       }
       async function cloudSaveTheme(theme) {
         const session = await sbSession();
         if (!session) return;
-        const payload = { ...theme, user_id: session.user.id, updated: new Date().toISOString() };
+        const payload = {
+          ...theme,
+          user_id: session.user.id,
+          updated: new Date().toISOString(),
+        };
         await sb.from("themes").upsert(payload, { onConflict: "id" });
       }
       async function cloudSaveLink(link) {
         const session = await sbSession();
         if (!session) return;
-        const payload = { ...link, user_id: session.user.id, updated: new Date().toISOString() };
+        const payload = {
+          ...link,
+          user_id: session.user.id,
+          updated: new Date().toISOString(),
+        };
         await sb.from("links").upsert(payload, { onConflict: "id" });
       }
 
-      const uid = (p="t") => `${p}_${Math.random().toString(36).slice(2,8)}${Date.now().toString(36).slice(-4)}`;
+      const uid = (p = "t") =>
+        `${p}_${Math.random().toString(36).slice(2, 8)}${Date.now()
+          .toString(36)
+          .slice(-4)}`;
 
       /***********************
        * Navigation (left sidebar)
@@ -1376,7 +1438,7 @@
         modes: $("#modes"),
         analytics: $("#analytics"),
         io: $("#io"),
-        help: $("#help")
+        help: $("#help"),
       };
 
       $("#sidebar").addEventListener("click", (e) => {
@@ -1394,7 +1456,9 @@
           seedPresetsIfEmpty();
           refreshModeLinkSelect();
           const m = getMode();
-          $$('input[name="uimode"]').forEach((r) => (r.checked = r.value === m));
+          $$('input[name="uimode"]').forEach(
+            (r) => (r.checked = r.value === m)
+          );
           renderPresetsGrid();
           renderPlaylist();
         }
@@ -1410,26 +1474,49 @@
       /***********************
        * QR rendering helpers
        ************************/
-      function hasQRCodeLib(){ return typeof window.QRCode !== "undefined"; }
-      function hexNoHash(c){ return String(c || "#000000").replace("#",""); }
+      function hasQRCodeLib() {
+        return typeof window.QRCode !== "undefined";
+      }
+      function hexNoHash(c) {
+        return String(c || "#000000").replace("#", "");
+      }
 
-      async function renderQRInto(host, text, { size=512, bg="#ffffff", fg="#000000", ecc="M" } = {}) {
+      async function renderQRInto(
+        host,
+        text,
+        { size = 512, bg = "#ffffff", fg = "#000000", ecc = "M" } = {}
+      ) {
         host.innerHTML = "";
         if (hasQRCodeLib()) {
           const c = document.createElement("canvas");
           c.width = c.height = size;
           QRCode.toCanvas(c, String(text || ""), {
-            errorCorrectionLevel: ({ L:"low", M:"medium", Q:"quartile", H:"high" }[ecc] || "medium"),
-            color: { dark: fg, light: bg }, width: size, margin: 0
+            errorCorrectionLevel:
+              { L: "low", M: "medium", Q: "quartile", H: "high" }[ecc] ||
+              "medium",
+            color: { dark: fg, light: bg },
+            width: size,
+            margin: 0,
           });
           host.appendChild(c);
           return { type: "canvas", el: c };
         }
         const img = new Image();
-        img.alt = "QR"; img.width = size; img.height = size; img.crossOrigin = "anonymous";
-        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&ecc=${encodeURIComponent(ecc)}&color=${hexNoHash(fg)}&bgcolor=${hexNoHash(bg)}&qzone=0&data=${encodeURIComponent(String(text || ""))}`;
+        img.alt = "QR";
+        img.width = size;
+        img.height = size;
+        img.crossOrigin = "anonymous";
+        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&ecc=${encodeURIComponent(
+          ecc
+        )}&color=${hexNoHash(fg)}&bgcolor=${hexNoHash(
+          bg
+        )}&qzone=0&data=${encodeURIComponent(String(text || ""))}`;
         host.appendChild(img);
-        if (typeof img.decode === "function") { try { await img.decode(); } catch {} }
+        if (typeof img.decode === "function") {
+          try {
+            await img.decode();
+          } catch {}
+        }
         return { type: "img", el: img };
       }
 
@@ -1448,15 +1535,27 @@
 
       async function drawQR() {
         const size = +$("#qrSize").value || 512;
-        const fg = $("#qrFg").value, bg = $("#qrBg").value, ecc = $("#qrEcc").value;
+        const fg = $("#qrFg").value,
+          bg = $("#qrBg").value,
+          ecc = $("#qrEcc").value;
         const linkId = ($("#linkId").value || "").trim();
         const themeId = $("#linkTheme").value || "";
-        const payloadUrl = linkId ? currentLandingUrl(linkId, themeId) : "https://example.com";
-        const result = await renderQRInto(qrCanvasHost, payloadUrl, { size, bg, fg, ecc });
+        const payloadUrl = linkId
+          ? currentLandingUrl(linkId, themeId)
+          : "https://example.com";
+        const result = await renderQRInto(qrCanvasHost, payloadUrl, {
+          size,
+          bg,
+          fg,
+          ecc,
+        });
         $("#encoded").textContent = payloadUrl;
         qrCanvasHost.dataset.qrType = result.type;
       }
-      $("#qrSize, #qrFg, #qrBg, #qrEcc, #linkId, #linkTheme").addEventListener("input", drawQR);
+      $("#qrSize, #qrFg, #qrBg, #qrEcc, #linkId, #linkTheme").addEventListener(
+        "input",
+        drawQR
+      );
 
       function renderLinksList() {
         const list = $("#linksList");
@@ -1466,8 +1565,16 @@
           div.className = "item small";
           const theme = db.themes().find((t) => t.id === link.themeId);
           const target = document.createElement("div");
-          target.innerHTML = `<div><b>${escapeHtml(link.id)}</b> → <span class="muted">${escapeHtml(link.url || "(no destination set)")}</span></div>
-                              <div class="muted">Theme: ${theme ? escapeHtml(theme.name) : "—"} · Last updated: ${new Date(link.updated).toLocaleString()}</div>`;
+          target.innerHTML = `<div><b>${escapeHtml(
+            link.id
+          )}</b> → <span class="muted">${escapeHtml(
+            link.url || "(no destination set)"
+          )}</span></div>
+                              <div class="muted">Theme: ${
+                                theme ? escapeHtml(theme.name) : "—"
+                              } · Last updated: ${new Date(
+            link.updated
+          ).toLocaleString()}</div>`;
           const actions = document.createElement("div");
           actions.className = "stack";
           const openBtn = document.createElement("a");
@@ -1512,21 +1619,26 @@
             .eq("user_id", user.id)
             .order("updated", { ascending: false });
 
-          if (error) { console.warn("[links] fetch cloud error:", error); return; }
+          if (error) {
+            console.warn("[links] fetch cloud error:", error);
+            return;
+          }
           if (!Array.isArray(data)) return;
 
           const toLocal = (r) => ({
             id: r.link_id,
             url: r.url || "",
             themeId: r.theme_id != null ? String(r.theme_id) : "",
-            updated: r.updated ? new Date(r.updated).getTime() : Date.now()
+            updated: r.updated ? new Date(r.updated).getTime() : Date.now(),
           });
 
           const local = db.links();
-          const byId = Object.fromEntries(local.map(l => [l.id, l]));
+          const byId = Object.fromEntries(local.map((l) => [l.id, l]));
           for (const r of data) byId[r.link_id] = toLocal(r);
 
-          const merged = Object.values(byId).sort((a,b)=>b.updated - a.updated);
+          const merged = Object.values(byId).sort(
+            (a, b) => b.updated - a.updated
+          );
           db.saveLinks(merged);
           renderLinksList();
         } catch (e) {
@@ -1547,13 +1659,22 @@
         const themeSel = $("#linkTheme").value || ""; // could be "", "123", "theme_x"
         const themeIdNum = /^\d+$/.test(themeSel) ? Number(themeSel) : null;
 
-        if (!cleanedId) { alert("Please provide a Link ID"); return; }
+        if (!cleanedId) {
+          alert("Please provide a Link ID");
+          return;
+        }
 
         // 2) Local storage update
         const links = db.links();
         const idx = links.findIndex((l) => l.id === cleanedId);
-        const rec = { id: cleanedId, url, themeId: themeSel || "", updated: Date.now() };
-        if (idx >= 0) links[idx] = rec; else links.unshift(rec);
+        const rec = {
+          id: cleanedId,
+          url,
+          themeId: themeSel || "",
+          updated: Date.now(),
+        };
+        if (idx >= 0) links[idx] = rec;
+        else links.unshift(rec);
         db.saveLinks(links);
         renderLinksList();
         drawQR();
@@ -1571,13 +1692,18 @@
             link_id: cleanedId,
             url: url || null,
             theme_id: themeIdNum ?? null,
-            updated: new Date().toISOString()
+            updated: new Date().toISOString(),
           };
           if (!row.url && row.theme_id == null) {
-            console.warn("[links] Neither url nor theme set; skipping cloud upsert.");
+            console.warn(
+              "[links] Neither url nor theme set; skipping cloud upsert."
+            );
             return;
           }
-          const { data, error } = await sb.from("links").upsert(row, { onConflict: "link_id" }).select();
+          const { data, error } = await sb
+            .from("links")
+            .upsert(row, { onConflict: "link_id" })
+            .select();
           if (error) {
             console.error("[links] Supabase upsert error:", error);
             alert("Cloud save failed: " + (error.message || "unknown error"));
@@ -1591,14 +1717,20 @@
 
       $("#downloadQR").addEventListener("click", () => {
         let node = qrCanvasHost.querySelector("canvas, img");
-        if (!node) { alert("Generate a QR first."); return; }
-        const canvas = node.tagName === "CANVAS" ? node : (function imgToCanvas(img){
-          const c = document.createElement("canvas");
-          c.width = img.naturalWidth || img.width || 512;
-          c.height = img.naturalHeight || img.height || 512;
-          c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-          return c;
-        })(node);
+        if (!node) {
+          alert("Generate a QR first.");
+          return;
+        }
+        const canvas =
+          node.tagName === "CANVAS"
+            ? node
+            : (function imgToCanvas(img) {
+                const c = document.createElement("canvas");
+                c.width = img.naturalWidth || img.width || 512;
+                c.height = img.naturalHeight || img.height || 512;
+                c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+                return c;
+              })(node);
         const dl = document.createElement("a");
         dl.download = `qr-${$("#linkId").value || "link"}.png`;
         dl.href = canvas.toDataURL("image/png");
@@ -1620,12 +1752,26 @@
        * Theme Studio
        ************************/
       let workingTheme = {
-        id: "", name: "", title: "", subtitle: "",
+        id: "",
+        name: "",
+        title: "",
+        subtitle: "",
         font: "Inter,system-ui",
-        colors: { bg1:"#101635", bg2:"#0b0f23", fg:"#f3f6ff", ctaBg:"#6c7dff", ctaFg:"#09122a" },
-        cta: { text:"Shop Now", url:"" },
-        media: { kind:"", data:"", alt:"" },
-        settings: { redirectDelay:2, showSkip:true, skipText:"Skip", mediaBox:{ w:320 } }
+        colors: {
+          bg1: "#101635",
+          bg2: "#0b0f23",
+          fg: "#f3f6ff",
+          ctaBg: "#6c7dff",
+          ctaFg: "#09122a",
+        },
+        cta: { text: "Shop Now", url: "" },
+        media: { kind: "", data: "", alt: "" },
+        settings: {
+          redirectDelay: 2,
+          showSkip: true,
+          skipText: "Skip",
+          mediaBox: { w: 320 },
+        },
       };
 
       function applySim() {
@@ -1657,7 +1803,8 @@
         const useThemeUrl = !!s.settings?.overrideWithThemeUrl;
         note.textContent =
           delay > 0
-            ? `Auto-redirect in ${delay}s…` + (useThemeUrl && s.cta?.url ? ` (using Theme CTA URL)` : "")
+            ? `Auto-redirect in ${delay}s…` +
+              (useThemeUrl && s.cta?.url ? ` (using Theme CTA URL)` : "")
             : "No auto-redirect";
 
         let skip = document.getElementById("simSkip");
@@ -1670,7 +1817,8 @@
           contentEl.appendChild(skip);
         }
         skip.textContent = s.settings?.skipText || "Skip";
-        skip.style.display = (s.settings?.showSkip ?? true) ? "inline-block" : "none";
+        skip.style.display =
+          s.settings?.showSkip ?? true ? "inline-block" : "none";
 
         const mwrap = $("#simMedia");
         mwrap.innerHTML = "";
@@ -1685,7 +1833,9 @@
           wrap.id = "simMediaBox";
           const parentW = mwrap.clientWidth || 360;
           const savedW = Number(s.settings?.mediaBox?.w);
-          const initial = Number.isFinite(savedW) ? savedW : Math.round(parentW * 0.9);
+          const initial = Number.isFinite(savedW)
+            ? savedW
+            : Math.round(parentW * 0.9);
           const clamped = Math.max(120, Math.min(parentW - 12, initial));
           wrap.style.width = clamped + "px";
           wrap.style.maxWidth = "100%";
@@ -1713,15 +1863,27 @@
           const wrap = createWrapper();
           const vid = document.createElement("video");
           vid.src = s.media.data;
-          vid.muted = true; vid.loop = true; vid.playsInline = true; vid.preload = "metadata"; vid.controls = false;
+          vid.muted = true;
+          vid.loop = true;
+          vid.playsInline = true;
+          vid.preload = "metadata";
+          vid.controls = false;
 
-          const tryPlay = () => vid.play().catch(() => {
-            const btn = document.createElement("button");
-            btn.className = "btn"; btn.style.position = "absolute"; btn.style.zIndex = "3"; btn.textContent = "Tap to play";
-            btn.onclick = () => { vid.play().catch(() => {}); btn.remove(); };
-            wrap.style.position = "relative"; wrap.appendChild(btn);
-          });
-          vid.addEventListener("loadedmetadata", tryPlay, { once:true });
+          const tryPlay = () =>
+            vid.play().catch(() => {
+              const btn = document.createElement("button");
+              btn.className = "btn";
+              btn.style.position = "absolute";
+              btn.style.zIndex = "3";
+              btn.textContent = "Tap to play";
+              btn.onclick = () => {
+                vid.play().catch(() => {});
+                btn.remove();
+              };
+              wrap.style.position = "relative";
+              wrap.appendChild(btn);
+            });
+          vid.addEventListener("loadedmetadata", tryPlay, { once: true });
           vid.onerror = () => errBox("Video failed to load (codec/format?).");
 
           wrap.appendChild(vid);
@@ -1736,28 +1898,71 @@
           });
           ensureMediaControls(mwrap);
         } else {
-          mwrap.innerHTML = '<div class="placard">Upload media to preview…</div>';
+          mwrap.innerHTML =
+            '<div class="placard">Upload media to preview…</div>';
         }
       } // end applySim
 
-      $("#themeName").addEventListener("input", (e) => (workingTheme.name = e.target.value));
-      $("#themeTitle").addEventListener("input", (e) => { workingTheme.title = e.target.value; applySim(); });
-      $("#themeSubtitle").addEventListener("input", (e) => { workingTheme.subtitle = e.target.value; applySim(); });
-      $("#themeCtaText").addEventListener("input", (e) => { workingTheme.cta.text = e.target.value; applySim(); });
-      $("#themeCtaUrl").addEventListener("input", (e) => { workingTheme.cta.url = e.target.value; applySim(); });
-      $("#themeFont").addEventListener("change", (e) => { workingTheme.font = e.target.value; applySim(); });
-      $("#themeBg1").addEventListener("input", (e) => { workingTheme.colors.bg1 = e.target.value; applySim(); });
-      $("#themeBg2").addEventListener("input", (e) => { workingTheme.colors.bg2 = e.target.value; applySim(); });
-      $("#themeFg").addEventListener("input", (e) => { workingTheme.colors.fg  = e.target.value; applySim(); });
-      $("#themeCtaBg").addEventListener("input", (e) => { workingTheme.colors.ctaBg = e.target.value; applySim(); });
-      $("#themeCtaFg").addEventListener("input", (e) => { workingTheme.colors.ctaFg = e.target.value; applySim(); });
-      $("#themeAlt").addEventListener("input", (e) => { workingTheme.media.alt = e.target.value; });
+      $("#themeName").addEventListener(
+        "input",
+        (e) => (workingTheme.name = e.target.value)
+      );
+      $("#themeTitle").addEventListener("input", (e) => {
+        workingTheme.title = e.target.value;
+        applySim();
+      });
+      $("#themeSubtitle").addEventListener("input", (e) => {
+        workingTheme.subtitle = e.target.value;
+        applySim();
+      });
+      $("#themeCtaText").addEventListener("input", (e) => {
+        workingTheme.cta.text = e.target.value;
+        applySim();
+      });
+      $("#themeCtaUrl").addEventListener("input", (e) => {
+        workingTheme.cta.url = e.target.value;
+        applySim();
+      });
+      $("#themeFont").addEventListener("change", (e) => {
+        workingTheme.font = e.target.value;
+        applySim();
+      });
+      $("#themeBg1").addEventListener("input", (e) => {
+        workingTheme.colors.bg1 = e.target.value;
+        applySim();
+      });
+      $("#themeBg2").addEventListener("input", (e) => {
+        workingTheme.colors.bg2 = e.target.value;
+        applySim();
+      });
+      $("#themeFg").addEventListener("input", (e) => {
+        workingTheme.colors.fg = e.target.value;
+        applySim();
+      });
+      $("#themeCtaBg").addEventListener("input", (e) => {
+        workingTheme.colors.ctaBg = e.target.value;
+        applySim();
+      });
+      $("#themeCtaFg").addEventListener("input", (e) => {
+        workingTheme.colors.ctaFg = e.target.value;
+        applySim();
+      });
+      $("#themeAlt").addEventListener("input", (e) => {
+        workingTheme.media.alt = e.target.value;
+      });
       $("#themeDelay").addEventListener("input", (e) => {
         const v = Math.max(0, Math.min(120, Number(e.target.value || 0)));
-        (workingTheme.settings ||= {}).redirectDelay = v; applySim();
+        (workingTheme.settings ||= {}).redirectDelay = v;
+        applySim();
       });
-      $("#themeShowSkip").addEventListener("change", (e) => { (workingTheme.settings ||= {}).showSkip = !!e.target.checked; applySim(); });
-      $("#themeSkipText").addEventListener("input", (e) => { (workingTheme.settings ||= {}).skipText = e.target.value || "Skip"; applySim(); });
+      $("#themeShowSkip").addEventListener("change", (e) => {
+        (workingTheme.settings ||= {}).showSkip = !!e.target.checked;
+        applySim();
+      });
+      $("#themeSkipText").addEventListener("input", (e) => {
+        (workingTheme.settings ||= {}).skipText = e.target.value || "Skip";
+        applySim();
+      });
       const chkOverride = document.getElementById("themeOverrideUrl");
       chkOverride.addEventListener("change", (e) => {
         workingTheme.settings = workingTheme.settings || {};
@@ -1765,26 +1970,52 @@
         applySim();
       });
 
-      function captureFileAsDataURL(file){
-        return new Promise((res, rej) => { const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); });
+      function captureFileAsDataURL(file) {
+        return new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = () => res(r.result);
+          r.onerror = rej;
+          r.readAsDataURL(file);
+        });
       }
-      async function compressImage(file,{maxW=1280,quality=.8}={}){
-        const img=new Image(); const url=URL.createObjectURL(file);
-        await new Promise((res,rej)=>{img.onload=res; img.onerror=rej; img.src=url;});
-        const scale=Math.min(1, maxW/img.width); const w=Math.round(img.width*scale), h=Math.round(img.height*scale);
-        const c=document.createElement("canvas"); c.width=w; c.height=h; c.getContext("2d").drawImage(img,0,0,w,h);
-        const out=c.toDataURL("image/jpeg", quality); URL.revokeObjectURL(url); return out;
+      async function compressImage(file, { maxW = 1280, quality = 0.8 } = {}) {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        await new Promise((res, rej) => {
+          img.onload = res;
+          img.onerror = rej;
+          img.src = url;
+        });
+        const scale = Math.min(1, maxW / img.width);
+        const w = Math.round(img.width * scale),
+          h = Math.round(img.height * scale);
+        const c = document.createElement("canvas");
+        c.width = w;
+        c.height = h;
+        c.getContext("2d").drawImage(img, 0, 0, w, h);
+        const out = c.toDataURL("image/jpeg", quality);
+        URL.revokeObjectURL(url);
+        return out;
       }
       $("#themeMedia").addEventListener("change", async (e) => {
-        const f = e.target.files?.[0]; if (!f) return;
+        const f = e.target.files?.[0];
+        if (!f) return;
         const isVid = f.type.startsWith("video/");
-        const data = isVid ? await captureFileAsDataURL(f) : await compressImage(f, { maxW:1280, quality:.8 });
-        workingTheme.media = { kind: isVid ? "video" : "image", data, alt: $("#themeAlt").value || "" };
+        const data = isVid
+          ? await captureFileAsDataURL(f)
+          : await compressImage(f, { maxW: 1280, quality: 0.8 });
+        workingTheme.media = {
+          kind: isVid ? "video" : "image",
+          data,
+          alt: $("#themeAlt").value || "",
+        };
         applySim();
       });
       $("#clearMedia").addEventListener("click", () => {
-        workingTheme.media = { kind:"", data:"", alt:"" };
-        $("#themeMedia").value = ""; $("#themeAlt").value = ""; applySim();
+        workingTheme.media = { kind: "", data: "", alt: "" };
+        $("#themeMedia").value = "";
+        $("#themeAlt").value = "";
+        applySim();
       });
 
       function renderThemesList(selectedId = "") {
@@ -1799,7 +2030,11 @@
           if (t.id === currentId) row.classList.add("selected");
 
           const left = document.createElement("div");
-          left.innerHTML = `<div><b>${escapeHtml(t.name || "")}</b></div><div class="muted small">${escapeHtml(t.title || "—")}</div>`;
+          left.innerHTML = `<div><b>${escapeHtml(
+            t.name || ""
+          )}</b></div><div class="muted small">${escapeHtml(
+            t.title || "—"
+          )}</div>`;
 
           const actions = document.createElement("div");
           actions.className = "stack";
@@ -1849,10 +2084,15 @@
       }
 
       $("#saveTheme").addEventListener("click", async () => {
-        if (!workingTheme.name?.trim()) { alert("Please give your theme a name."); return; }
+        if (!workingTheme.name?.trim()) {
+          alert("Please give your theme a name.");
+          return;
+        }
 
         const row = {
-          id: Number.isFinite(workingTheme.remoteId) ? workingTheme.remoteId : undefined,
+          id: Number.isFinite(workingTheme.remoteId)
+            ? workingTheme.remoteId
+            : undefined,
           user_id: await getCurrentUserId(),
           name: workingTheme.name || "",
           title: workingTheme.title || "",
@@ -1861,22 +2101,32 @@
           colors: workingTheme.colors || {},
           cta: workingTheme.cta || {},
           media: workingTheme.media || {},
-          updated: new Date().toISOString()
+          updated: new Date().toISOString(),
         };
 
         if (window.sb) {
           try {
-            const { data, error } = await sb.from("themes").upsert(row).select("id").single();
-            if (error) { console.warn("Supabase themes upsert failed:", error); }
-            else if (data?.id) { workingTheme.remoteId = data.id; }
-          } catch (e) { console.warn("Supabase themes upsert threw:", e); }
+            const { data, error } = await sb
+              .from("themes")
+              .upsert(row)
+              .select("id")
+              .single();
+            if (error) {
+              console.warn("Supabase themes upsert failed:", error);
+            } else if (data?.id) {
+              workingTheme.remoteId = data.id;
+            }
+          } catch (e) {
+            console.warn("Supabase themes upsert threw:", e);
+          }
         }
 
         if (!workingTheme.id) workingTheme.id = uid("theme");
         const themes = db.themes();
         const idx = themes.findIndex((t) => t.id === workingTheme.id);
         const copy = JSON.parse(JSON.stringify(workingTheme));
-        if (idx >= 0) themes[idx] = copy; else themes.unshift(copy);
+        if (idx >= 0) themes[idx] = copy;
+        else themes.unshift(copy);
         db.saveThemes(themes);
 
         renderThemesList(copy.id);
@@ -1888,7 +2138,9 @@
         if (!workingTheme.id) return alert("Load a theme first.");
         if (!confirm("Delete this theme?")) return;
         if (workingTheme.remoteId && window.sb) {
-          try { await sb.from("themes").delete().eq("id", workingTheme.remoteId); } catch {}
+          try {
+            await sb.from("themes").delete().eq("id", workingTheme.remoteId);
+          } catch {}
         }
         db.saveThemes(db.themes().filter((t) => t.id !== workingTheme.id));
         renderThemesList();
@@ -1908,36 +2160,65 @@
       function ensureDraggableQR() {
         const linkId = $("#linkId").value || "example";
         const themeId = $("#linkTheme").value || "";
-        const fg = $("#qrFg").value, bg = $("#qrBg").value, ecc = $("#qrEcc").value;
+        const fg = $("#qrFg").value,
+          bg = $("#qrBg").value,
+          ecc = $("#qrEcc").value;
         const url = currentLandingUrl(linkId, themeId);
-        const size = Math.max(128, Math.min(1024, Math.round(qrDrag.clientWidth || 180)));
+        const size = Math.max(
+          128,
+          Math.min(1024, Math.round(qrDrag.clientWidth || 180))
+        );
         qrDragInner.innerHTML = "";
         renderQRInto(qrDragInner, url, { size, bg, fg, ecc }).then(() => {
           $("#overlayQrPx").textContent = size;
         });
       }
-      function setOverlayOpacity(val) { qrDrag.style.opacity = val; }
+      function setOverlayOpacity(val) {
+        qrDrag.style.opacity = val;
+      }
 
       function loadOverlayFile(file) {
         const wrap = $("#canvasBg");
         wrap.innerHTML = "";
-        if (!file) { overlayMediaEl = null; qrDrag.hidden = true; return; }
+        if (!file) {
+          overlayMediaEl = null;
+          qrDrag.hidden = true;
+          return;
+        }
         overlayStage.querySelector(".placard")?.remove();
 
         const isVideo = file.type.startsWith("video/");
-        let el = isVideo ? document.createElement("video") : document.createElement("img");
+        let el = isVideo
+          ? document.createElement("video")
+          : document.createElement("img");
         if (isVideo) {
-          el.controls = true; el.muted = true; el.autoplay = true; el.loop = true; el.playsInline = true; el.preload = "metadata";
-          el.addEventListener("loadedmetadata", () => { el.play().catch(() => {}); }, { once: true });
+          el.controls = true;
+          el.muted = true;
+          el.autoplay = true;
+          el.loop = true;
+          el.playsInline = true;
+          el.preload = "metadata";
+          el.addEventListener(
+            "loadedmetadata",
+            () => {
+              el.play().catch(() => {});
+            },
+            { once: true }
+          );
         }
-        el.style.width = "100%"; el.style.height = "100%"; el.style.objectFit = "cover"; el.style.display = "block";
+        el.style.width = "100%";
+        el.style.height = "100%";
+        el.style.objectFit = "cover";
+        el.style.display = "block";
         wrap.appendChild(el);
         const blobUrl = URL.createObjectURL(file);
         el.src = blobUrl;
         overlayMediaEl = el;
         qrDrag.hidden = false;
         ensureDraggableQR();
-        el.addEventListener("ended", () => URL.revokeObjectURL(blobUrl), { once: true });
+        el.addEventListener("ended", () => URL.revokeObjectURL(blobUrl), {
+          once: true,
+        });
       }
 
       $("#overlayFile").addEventListener("change", (e) => {
@@ -1945,174 +2226,355 @@
         if (f) loadOverlayFile(f);
       });
       overlayStage.addEventListener("dragover", (e) => {
-        e.preventDefault(); overlayStage.style.outline = "2px dashed #6c7dff";
+        e.preventDefault();
+        overlayStage.style.outline = "2px dashed #6c7dff";
       });
-      overlayStage.addEventListener("dragleave", () => (overlayStage.style.outline = "none"));
+      overlayStage.addEventListener(
+        "dragleave",
+        () => (overlayStage.style.outline = "none")
+      );
       overlayStage.addEventListener("drop", (e) => {
-        e.preventDefault(); overlayStage.style.outline = "none";
-        const f = e.dataTransfer.files?.[0]; if (f) loadOverlayFile(f);
+        e.preventDefault();
+        overlayStage.style.outline = "none";
+        const f = e.dataTransfer.files?.[0];
+        if (f) loadOverlayFile(f);
       });
 
       qrDrag.addEventListener("mousedown", (e) => {
         if (e.target === qrHandle) return;
-        dragState = { type:"move", startX:e.clientX, startY:e.clientY, origLeft:qrDrag.offsetLeft, origTop:qrDrag.offsetTop };
+        dragState = {
+          type: "move",
+          startX: e.clientX,
+          startY: e.clientY,
+          origLeft: qrDrag.offsetLeft,
+          origTop: qrDrag.offsetTop,
+        };
         document.body.style.userSelect = "none";
       });
       qrHandle.addEventListener("mousedown", (e) => {
         e.stopPropagation();
-        dragState = { type:"resize", startX:e.clientX, startY:e.clientY, origW:qrDrag.clientWidth };
-        qrDrag.classList.add("resizing"); document.body.style.userSelect = "none";
+        dragState = {
+          type: "resize",
+          startX: e.clientX,
+          startY: e.clientY,
+          origW: qrDrag.clientWidth,
+        };
+        qrDrag.classList.add("resizing");
+        document.body.style.userSelect = "none";
       });
       window.addEventListener("mousemove", (e) => {
         if (!dragState) return;
         if (dragState.type === "move") {
-          const dx = e.clientX - dragState.startX, dy = e.clientY - dragState.startY;
-          qrDrag.style.left = Math.max(0, Math.min(overlayStage.clientWidth  - qrDrag.clientWidth,  dragState.origLeft + dx)) + "px";
-          qrDrag.style.top  = Math.max(0, Math.min(overlayStage.clientHeight - qrDrag.clientHeight, dragState.origTop  + dy)) + "px";
+          const dx = e.clientX - dragState.startX,
+            dy = e.clientY - dragState.startY;
+          qrDrag.style.left =
+            Math.max(
+              0,
+              Math.min(
+                overlayStage.clientWidth - qrDrag.clientWidth,
+                dragState.origLeft + dx
+              )
+            ) + "px";
+          qrDrag.style.top =
+            Math.max(
+              0,
+              Math.min(
+                overlayStage.clientHeight - qrDrag.clientHeight,
+                dragState.origTop + dy
+              )
+            ) + "px";
         } else {
-          const d = Math.max(120, dragState.origW + (e.clientX - dragState.startX));
+          const d = Math.max(
+            120,
+            dragState.origW + (e.clientX - dragState.startX)
+          );
           qrDrag.style.width = qrDrag.style.height = d + "px";
           ensureDraggableQR();
         }
       });
       window.addEventListener("mouseup", () => {
         if (dragState?.type === "resize") qrDrag.classList.remove("resizing");
-        dragState = null; document.body.style.userSelect = "";
+        dragState = null;
+        document.body.style.userSelect = "";
       });
 
-      $("#overlayOpacity").addEventListener("input", (e) => setOverlayOpacity(e.target.value));
+      $("#overlayOpacity").addEventListener("input", (e) =>
+        setOverlayOpacity(e.target.value)
+      );
       $("#overlayClear").addEventListener("click", () => {
         $("#canvasBg").innerHTML = "";
-        overlayStage.insertAdjacentHTML("afterbegin", '<div class="placard">Drop image/video here or use the uploader below</div>');
-        overlayMediaEl = null; qrDrag.hidden = true; $("#overlayFile").value = "";
+        overlayStage.insertAdjacentHTML(
+          "afterbegin",
+          '<div class="placard">Drop image/video here or use the uploader below</div>'
+        );
+        overlayMediaEl = null;
+        qrDrag.hidden = true;
+        $("#overlayFile").value = "";
       });
       $("#overlayExport").addEventListener("click", () => {
         const canvas = document.createElement("canvas");
         const rect = overlayStage.getBoundingClientRect();
-        canvas.width = rect.width; canvas.height = rect.height;
+        canvas.width = rect.width;
+        canvas.height = rect.height;
         const ctx = canvas.getContext("2d");
         if (overlayMediaEl) {
           if (overlayMediaEl.tagName === "VIDEO") {
-            const v = overlayMediaEl; if (!v.videoWidth || !v.videoHeight || v.readyState < 2) { alert("Video is not ready yet."); return; }
-            const w=v.videoWidth, h=v.videoHeight;
+            const v = overlayMediaEl;
+            if (!v.videoWidth || !v.videoHeight || v.readyState < 2) {
+              alert("Video is not ready yet.");
+              return;
+            }
+            const w = v.videoWidth,
+              h = v.videoHeight;
             const scale = Math.max(canvas.width / w, canvas.height / h);
-            const dw=w*scale, dh=h*scale, dx=(canvas.width-dw)/2, dy=(canvas.height-dh)/2;
+            const dw = w * scale,
+              dh = h * scale,
+              dx = (canvas.width - dw) / 2,
+              dy = (canvas.height - dh) / 2;
             ctx.drawImage(v, dx, dy, dw, dh);
           } else {
-            const img = overlayMediaEl; const w=img.naturalWidth, h=img.naturalHeight;
-            if (!w || !h) { alert("Image not ready yet."); return; }
+            const img = overlayMediaEl;
+            const w = img.naturalWidth,
+              h = img.naturalHeight;
+            if (!w || !h) {
+              alert("Image not ready yet.");
+              return;
+            }
             const scale = Math.max(canvas.width / w, canvas.height / h);
-            const dw=w*scale, dh=h*scale, dx=(canvas.width-dw)/2, dy=(canvas.height-dh)/2;
+            const dw = w * scale,
+              dh = h * scale,
+              dx = (canvas.width - dw) / 2,
+              dy = (canvas.height - dh) / 2;
             ctx.drawImage(img, dx, dy, dw, dh);
           }
         } else {
-          ctx.fillStyle = "#0b0f23"; ctx.fillRect(0,0,canvas.width,canvas.height);
+          ctx.fillStyle = "#0b0f23";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
         let qrc = qrDragInner.querySelector("canvas, img");
         if (qrc && qrc.tagName !== "CANVAS") {
           const c = document.createElement("canvas");
-          c.width = qrc.naturalWidth || qrc.width; c.height = qrc.naturalHeight || qrc.height;
+          c.width = qrc.naturalWidth || qrc.width;
+          c.height = qrc.naturalHeight || qrc.height;
           c.getContext("2d").drawImage(qrc, 0, 0, c.width, c.height);
           qrc = c;
         }
         ctx.globalAlpha = parseFloat($("#overlayOpacity").value || "1");
-        const x = qrDrag.offsetLeft, y = qrDrag.offsetTop, s = qrDrag.clientWidth;
-        ctx.drawImage(qrc, x, y, s, s); ctx.globalAlpha = 1;
+        const x = qrDrag.offsetLeft,
+          y = qrDrag.offsetTop,
+          s = qrDrag.clientWidth;
+        ctx.drawImage(qrc, x, y, s, s);
+        ctx.globalAlpha = 1;
         const dl = document.createElement("a");
-        dl.download = "overlay-snapshot.png"; dl.href = canvas.toDataURL("image/png"); dl.click();
+        dl.download = "overlay-snapshot.png";
+        dl.href = canvas.toDataURL("image/png");
+        dl.click();
       });
 
       /***********************
        * Analytics
        ************************/
-      function detectDevice(ua){ if(!ua) return "Other";
+      function detectDevice(ua) {
+        if (!ua) return "Other";
         if (/Android/i.test(ua)) return "Android";
         if (/iPhone|iPad|iPod/i.test(ua)) return "iOS";
         if (/Windows/i.test(ua)) return "Windows";
         if (/Macintosh|Mac OS X/i.test(ua)) return "macOS";
         return "Other";
       }
-      function logScan({ linkId, source="studio" }) {
+      function logScan({ linkId, source = "studio" }) {
         if (!linkId) return;
         const ua = navigator.userAgent || "";
-        const scan = { id:uid("scan"), linkId, ts:Date.now(), ua, referrer:document.referrer || "", source, device:detectDevice(ua) };
-        const arr = db.scans(); arr.push(scan); db.saveScans(arr);
+        const scan = {
+          id: uid("scan"),
+          linkId,
+          ts: Date.now(),
+          ua,
+          referrer: document.referrer || "",
+          source,
+          device: detectDevice(ua),
+        };
+        const arr = db.scans();
+        arr.push(scan);
+        db.saveScans(arr);
       }
       const ymd = (ts) => new Date(ts).toISOString().slice(0, 10);
-      const fmtDateTime = (ts) => { const d=new Date(ts); return isNaN(d) ? "—" : d.toLocaleString(); };
-      function rangeDays(fromISO,toISO){ const out=[]; const from=new Date(fromISO+"T00:00:00Z"); const to=new Date(toISO+"T00:00:00Z");
-        for(let d=new Date(from); d<=to; d.setUTCDate(d.getUTCDate()+1)) out.push(d.toISOString().slice(0,10)); return out; }
-      function drawBars(canvas, labels, values, {color="#6c7dff", max=null}={}){
-        const ctx=canvas.getContext("2d"); const W=canvas.clientWidth||600, H=canvas.height||180; canvas.width=W; canvas.height=H;
-        ctx.clearRect(0,0,W,H); const pad=24, gap=8, n=values.length||1;
-        const barW=Math.max(6, Math.min(60, (W - pad*2 - gap*(n-1)) / n));
-        const vmax=Math.max(1, max ?? Math.max(...values,1)); ctx.strokeStyle="#232741"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pad,H-pad); ctx.lineTo(W-pad,H-pad); ctx.stroke();
-        ctx.fillStyle=color;
-        for(let i=0;i<n;i++){ const x=pad + i*(barW+gap); const h=Math.round(((values[i]||0)/vmax)*(H-pad*2)); const y=H-pad-h; ctx.fillRect(x,y,barW,Math.max(1,h)); }
-        ctx.fillStyle="#aab1d6"; ctx.font="11px Inter, system-ui"; const step=Math.ceil(n/8);
-        for(let i=0;i<n;i+=step){ const x=pad + i*(barW+gap) + barW/2; const lab=labels[i] ?? ""; ctx.save(); ctx.translate(x, H-pad+12); ctx.rotate(-Math.PI/4); ctx.fillText(lab,0,0); ctx.restore(); }
+      const fmtDateTime = (ts) => {
+        const d = new Date(ts);
+        return isNaN(d) ? "—" : d.toLocaleString();
+      };
+      function rangeDays(fromISO, toISO) {
+        const out = [];
+        const from = new Date(fromISO + "T00:00:00Z");
+        const to = new Date(toISO + "T00:00:00Z");
+        for (let d = new Date(from); d <= to; d.setUTCDate(d.getUTCDate() + 1))
+          out.push(d.toISOString().slice(0, 10));
+        return out;
+      }
+      function drawBars(
+        canvas,
+        labels,
+        values,
+        { color = "#6c7dff", max = null } = {}
+      ) {
+        const ctx = canvas.getContext("2d");
+        const W = canvas.clientWidth || 600,
+          H = canvas.height || 180;
+        canvas.width = W;
+        canvas.height = H;
+        ctx.clearRect(0, 0, W, H);
+        const pad = 24,
+          gap = 8,
+          n = values.length || 1;
+        const barW = Math.max(
+          6,
+          Math.min(60, (W - pad * 2 - gap * (n - 1)) / n)
+        );
+        const vmax = Math.max(1, max ?? Math.max(...values, 1));
+        ctx.strokeStyle = "#232741";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pad, H - pad);
+        ctx.lineTo(W - pad, H - pad);
+        ctx.stroke();
+        ctx.fillStyle = color;
+        for (let i = 0; i < n; i++) {
+          const x = pad + i * (barW + gap);
+          const h = Math.round(((values[i] || 0) / vmax) * (H - pad * 2));
+          const y = H - pad - h;
+          ctx.fillRect(x, y, barW, Math.max(1, h));
+        }
+        ctx.fillStyle = "#aab1d6";
+        ctx.font = "11px Inter, system-ui";
+        const step = Math.ceil(n / 8);
+        for (let i = 0; i < n; i += step) {
+          const x = pad + i * (barW + gap) + barW / 2;
+          const lab = labels[i] ?? "";
+          ctx.save();
+          ctx.translate(x, H - pad + 12);
+          ctx.rotate(-Math.PI / 4);
+          ctx.fillText(lab, 0, 0);
+          ctx.restore();
+        }
       }
       function refreshAnalyticsSelectors() {
         const links = db.links();
-        const fSel = $("#fLink"), sSel = $("#scanLinkSelect");
+        const fSel = $("#fLink"),
+          sSel = $("#scanLinkSelect");
         if (fSel) {
           const cur = fSel.value;
-          fSel.innerHTML = `<option value="">All links</option>` + links.map((l)=>`<option value="${l.id}">${l.id}</option>`).join("");
+          fSel.innerHTML =
+            `<option value="">All links</option>` +
+            links
+              .map((l) => `<option value="${l.id}">${l.id}</option>`)
+              .join("");
           fSel.value = cur;
         }
         if (sSel) {
-          sSel.innerHTML = links.length ? links.map((l)=>`<option value="${l.id}">${l.id}</option>`).join("") : `<option value="">No links yet</option>`;
+          sSel.innerHTML = links.length
+            ? links
+                .map((l) => `<option value="${l.id}">${l.id}</option>`)
+                .join("")
+            : `<option value="">No links yet</option>`;
           $("#recordScan").disabled = links.length === 0;
         }
       }
       function renderAnalytics() {
-        const scans = db.scans().sort((a,b)=>a.ts-b.ts);
-        const toDef = scans.length ? ymd(scans[scans.length-1].ts) : ymd(Date.now());
+        const scans = db.scans().sort((a, b) => a.ts - b.ts);
+        const toDef = scans.length
+          ? ymd(scans[scans.length - 1].ts)
+          : ymd(Date.now());
         const fromDef = scans.length ? ymd(scans[0].ts) : toDef;
-        const inFrom=$("#fFrom"), inTo=$("#fTo"), inLink=$("#fLink");
+        const inFrom = $("#fFrom"),
+          inTo = $("#fTo"),
+          inLink = $("#fLink");
         if (!inFrom.value) inFrom.value = fromDef;
         if (!inTo.value) inTo.value = toDef;
-        const fromISO=inFrom.value||fromDef, toISO=inTo.value||toDef, filterLink=inLink.value||"";
-        const filtered = scans.filter((s)=>{ const d=ymd(s.ts); const okDate=d>=fromISO && d<=toISO; const okLink=!filterLink || s.linkId===filterLink; return okDate && okLink; });
+        const fromISO = inFrom.value || fromDef,
+          toISO = inTo.value || toDef,
+          filterLink = inLink.value || "";
+        const filtered = scans.filter((s) => {
+          const d = ymd(s.ts);
+          const okDate = d >= fromISO && d <= toISO;
+          const okLink = !filterLink || s.linkId === filterLink;
+          return okDate && okLink;
+        });
 
         $("#kpiTotal").textContent = filtered.length.toLocaleString();
-        $("#kpiUnique").textContent = new Set(filtered.map((s)=>s.linkId)).size.toLocaleString();
-        $("#kpiLast").textContent = filtered.length ? fmtDateTime(filtered[filtered.length-1].ts) : "—";
+        $("#kpiUnique").textContent = new Set(
+          filtered.map((s) => s.linkId)
+        ).size.toLocaleString();
+        $("#kpiLast").textContent = filtered.length
+          ? fmtDateTime(filtered[filtered.length - 1].ts)
+          : "—";
         const days = Math.max(1, rangeDays(fromISO, toISO).length);
         $("#kpiAvg").textContent = (filtered.length / days).toFixed(1);
 
-        const daysArr = rangeDays(fromISO,toISO);
-        const dayCount = Object.fromEntries(daysArr.map((d)=>[d,0]));
-        for (const s of filtered) dayCount[ymd(s.ts)] = (dayCount[ymd(s.ts)] || 0) + 1;
-        drawBars($("#chartTime"), daysArr.map((d)=>d.slice(5)), daysArr.map((d)=>dayCount[d]||0), { color:"#6c7dff" });
+        const daysArr = rangeDays(fromISO, toISO);
+        const dayCount = Object.fromEntries(daysArr.map((d) => [d, 0]));
+        for (const s of filtered)
+          dayCount[ymd(s.ts)] = (dayCount[ymd(s.ts)] || 0) + 1;
+        drawBars(
+          $("#chartTime"),
+          daysArr.map((d) => d.slice(5)),
+          daysArr.map((d) => dayCount[d] || 0),
+          { color: "#6c7dff" }
+        );
 
-        const byLink = {}; for (const s of filtered) byLink[s.linkId] = (byLink[s.linkId] || 0) + 1;
-        const top = Object.entries(byLink).sort((a,b)=>b[1]-a[1]).slice(0,12);
-        drawBars($("#chartTop"), top.map(([k])=>k), top.map(([,v])=>v), { color:"#2de6c5" });
+        const byLink = {};
+        for (const s of filtered)
+          byLink[s.linkId] = (byLink[s.linkId] || 0) + 1;
+        const top = Object.entries(byLink)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 12);
+        drawBars(
+          $("#chartTop"),
+          top.map(([k]) => k),
+          top.map(([, v]) => v),
+          { color: "#2de6c5" }
+        );
 
         const total = filtered.length || 1;
-        const lastByLink = {}; for (const s of filtered) lastByLink[s.linkId] = s.ts;
-        const rows = Object.keys(byLink).sort((a,b)=>byLink[b]-byLink[a]).map((id)=>{
-          const count = byLink[id], share = ((count/total)*100).toFixed(1)+"%";
-          return `<tr><td><code class="code">${escapeHtml(id)}</code></td><td class="right">${count}</td><td>${fmtDateTime(lastByLink[id])}</td><td class="right">${share}</td></tr>`;
-        }).join("") || `<tr><td colspan="4" class="muted">No scans in this range.</td></tr>`;
+        const lastByLink = {};
+        for (const s of filtered) lastByLink[s.linkId] = s.ts;
+        const rows =
+          Object.keys(byLink)
+            .sort((a, b) => byLink[b] - byLink[a])
+            .map((id) => {
+              const count = byLink[id],
+                share = ((count / total) * 100).toFixed(1) + "%";
+              return `<tr><td><code class="code">${escapeHtml(
+                id
+              )}</code></td><td class="right">${count}</td><td>${fmtDateTime(
+                lastByLink[id]
+              )}</td><td class="right">${share}</td></tr>`;
+            })
+            .join("") ||
+          `<tr><td colspan="4" class="muted">No scans in this range.</td></tr>`;
         $("#tblLinks tbody").innerHTML = rows;
 
         refreshAnalyticsSelectors();
       }
       $("#applyFilters").addEventListener("click", renderAnalytics);
-      $("#resetFilters").addEventListener("click", () => { $("#fFrom").value=""; $("#fTo").value=""; $("#fLink").value=""; renderAnalytics(); });
+      $("#resetFilters").addEventListener("click", () => {
+        $("#fFrom").value = "";
+        $("#fTo").value = "";
+        $("#fLink").value = "";
+        renderAnalytics();
+      });
       $("#recordScan").addEventListener("click", () => {
         const linkId = $("#scanLinkSelect").value;
         if (!linkId) return alert("Create a link first.");
-        logScan({ linkId, source:"studio" });
+        logScan({ linkId, source: "studio" });
         renderAnalytics();
       });
       $("#exportScans").addEventListener("click", () => {
         const data = { scans: db.scans() };
         const dl = document.createElement("a");
         dl.download = "qrstudio-scans.json";
-        dl.href = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+        dl.href =
+          "data:application/json;charset=utf-8," +
+          encodeURIComponent(JSON.stringify(data, null, 2));
         dl.click();
       });
       $("#importScans").addEventListener("click", async () => {
@@ -2122,34 +2584,53 @@
         try {
           const obj = JSON.parse(txt);
           if (!Array.isArray(obj.scans)) throw new Error("No scans[]");
-          const merged = db.scans().concat(obj.scans).sort((a,b)=>a.ts-b.ts);
+          const merged = db
+            .scans()
+            .concat(obj.scans)
+            .sort((a, b) => a.ts - b.ts);
           db.saveScans(merged);
           renderAnalytics();
           alert("Scans imported.");
-        } catch { alert("Invalid JSON."); }
+        } catch {
+          alert("Invalid JSON.");
+        }
       });
       $("#clearScans").addEventListener("click", () => {
         if (!confirm("Clear all local scans?")) return;
-        db.saveScans([]); renderAnalytics();
+        db.saveScans([]);
+        renderAnalytics();
       });
       $("#genDemo").addEventListener("click", () => {
-        const links = db.links(); if (!links.length) return alert("Create at least one link first.");
-        const now=Date.now(); const days=14, total=220+Math.floor(Math.random()*120);
+        const links = db.links();
+        if (!links.length) return alert("Create at least one link first.");
+        const now = Date.now();
+        const days = 14,
+          total = 220 + Math.floor(Math.random() * 120);
         const out = db.scans();
-        for (let i=0;i<total;i++){
-          const link = links[Math.floor(Math.random()*links.length)];
-          const dayOffset = Math.floor(Math.random()*days);
-          const ts = now - dayOffset*86400000 - Math.floor(Math.random()*86400000);
+        for (let i = 0; i < total; i++) {
+          const link = links[Math.floor(Math.random() * links.length)];
+          const dayOffset = Math.floor(Math.random() * days);
+          const ts =
+            now - dayOffset * 86400000 - Math.floor(Math.random() * 86400000);
           const uaPool = [
             "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X)",
             "Mozilla/5.0 (Linux; Android 13; Pixel 7)",
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_5)"
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_5)",
           ];
-          const ua = uaPool[Math.floor(Math.random()*uaPool.length)];
-          out.push({ id:uid("scan"), linkId:link.id, ts, ua, referrer:"", source:"demo", device:detectDevice(ua) });
+          const ua = uaPool[Math.floor(Math.random() * uaPool.length)];
+          out.push({
+            id: uid("scan"),
+            linkId: link.id,
+            ts,
+            ua,
+            referrer: "",
+            source: "demo",
+            device: detectDevice(ua),
+          });
         }
-        db.saveScans(out); renderAnalytics();
+        db.saveScans(out);
+        renderAnalytics();
       });
 
       /***********************
@@ -2159,39 +2640,56 @@
         const data = { themes: db.themes() };
         const dl = document.createElement("a");
         dl.download = "qrstudio-themes.json";
-        dl.href = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+        dl.href =
+          "data:application/json;charset=utf-8," +
+          encodeURIComponent(JSON.stringify(data, null, 2));
         dl.click();
       });
       $("#exportLinks").addEventListener("click", () => {
         const data = { links: db.links() };
         const dl = document.createElement("a");
         dl.download = "qrstudio-links.json";
-        dl.href = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+        dl.href =
+          "data:application/json;charset=utf-8," +
+          encodeURIComponent(JSON.stringify(data, null, 2));
         dl.click();
       });
-      function importPayload(obj){
+      function importPayload(obj) {
         if (obj.themes) {
-          const byId = Object.fromEntries(db.themes().map((t)=>[t.id, t]));
+          const byId = Object.fromEntries(db.themes().map((t) => [t.id, t]));
           for (const t of obj.themes) byId[t.id] = t;
           db.saveThemes(Object.values(byId));
         }
         if (obj.links) {
-          const byId = Object.fromEntries(db.links().map((l)=>[l.id, l]));
+          const byId = Object.fromEntries(db.links().map((l) => [l.id, l]));
           for (const l of obj.links) byId[l.id] = l;
           db.saveLinks(Object.values(byId));
         }
-        renderThemesList(); renderLinksList(); refreshThemeDropdown(); drawQR();
+        renderThemesList();
+        renderLinksList();
+        refreshThemeDropdown();
+        drawQR();
       }
       $("#importNow").addEventListener("click", async () => {
         const f = $("#importFile").files?.[0];
         if (!f) return alert("Choose a JSON file first.");
         const txt = await f.text();
-        try { importPayload(JSON.parse(txt)); alert("Imported."); } catch { alert("Invalid JSON."); }
+        try {
+          importPayload(JSON.parse(txt));
+          alert("Imported.");
+        } catch {
+          alert("Invalid JSON.");
+        }
       });
       $("#importFromText").addEventListener("click", () => {
         const txt = $("#importText").value.trim();
         if (!txt) return alert("Paste JSON first.");
-        try { importPayload(JSON.parse(txt)); alert("Imported."); } catch { alert("Invalid JSON."); }
+        try {
+          importPayload(JSON.parse(txt));
+          alert("Imported.");
+        } catch {
+          alert("Invalid JSON.");
+        }
       });
 
       /***********************
@@ -2199,29 +2697,74 @@
        ************************/
       const MODES_KEY = "qrstudio.uiMode";
       const PLAYLIST_KEY = "qrstudio.social.playlist";
-      function getMode(){ return localStorage.getItem(MODES_KEY) || "event"; }
-      function setMode(m){ localStorage.setItem(MODES_KEY, m); }
-      function getPlaylist(){ return store.get(PLAYLIST_KEY, []); }
-      function savePlaylist(arr){ store.set(PLAYLIST_KEY, arr); }
+      function getMode() {
+        return localStorage.getItem(MODES_KEY) || "event";
+      }
+      function setMode(m) {
+        localStorage.setItem(MODES_KEY, m);
+      }
+      function getPlaylist() {
+        return store.get(PLAYLIST_KEY, []);
+      }
+      function savePlaylist(arr) {
+        store.set(PLAYLIST_KEY, arr);
+      }
 
       function seedPresetsIfEmpty() {
         const themes = db.themes();
-        const hasPresets = themes.some((t)=>t?.meta?.preset === true);
+        const hasPresets = themes.some((t) => t?.meta?.preset === true);
         if (hasPresets) return;
-        const mk = (name,title,subtitle,colors,ctaText="Open",ctaUrl="") => ({
+        const mk = (
+          name,
+          title,
+          subtitle,
+          colors,
+          ctaText = "Open",
+          ctaUrl = ""
+        ) => ({
           id: uid("preset"),
-          name, title, subtitle, font:"Inter,system-ui",
-          colors: { bg1:colors[0], bg2:colors[1], fg:"#f3f6ff", ctaBg:colors[2], ctaFg:"#09122a" },
-          cta:{ text:ctaText, url:ctaUrl },
-          media:{ kind:"", data:"", alt:"" },
-          settings:{ redirectDelay:0, showSkip:true, skipText:"Skip", mediaBox:{ w:320 } },
-          meta:{ preset:true, category:"event" }
+          name,
+          title,
+          subtitle,
+          font: "Inter,system-ui",
+          colors: {
+            bg1: colors[0],
+            bg2: colors[1],
+            fg: "#f3f6ff",
+            ctaBg: colors[2],
+            ctaFg: "#09122a",
+          },
+          cta: { text: ctaText, url: ctaUrl },
+          media: { kind: "", data: "", alt: "" },
+          settings: {
+            redirectDelay: 0,
+            showSkip: true,
+            skipText: "Skip",
+            mediaBox: { w: 320 },
+          },
+          meta: { preset: true, category: "event" },
         });
         const presets = [
-          mk("Welcome","Welcome Riders!","Scan for the schedule",["#0f132c","#0b0f23","#6c7dff"]),
-          mk("Afterparty","Afterparty 9PM","Tap for address",["#2c0f1b","#100810","#ff6b6b"]),
-          mk("Sponsor","Thanks to Our Sponsors","Exclusive deals inside",["#0f2c23","#0b0f23","#2de6c5"]),
-          mk("Merch Drop","Limited Merch Drop","Tap to buy now",["#20130f","#0b0f23","#fcbf49"])
+          mk("Welcome", "Welcome Riders!", "Scan for the schedule", [
+            "#0f132c",
+            "#0b0f23",
+            "#6c7dff",
+          ]),
+          mk("Afterparty", "Afterparty 9PM", "Tap for address", [
+            "#2c0f1b",
+            "#100810",
+            "#ff6b6b",
+          ]),
+          mk("Sponsor", "Thanks to Our Sponsors", "Exclusive deals inside", [
+            "#0f2c23",
+            "#0b0f23",
+            "#2de6c5",
+          ]),
+          mk("Merch Drop", "Limited Merch Drop", "Tap to buy now", [
+            "#20130f",
+            "#0b0f23",
+            "#fcbf49",
+          ]),
         ];
         db.saveThemes(presets.concat(themes));
       }
@@ -2229,145 +2772,248 @@
       function refreshModeLinkSelect() {
         const links = db.links();
         const sel = $("#modeLinkSelect");
-        sel.innerHTML = links.length ? links.map((l)=>`<option value="${l.id}">${l.id}</option>`).join("") : `<option value="">No links yet</option>`;
+        sel.innerHTML = links.length
+          ? links
+              .map((l) => `<option value="${l.id}">${l.id}</option>`)
+              .join("")
+          : `<option value="">No links yet</option>`;
       }
       function applyThemeToLink(linkId, themeId) {
         if (!linkId || !themeId) return;
         const links = db.links();
-        const idx = links.findIndex((l)=>l.id===linkId);
+        const idx = links.findIndex((l) => l.id === linkId);
         if (idx === -1) return;
         links[idx] = { ...links[idx], themeId, updated: Date.now() };
         db.saveLinks(links);
         renderLinksList();
       }
-      function el(tag, attrs={}, html=""){
-        const n=document.createElement(tag);
-        for (const [k,v] of Object.entries(attrs)) {
-          if (k==="class") n.className=v;
-          else if (k==="dataset") Object.assign(n.dataset,v);
-          else if (k.startsWith("on") && typeof v === "function") n.addEventListener(k.slice(2), v);
-          else n.setAttribute(k,v);
+      function el(tag, attrs = {}, html = "") {
+        const n = document.createElement(tag);
+        for (const [k, v] of Object.entries(attrs)) {
+          if (k === "class") n.className = v;
+          else if (k === "dataset") Object.assign(n.dataset, v);
+          else if (k.startsWith("on") && typeof v === "function")
+            n.addEventListener(k.slice(2), v);
+          else n.setAttribute(k, v);
         }
-        if (html) n.innerHTML=html; return n;
+        if (html) n.innerHTML = html;
+        return n;
       }
       function renderPresetsGrid() {
         const mode = getMode();
         const grid = $("#presetsGrid");
         const themes = db.themes();
         const linkId = $("#modeLinkSelect").value;
-        const list = (mode === "event")
-          ? themes.filter((t)=>t?.meta?.preset===true && t?.meta?.category==="event")
-          : themes;
+        const list =
+          mode === "event"
+            ? themes.filter(
+                (t) => t?.meta?.preset === true && t?.meta?.category === "event"
+              )
+            : themes;
         grid.innerHTML = "";
-        if (!list.length) { grid.innerHTML = `<div class="muted small">No presets yet. Create themes in Theme Studio.</div>`; return; }
-        list.forEach((t)=>{
-          const card = el("div", { class:"mode-card" });
-          const preview = el("div", { class:"preview" }, t.title ? escapeHtml(t.title) : "No media");
-          preview.style.background = `linear-gradient(140deg, ${t.colors?.bg1 || "#101635"}, ${t.colors?.bg2 || "#0b0f23"})`;
-          const title = el("div", { class:"t" }, escapeHtml(t.name || "Theme"));
-          const btn = el("button", { class:"btn" });
+        if (!list.length) {
+          grid.innerHTML = `<div class="muted small">No presets yet. Create themes in Theme Studio.</div>`;
+          return;
+        }
+        list.forEach((t) => {
+          const card = el("div", { class: "mode-card" });
+          const preview = el(
+            "div",
+            { class: "preview" },
+            t.title ? escapeHtml(t.title) : "No media"
+          );
+          preview.style.background = `linear-gradient(140deg, ${
+            t.colors?.bg1 || "#101635"
+          }, ${t.colors?.bg2 || "#0b0f23"})`;
+          const title = el(
+            "div",
+            { class: "t" },
+            escapeHtml(t.name || "Theme")
+          );
+          const btn = el("button", { class: "btn" });
           if (mode === "event") {
             btn.textContent = "Apply to Link";
-            btn.addEventListener("click", ()=>{
-              if (!linkId) { alert("Pick an active link first."); return; }
+            btn.addEventListener("click", () => {
+              if (!linkId) {
+                alert("Pick an active link first.");
+                return;
+              }
               applyThemeToLink(linkId, t.id);
             });
           } else {
             btn.textContent = "Add to Playlist";
-            btn.addEventListener("click", ()=>{
+            btn.addEventListener("click", () => {
               const pl = getPlaylist();
-              if (!pl.includes(t.id)) { pl.push(t.id); savePlaylist(pl); renderPlaylist(); }
+              if (!pl.includes(t.id)) {
+                pl.push(t.id);
+                savePlaylist(pl);
+                renderPlaylist();
+              }
             });
           }
           card.append(preview, title, btn);
           grid.appendChild(card);
         });
-        $("#modesHeader").textContent = (mode === "event") ? "Event Presets" : "Pick Themes for Social Playlist";
+        $("#modesHeader").textContent =
+          mode === "event"
+            ? "Event Presets"
+            : "Pick Themes for Social Playlist";
       }
       function renderPlaylist() {
         const box = $("#playlist");
         const pl = getPlaylist();
-        const themesById = Object.fromEntries(db.themes().map((t)=>[t.id, t]));
+        const themesById = Object.fromEntries(
+          db.themes().map((t) => [t.id, t])
+        );
         box.innerHTML = "";
-        if (!pl.length) { box.innerHTML = `<div class="muted small">No items yet. Add some themes on the left.</div>`; return; }
-        pl.forEach((id, idx)=>{
+        if (!pl.length) {
+          box.innerHTML = `<div class="muted small">No items yet. Add some themes on the left.</div>`;
+          return;
+        }
+        pl.forEach((id, idx) => {
           const t = themesById[id];
-          const row = el("div", { class:"item small" });
-          const left = el("div", {}, `<div><b>${escapeHtml(t?.name || "Theme")}</b></div><div class="muted">${escapeHtml(t?.title || "—")}</div>`);
-          const actions = el("div", { class:"stack" });
-          const up = el("button", { class:"btn ghost" }, "↑");
-          const down = el("button", { class:"btn ghost" }, "↓");
-          const rem = el("button", { class:"btn warn" }, "Remove");
-          up.onclick = ()=>{ if (idx===0) return; const arr=getPlaylist(); [arr[idx-1],arr[idx]]=[arr[idx],arr[idx-1]]; savePlaylist(arr); renderPlaylist(); };
-          down.onclick = ()=>{ const arr=getPlaylist(); if (idx>=arr.length-1) return; [arr[idx+1],arr[idx]]=[arr[idx],arr[idx+1]]; savePlaylist(arr); renderPlaylist(); };
-          rem.onclick = ()=>{ const arr=getPlaylist().filter((x)=>x!==id); savePlaylist(arr); renderPlaylist(); };
-          actions.append(up,down,rem); row.append(left,actions); box.appendChild(row);
+          const row = el("div", { class: "item small" });
+          const left = el(
+            "div",
+            {},
+            `<div><b>${escapeHtml(
+              t?.name || "Theme"
+            )}</b></div><div class="muted">${escapeHtml(t?.title || "—")}</div>`
+          );
+          const actions = el("div", { class: "stack" });
+          const up = el("button", { class: "btn ghost" }, "↑");
+          const down = el("button", { class: "btn ghost" }, "↓");
+          const rem = el("button", { class: "btn warn" }, "Remove");
+          up.onclick = () => {
+            if (idx === 0) return;
+            const arr = getPlaylist();
+            [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
+            savePlaylist(arr);
+            renderPlaylist();
+          };
+          down.onclick = () => {
+            const arr = getPlaylist();
+            if (idx >= arr.length - 1) return;
+            [arr[idx + 1], arr[idx]] = [arr[idx], arr[idx + 1]];
+            savePlaylist(arr);
+            renderPlaylist();
+          };
+          rem.onclick = () => {
+            const arr = getPlaylist().filter((x) => x !== id);
+            savePlaylist(arr);
+            renderPlaylist();
+          };
+          actions.append(up, down, rem);
+          row.append(left, actions);
+          box.appendChild(row);
         });
       }
       let rotateTimer = null;
-      function setAutorotate(on){
-        if (rotateTimer) { clearInterval(rotateTimer); rotateTimer=null; }
+      function setAutorotate(on) {
+        if (rotateTimer) {
+          clearInterval(rotateTimer);
+          rotateTimer = null;
+        }
         if (!on) return;
         const sec = Math.max(5, +$("#rotateSec").value || 15);
-        rotateTimer = setInterval(()=>{ doNextPreset(); }, sec*1000);
+        rotateTimer = setInterval(() => {
+          doNextPreset();
+        }, sec * 1000);
       }
-      function doNextPreset(){
+      function doNextPreset() {
         const linkId = $("#modeLinkSelect").value;
         const pl = getPlaylist();
-        if (!linkId || pl.length===0) return;
-        const arr = pl.slice(); const nextId = arr.shift(); arr.push(nextId);
-        savePlaylist(arr); applyThemeToLink(linkId, nextId); renderPlaylist();
+        if (!linkId || pl.length === 0) return;
+        const arr = pl.slice();
+        const nextId = arr.shift();
+        arr.push(nextId);
+        savePlaylist(arr);
+        applyThemeToLink(linkId, nextId);
+        renderPlaylist();
       }
-      function doRandomPreset(){
+      function doRandomPreset() {
         const linkId = $("#modeLinkSelect").value;
         const pl = getPlaylist();
-        if (!linkId || pl.length===0) return;
-        const nextId = pl[Math.floor(Math.random()*pl.length)];
+        if (!linkId || pl.length === 0) return;
+        const nextId = pl[Math.floor(Math.random() * pl.length)];
         applyThemeToLink(linkId, nextId);
       }
-      document.addEventListener("change", (e)=>{
-        if (e.target && e.target.name === "uimode") { setMode(e.target.value); renderPresetsGrid(); }
+      document.addEventListener("change", (e) => {
+        if (e.target && e.target.name === "uimode") {
+          setMode(e.target.value);
+          renderPresetsGrid();
+        }
       });
       $("#nextPreset").addEventListener("click", doNextPreset);
       $("#shufflePreset").addEventListener("click", doRandomPreset);
-      $("#autoRotate").addEventListener("change", (e)=> setAutorotate(e.target.checked));
-      $("#rotateSec").addEventListener("input", ()=>{ if ($("#autoRotate").checked) setAutorotate(true); });
+      $("#autoRotate").addEventListener("change", (e) =>
+        setAutorotate(e.target.checked)
+      );
+      $("#rotateSec").addEventListener("input", () => {
+        if ($("#autoRotate").checked) setAutorotate(true);
+      });
 
       /***********************
        * Resize helper for preview media
        ************************/
       function makeResizable(wrapper, { onChange } = {}) {
         let handle = wrapper.querySelector(".resizer.se");
-        if (!handle) { handle = document.createElement("div"); handle.className = "resizer se"; wrapper.appendChild(handle); }
-        let startX=0, startW=0;
+        if (!handle) {
+          handle = document.createElement("div");
+          handle.className = "resizer se";
+          wrapper.appendChild(handle);
+        }
+        let startX = 0,
+          startW = 0;
 
         const move = (clientX) => {
-          const parentW = wrapper.parentElement.clientWidth || window.innerWidth;
-          const newW = Math.max(120, Math.min(parentW-12, startW + (clientX - startX)));
+          const parentW =
+            wrapper.parentElement.clientWidth || window.innerWidth;
+          const newW = Math.max(
+            120,
+            Math.min(parentW - 12, startW + (clientX - startX))
+          );
           wrapper.style.width = newW + "px";
           onChange && onChange(newW);
         };
-        const onMouseMove = (e)=>{ e.preventDefault(); move(e.clientX); };
-        const onTouchMove = (e)=>{ if (!e.touches?.[0]) return; e.preventDefault(); move(e.touches[0].clientX); };
-        const end = ()=>{
+        const onMouseMove = (e) => {
+          e.preventDefault();
+          move(e.clientX);
+        };
+        const onTouchMove = (e) => {
+          if (!e.touches?.[0]) return;
+          e.preventDefault();
+          move(e.touches[0].clientX);
+        };
+        const end = () => {
           document.removeEventListener("mousemove", onMouseMove);
           document.removeEventListener("mouseup", end);
-          document.removeEventListener("touchmove", onTouchMove, { passive:false });
+          document.removeEventListener("touchmove", onTouchMove, {
+            passive: false,
+          });
           document.removeEventListener("touchend", end);
           document.body.style.userSelect = "";
         };
-        const start = (clientX, e)=>{
+        const start = (clientX, e) => {
           e.preventDefault();
           startX = clientX;
-          startW = parseInt(getComputedStyle(wrapper).width, 10) || wrapper.clientWidth;
+          startW =
+            parseInt(getComputedStyle(wrapper).width, 10) ||
+            wrapper.clientWidth;
           document.addEventListener("mousemove", onMouseMove);
           document.addEventListener("mouseup", end);
-          document.addEventListener("touchmove", onTouchMove, { passive:false });
+          document.addEventListener("touchmove", onTouchMove, {
+            passive: false,
+          });
           document.addEventListener("touchend", end);
           document.body.style.userSelect = "none";
         };
-        handle.addEventListener("mousedown", (e)=>start(e.clientX, e));
-        handle.addEventListener("touchstart", (e)=>start(e.touches[0].clientX, e), { passive:false });
+        handle.addEventListener("mousedown", (e) => start(e.clientX, e));
+        handle.addEventListener(
+          "touchstart",
+          (e) => start(e.touches[0].clientX, e),
+          { passive: false }
+        );
       }
 
       function ensureMediaControls(mwrap) {
@@ -2394,7 +3040,10 @@
         const maxW = mwrap.clientWidth || 360;
 
         range.max = String(maxW);
-        const curW = parseInt(getComputedStyle(box).width, 10) || box.clientWidth || Math.min(maxW, 320);
+        const curW =
+          parseInt(getComputedStyle(box).width, 10) ||
+          box.clientWidth ||
+          Math.min(maxW, 320);
         range.value = String(curW);
 
         const saveW = (w) => {
@@ -2405,16 +3054,24 @@
         };
 
         range.oninput = (e) => {
-          const w = Math.max(120, Math.min(maxW, Number(e.target.value || curW)));
-          box.style.width = w + "px"; saveW(w);
+          const w = Math.max(
+            120,
+            Math.min(maxW, Number(e.target.value || curW))
+          );
+          box.style.width = w + "px";
+          saveW(w);
         };
         document.getElementById("simFit").onclick = () => {
           const w = Math.max(120, Math.min(maxW, Math.round(maxW * 0.95)));
-          box.style.width = w + "px"; range.value = String(w); saveW(w);
+          box.style.width = w + "px";
+          range.value = String(w);
+          saveW(w);
         };
         document.getElementById("simReset").onclick = () => {
           const w = Math.min(maxW, 320);
-          box.style.width = w + "px"; range.value = String(w); saveW(w);
+          box.style.width = w + "px";
+          range.value = String(w);
+          saveW(w);
         };
       }
 
@@ -2427,7 +3084,11 @@
         window.open(url.toString(), "_blank", "noopener");
       }
       const merchEl = document.getElementById("btnMerch");
-      if (merchEl) merchEl.addEventListener("click", (e)=>{ e.preventDefault(); openMerchWithSelection(); });
+      if (merchEl)
+        merchEl.addEventListener("click", (e) => {
+          e.preventDefault();
+          openMerchWithSelection();
+        });
 
       /***********************
        * Init
@@ -2441,7 +3102,7 @@
         setOverlayOpacity($("#overlayOpacity").value);
         refreshAnalyticsSelectors();
         seedPresetsIfEmpty();
-        syncLinksFromCloud();   // safe now (sb + sbSession exist)
+        syncLinksFromCloud(); // safe now (sb + sbSession exist)
         // Start at QR tab
         Object.entries(pages).forEach(([k, v]) => (v.hidden = k !== "qr"));
       }
