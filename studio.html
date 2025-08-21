@@ -10,12 +10,25 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-      .scrollable-div {
-       height: 150px; /* Fixed height */
-       overflow-y: auto; /* Enable vertical scrollbar when content overflows */
-       border: 1px solid #ccc; /* Optional: for visual clarity */
-       padding: 10px;
+      .horizontal-scroll-div {
+        width: 300px; /* Define a fixed width for the div */
+        overflow-x: auto; /* Enable horizontal scrolling when content overflows */
+        overflow-y: hidden; /* Hide vertical scrollbar */
+        white-space: nowrap; /* Prevent content from wrapping */
+        border: 1px solid black;
+        padding: 10px;
       }
+
+      .content-item {
+        display: inline-block; /* Ensure items display in a row */
+        width: 150px; /* Example width for content items */
+        height: 50px;
+        background-color: lightblue;
+        margin-right: 10px;
+        text-align: center;
+        line-height: 50px;
+      }
+
       :root {
         --bg: #0f1220;
         --panel: #171a2b;
@@ -839,11 +852,11 @@
             </button>
             <button class="btn warn" id="deleteTheme">Delete</button>
           </div>
-          <div class="scrollable-div"> 
-            <div style="width: 360px">
+          <div class="horizontal-scroll-div"> 
+            <div class="content-item">
               <label>Saved Themes</label>
               <div id="themesList" class="list"></div>
-             </div>
+            </div>
           </div>  
         </div>
 
