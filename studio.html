@@ -10,25 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-      .horizontal-scroll-div {
-        width: 300px; /* Define a fixed width for the div */
-        overflow-x: auto; /* Enable horizontal scrolling when content overflows */
-        overflow-y: hidden; /* Hide vertical scrollbar */
-        white-space: nowrap; /* Prevent content from wrapping */
-        border: 1px solid black;
-        padding: 10px;
-      }
-
-      .content-item {
-        display: inline-block; /* Ensure items display in a row */
-        width: 150px; /* Example width for content items */
-        height: 50px;
-        background-color: lightblue;
-        margin-right: 10px;
-        text-align: center;
-        line-height: 50px;
-      }
-
+ 
       :root {
         --bg: #0f1220;
         --panel: #171a2b;
@@ -400,6 +382,49 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+      }
+
+      /* Saved Themes: horizontal scroller */
+      #themesList {
+        display: flex; /* row layout */
+        flex-direction: row;
+        flex-wrap: nowrap; /* single row */
+        gap: 10px;
+        overflow-x: auto; /* <- horizontal scroll */
+        overflow-y: hidden;
+        padding: 6px 4px 10px;
+        scroll-snap-type: x proximity;
+        -webkit-overflow-scrolling: touch; /* smooth iOS scroll */
+      }
+
+      /* Hide/trim scrollbar (optional) */
+      #themesList::-webkit-scrollbar {
+        height: 8px;
+      }
+      #themesList::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      #themesList::-webkit-scrollbar-thumb {
+        background: #232741;
+        border-radius: 8px;
+      }
+
+      /* Each saved theme “card” in the row */
+      #themesList .item {
+        flex: 0 0 240px; /* fixed card width; no shrink */
+        scroll-snap-align: start;
+        display: grid; /* keeps your inner layout */
+      }
+
+      /* Make the selected card pop (you already have the styles; this just ensures width doesn’t collapse) */
+      #themesList .item.selected {
+        flex-basis: 240px;
+      }
+
+      @media (max-width: 600px) {
+        #themesList .item {
+          flex-basis: 80%;
+        } /* larger cards on phones */
       }
       #themesList .item.selected {
         border: 1px solid var(--accent) !important;
@@ -838,26 +863,23 @@
                     </div>
                   </div>
                 </div>
-                
-                  <div class="small muted" style="margin-top: 8px">
-                    This simulates <code>landing.html?themeId=…</code>
-                  </div>
-                
+
+                <div class="small muted" style="margin-top: 8px">
+                  This simulates <code>landing.html?themeId=…</code>
+                </div>
               </div>
             </div>
           </div>
           <div class="stack" style="margin-top: 10px">
-            <button class="btn primary" id="saveTheme">
-              Save / Update Theme
-            </button>
-            <button class="btn warn" id="deleteTheme">Delete</button>
-          </div>
-          <div class="horizontal-scroll-div"> 
-            <div class="content-item">
-              <label>Saved Themes</label>
-              <div id="themesList" class="list"></div>
-            </div>
-          </div>  
+  <button class="btn primary" id="saveTheme">Save / Update Theme</button>
+  <button class="btn warn" id="deleteTheme">Delete</button>
+</div>
+
+<!-- Saved Themes: now a true horizontal scroller -->
+<div style="margin-top: 12px">
+  <label>Saved Themes</label>
+  <div id="themesList"></div> <!-- NOTE: remove class="list" -->
+</div>
         </div>
 
         <!-- ===== OVERLAY ===== -->
