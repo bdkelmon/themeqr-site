@@ -385,15 +385,13 @@
 
       /* Saved Themes: horizontal scroller */
       #themesList {
-        display: flex; /* row layout */
+        display: flex;
         flex-direction: row;
-        flex-wrap: nowrap; /* single row */
+        flex-wrap: nowrap;
         gap: 10px;
-        overflow-x: auto; /* <- horizontal scroll */
-        overflow-y: hidden;
-        padding: 6px 4px 10px;
-        scroll-snap-type: x proximity;
-        -webkit-overflow-scrolling: touch; /* smooth iOS scroll */
+        overflow: visible; /* let .rail-view own the scrolling */
+        padding: 0;
+        margin: 0;
       }
 
       /* Hide/trim scrollbar (optional) */
@@ -747,6 +745,37 @@
       }
 
       /* Make cards a bit narrower on small screens so more fit in view */
+      @media (max-width: 900px) {
+        .themes-rail .rail > .item {
+          flex-basis: 220px;
+          max-width: 220px;
+        }
+      }
+
+      /* Containment: keep the rail inside the Themes card width */
+      #savedThemesCard {
+        max-width: 100%;
+      }
+      #savedThemesCard .body {
+        overflow: hidden;
+      } /* arrows won't enlarge layout */
+
+      /* Ensure the rail never grows wider than the card */
+      .themes-rail,
+      .themes-rail .rail-view {
+        width: 100%;
+        max-width: 100%;
+      }
+      .themes-rail .rail {
+        min-width: 0; /* allow flexbox to shrink */
+        padding: 6px 0; /* remove side padding that could add extra width */
+      }
+
+      /* Card width for items; will wrap inside the scroll area only */
+      .themes-rail .rail > .item {
+        flex: 0 0 240px;
+        max-width: 240px;
+      }
       @media (max-width: 900px) {
         .themes-rail .rail > .item {
           flex-basis: 220px;
@@ -1596,7 +1625,37 @@
         if (themeId) url.searchParams.set("themeId", themeId);
         window.open(url.toString(), "_blank", "noopener");
       }
+      function bindThemesRail() {
+        const card = document.getElementById("savedThemesCard");
+        if (!card) return;
 
+        const railView = card.querySelector(".rail-view");
+        const rail = card.querySelector(".rail"); // #themesList
+        const btnL = card.querySelector(".rail-btn.left");
+        const btnR = card.querySelector(".rail-btn.right");
+        if (!railView || !rail || !btnL || !btnR) return;
+
+        const cardEl = rail.querySelector(".item");
+        const step = (cardEl ? cardEl.offsetWidth : 240) + 10; // card + gap
+
+        const update = () => {
+          const maxScroll = rail.scrollWidth - railView.clientWidth;
+          btnL.disabled = rail.scrollLeft <= 0;
+          btnR.disabled = rail.scrollLeft >= maxScroll - 1;
+        };
+
+        btnL.onclick = () => {
+          rail.scrollBy({ left: -step, behavior: "smooth" });
+        };
+        btnR.onclick = () => {
+          rail.scrollBy({ left: step, behavior: "smooth" });
+        };
+
+        rail.addEventListener("scroll", update);
+        window.addEventListener("resize", update);
+        // Start in a valid state
+        requestAnimationFrame(update);
+      }
       const store = {
         get(key, fallback) {
           try {
@@ -2333,6 +2392,7 @@
           list.appendChild(row);
         }
         refreshThemeDropdown();
+        bindThemesRail();
         if (currentId) $("#linkTheme").value = currentId;
         initThemesRailControls();
       }
