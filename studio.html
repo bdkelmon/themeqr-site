@@ -10,7 +10,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
- 
       :root {
         --bg: #0f1220;
         --panel: #171a2b;
@@ -564,6 +563,109 @@
         z-index: 10;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
       }
+
+      /* ===== Saved Themes: Amazon-style horizontal rail ===== */
+      .themes-rail {
+        position: relative;
+        width: 100%;
+        margin-top: 6px;
+      }
+
+      .rail-view {
+        overflow: hidden; /* keep the content panel width contained */
+        padding: 6px 0;
+      }
+
+      .rail {
+        display: flex;
+        gap: 10px;
+        flex-wrap: nowrap;
+        overflow-x: auto; /* horizontal scroll */
+        overflow-y: hidden;
+        scroll-snap-type: x proximity;
+        scrollbar-width: thin; /* Firefox */
+        -webkit-overflow-scrolling: touch; /* iOS smooth */
+      }
+
+      .rail::-webkit-scrollbar {
+        height: 8px;
+      }
+      .rail::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .rail::-webkit-scrollbar-thumb {
+        background: #232741;
+        border-radius: 8px;
+      }
+
+      /* each theme “card” in the rail */
+      .rail > .item {
+        flex: 0 0 240px; /* fixed card width; won’t shrink */
+        scroll-snap-align: start;
+        display: grid; /* keeps your inner layout intact */
+      }
+
+      /* keep your selected-glow but ensure width stays the same */
+      #themesList .item.selected {
+        flex-basis: 240px;
+      }
+
+      .rail-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        border: 0;
+        width: 32px;
+        height: 56px;
+        border-radius: 10px;
+        background: rgba(23, 26, 43, 0.9);
+        color: #e8ebff;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        z-index: 3;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+      }
+
+      .rail-btn.left {
+        left: -6px;
+      }
+      .rail-btn.right {
+        right: -6px;
+      }
+
+      .rail-btn:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+
+      /* soft gradient edge masks (like Amazon) */
+      .rail-mask {
+        pointer-events: none;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 42px;
+        z-index: 2;
+      }
+      .rail-mask.left {
+        left: 0;
+        background: linear-gradient(90deg, #0f1220, rgba(15, 18, 32, 0));
+      }
+      .rail-mask.right {
+        right: 0;
+        background: linear-gradient(-90deg, #0f1220, rgba(15, 18, 32, 0));
+      }
+
+      @media (max-width: 600px) {
+        .rail > .item {
+          flex-basis: 80%;
+        } /* larger cards on phones */
+        .rail-btn {
+          width: 28px;
+          height: 48px;
+        }
+      }
     </style>
   </head>
 
@@ -871,15 +973,41 @@
             </div>
           </div>
           <div class="stack" style="margin-top: 10px">
-  <button class="btn primary" id="saveTheme">Save / Update Theme</button>
-  <button class="btn warn" id="deleteTheme">Delete</button>
-</div>
+            <button class="btn primary" id="saveTheme">
+              Save / Update Theme
+            </button>
+            <button class="btn warn" id="deleteTheme">Delete</button>
+          </div>
 
-<!-- Saved Themes: now a true horizontal scroller -->
-<div style="margin-top: 12px">
-  <label>Saved Themes</label>
-  <div id="themesList"></div> <!-- NOTE: remove class="list" -->
-</div>
+          <!-- Saved Themes: now a true horizontal scroller -->
+          <div style="width: 360px">
+            <label>Saved Themes</label>
+
+            <!-- Amazon-style carousel -->
+            <div class="themes-rail">
+              <button class="rail-btn left" aria-label="Scroll left">‹</button>
+
+              <div class="rail-view">
+                <!-- NOTE: removed class="list" so it won’t force a vertical column -->
+                <div id="themesList" class="rail"></div>
+              </div>
+
+              <button class="rail-btn right" aria-label="Scroll right">
+                ›
+              </button>
+
+              <!-- soft edge masks -->
+              <div class="rail-mask left"></div>
+              <div class="rail-mask right"></div>
+            </div>
+
+            <div class="stack" style="margin-top: 10px">
+              <button class="btn primary" id="saveTheme">
+                Save / Update Theme
+              </button>
+              <button class="btn warn" id="deleteTheme">Delete</button>
+            </div>
+          </div>
         </div>
 
         <!-- ===== OVERLAY ===== -->
@@ -2125,7 +2253,37 @@
         }
         refreshThemeDropdown();
         if (currentId) $("#linkTheme").value = currentId;
+        initThemesRailControls();
       }
+function initThemesRailControls() {
+  const rail = document.getElementById("themesList");
+  const view = document.querySelector(".themes-rail .rail-view");
+  const btnL = document.querySelector(".themes-rail .rail-btn.left");
+  const btnR = document.querySelector(".themes-rail .rail-btn.right");
+  if (!rail || !view || !btnL || !btnR) return;
+
+  // one “page” is 80% of the visible area or at least one card
+  const stepPx = () => Math.max(240, Math.floor(view.clientWidth * 0.8));
+
+  const updateDisabled = () => {
+    const max = rail.scrollWidth - rail.clientWidth - 1;
+    btnL.disabled = rail.scrollLeft <= 0;
+    btnR.disabled = rail.scrollLeft >= max;
+  };
+
+  btnL.onclick = () => {
+    rail.scrollBy({ left: -stepPx(), behavior: "smooth" });
+    setTimeout(updateDisabled, 350);
+  };
+  btnR.onclick = () => {
+    rail.scrollBy({ left: +stepPx(), behavior: "smooth" });
+    setTimeout(updateDisabled, 350);
+  };
+
+  rail.addEventListener("scroll", updateDisabled, { passive: true });
+  window.addEventListener("resize", updateDisabled);
+  updateDisabled();
+}
 
       $("#saveTheme").addEventListener("click", async () => {
         if (!workingTheme.name?.trim()) {
