@@ -666,6 +666,93 @@
           height: 48px;
         }
       }
+
+      /* Full-width responsive rail inside the Saved Themes card */
+      .themes-rail {
+        --btn-size: 34px;
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+
+      .themes-rail .rail-view {
+        overflow-x: auto;
+        overflow-y: hidden;
+        width: 100%;
+        /* keep arrows visible while allowing scroll behind them */
+        padding: 0;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .themes-rail .rail {
+        display: flex;
+        gap: 10px;
+        padding: 6px 36px; /* room under the arrow buttons */
+        margin: 0;
+        list-style: none;
+        /* snap cards nicely */
+        scroll-snap-type: x mandatory;
+      }
+
+      .themes-rail .rail > .item {
+        flex: 0 0 260px; /* card width on desktop */
+        max-width: 260px;
+        scroll-snap-align: start;
+        border: 1px solid #2a2e4d;
+        border-radius: 12px;
+        background: #0d1130;
+        padding: 10px;
+      }
+
+      /* Match your “selected” glow */
+      .themes-rail .rail > .item.selected {
+        border: 1px solid var(--accent) !important;
+        box-shadow: 0 0 0 2px rgba(108, 125, 255, 0.25) inset,
+          0 0 16px rgba(108, 125, 255, 0.35);
+        background: linear-gradient(
+          180deg,
+          rgba(108, 125, 255, 0.08),
+          transparent
+        );
+      }
+
+      /* Arrow buttons */
+      .rail-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: var(--btn-size);
+        height: var(--btn-size);
+        border-radius: 999px;
+        border: 1px solid #2a2e4d;
+        background: #141834;
+        color: #e8ebff;
+        box-shadow: var(--shadow);
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        z-index: 2; /* above scroll area */
+      }
+
+      .rail-btn.left {
+        left: 4px;
+      }
+      .rail-btn.right {
+        right: 4px;
+      }
+      .rail-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* Make cards a bit narrower on small screens so more fit in view */
+      @media (max-width: 900px) {
+        .themes-rail .rail > .item {
+          flex-basis: 220px;
+          max-width: 220px;
+        }
+      }
     </style>
   </head>
 
@@ -978,34 +1065,28 @@
             </button>
             <button class="btn warn" id="deleteTheme">Delete</button>
           </div>
-
           <!-- Saved Themes: now a true horizontal scroller -->
-          <div style="width: 360px">
-            <label>Saved Themes</label>
-
-            <!-- Amazon-style carousel -->
-            <div class="themes-rail">
-              <button class="rail-btn left" aria-label="Scroll left">‹</button>
-
-              <div class="rail-view">
-                <!-- NOTE: removed class="list" so it won’t force a vertical column -->
-                <div id="themesList" class="rail"></div>
+          <div class="theme-card" id="savedThemesCard" style="margin-top: 10px">
+            <header><strong>Saved Themes</strong></header>
+            <div class="body">
+              <div class="themes-rail">
+                <button class="rail-btn left" aria-label="Scroll left">
+                  ‹
+                </button>
+                <div class="rail-view">
+                  <div id="themesList" class="rail"></div>
+                </div>
+                <button class="rail-btn right" aria-label="Scroll right">
+                  ›
+                </button>
               </div>
 
-              <button class="rail-btn right" aria-label="Scroll right">
-                ›
-              </button>
-
-              <!-- soft edge masks -->
-              <div class="rail-mask left"></div>
-              <div class="rail-mask right"></div>
-            </div>
-
-            <div class="stack" style="margin-top: 10px">
-              <button class="btn primary" id="saveTheme">
-                Save / Update Theme
-              </button>
-              <button class="btn warn" id="deleteTheme">Delete</button>
+              <div class="stack" style="margin-top: 10px">
+                <button class="btn primary" id="saveTheme">
+                  Save / Update Theme
+                </button>
+                <button class="btn warn" id="deleteTheme">Delete</button>
+              </div>
             </div>
           </div>
         </div>
@@ -2255,35 +2336,37 @@
         if (currentId) $("#linkTheme").value = currentId;
         initThemesRailControls();
       }
-function initThemesRailControls() {
-  const rail = document.getElementById("themesList");
-  const view = document.querySelector(".themes-rail .rail-view");
-  const btnL = document.querySelector(".themes-rail .rail-btn.left");
-  const btnR = document.querySelector(".themes-rail .rail-btn.right");
-  if (!rail || !view || !btnL || !btnR) return;
+      function initThemesRailControls() {
+        const rail = document.getElementById("themesList");
+        const view = document.querySelector(".themes-rail .rail-view");
+        const btnL = document.querySelector(".themes-rail .rail-btn.left");
+        const btnR = document.querySelector(".themes-rail .rail-btn.right");
+        if (!rail || !view || !btnL || !btnR) return;
 
-  // one “page” is 80% of the visible area or at least one card
-  const stepPx = () => Math.max(240, Math.floor(view.clientWidth * 0.8));
+        // one “page” is 80% of the visible area or at least one card
+        const stepPx = () => Math.max(240, Math.floor(view.clientWidth * 0.8));
 
-  const updateDisabled = () => {
-    const max = rail.scrollWidth - rail.clientWidth - 1;
-    btnL.disabled = rail.scrollLeft <= 0;
-    btnR.disabled = rail.scrollLeft >= max;
-  };
+        const updateDisabled = () => {
+          const max = rail.scrollWidth - rail.clientWidth - 1;
+          btnL.disabled = rail.scrollLeft <= 0;
+          btnR.disabled = rail.scrollLeft >= max;
+        };
 
-  btnL.onclick = () => {
-    rail.scrollBy({ left: -stepPx(), behavior: "smooth" });
-    setTimeout(updateDisabled, 350);
-  };
-  btnR.onclick = () => {
-    rail.scrollBy({ left: +stepPx(), behavior: "smooth" });
-    setTimeout(updateDisabled, 350);
-  };
+        btnL.onclick = () => {
+          rail.scrollBy({ left: -stepPx(), behavior: "smooth" });
+          setTimeout(updateDisabled, 350);
+        };
+        btnR.onclick = () => {
+          rail.scrollBy({ left: +stepPx(), behavior: "smooth" });
+          setTimeout(updateDisabled, 350);
+        };
 
-  rail.addEventListener("scroll", updateDisabled, { passive: true });
-  window.addEventListener("resize", updateDisabled);
-  updateDisabled();
-}
+        rail.addEventListener("scroll", updateDisabled, { passive: true });
+        window.addEventListener("resize", updateDisabled);
+        updateDisabled();
+        // ensure starting state is correct (after first render/layout)
+        requestAnimationFrame(updateDisabled);
+      }
 
       $("#saveTheme").addEventListener("click", async () => {
         if (!workingTheme.name?.trim()) {
