@@ -800,7 +800,6 @@
       <div id="authNavFixed" class="auth-fixed"></div>
     </div>
 
-
     <main>
       <!-- LEFT NAV -->
       <aside id="sidebar">
@@ -887,14 +886,15 @@
                 </div>
               </div>
               <div class="stack" style="margin-top: 8px">
-                <button class="btn primary" id="saveLink">
+                <button class="btn primary" id="saveBtn">
                   Save / Update Link
                 </button>
                 <button id="newBtn" class="btn secondary">New</button>
                 <button class="btn" id="downloadQR">Download PNG</button>
                 <span class="muted small"
-                  >Encoded URL: <span id="encoded" class="code">—</span></span
-                >
+                  >Encoded URL:
+                  <span id="encoded" class="code">—</span>
+                </span>
               </div>
 
               <div style="margin-top: 14px">
@@ -1114,7 +1114,9 @@
             </div>
           </div>
           <input type="text" id="searchBox" placeholder="Search GIFs..." />
-          <button onclick="searchGifs(document.getElementById('searchBox').value)">
+          <button
+            onclick="searchGifs(document.getElementById('searchBox').value)"
+          >
             Search
           </button>
           <div id="results"></div>
@@ -1879,53 +1881,72 @@
         drawQR
       );
 
-      function renderLinksList() {
+      async function renderLinksList() {
         const list = $("#linksList");
         list.innerHTML = "";
-        for (const link of db.links()) {
+
+        const links = await fetchLinks(); // ← from Supabase
+
+        // If you still have themes locally:
+        const themes = db.themes ? db.themes() : []; // or fetch from Supabase if needed
+
+        for (const link of links) {
           const div = document.createElement("div");
           div.className = "item small";
-          const theme = db.themes().find((t) => t.id === link.themeId);
+
+          const theme = themes.find((t) => t.id === link.theme_id);
+
           const target = document.createElement("div");
-          target.innerHTML = `<div><b>${escapeHtml(
-            link.id
-          )}</b> → <span class="muted">${escapeHtml(
-            link.url || "(no destination set)"
-          )}</span></div>
-                              <div class="muted">Theme: ${
-                                theme ? escapeHtml(theme.name) : "—"
-                              } · Last updated: ${new Date(
-            link.updated
-          ).toLocaleString()}</div>`;
+          target.innerHTML = `
+      <div>
+        <b>${escapeHtml(link.link_id)}</b> → 
+        <span class="muted">${escapeHtml(
+          link.url || "(no destination set)"
+        )}</span>
+      </div>
+      <div class="muted">
+        Theme: ${theme ? escapeHtml(theme.name) : "—"} · 
+        Last updated: ${new Date(
+          link.updated_at || link.updated || Date.now()
+        ).toLocaleString()}
+      </div>`;
+
           const actions = document.createElement("div");
           actions.className = "stack";
+
           const openBtn = document.createElement("a");
           openBtn.className = "btn";
           openBtn.textContent = "Open";
-          openBtn.href = currentLandingUrl(link.id, link.themeId);
+          // IMPORTANT: use link.link_id + link.theme_id
+          openBtn.href = currentLandingUrl(link.link_id, link.theme_id);
           openBtn.target = "_blank";
+
           const editBtn = document.createElement("button");
           editBtn.className = "btn";
           editBtn.textContent = "Load";
           editBtn.onclick = () => {
-            $("#linkId").value = link.id;
-            $("#linkUrl").value = link.url;
-            $("#linkTheme").value = link.themeId || "";
+            // Load row into the form and switch Save → Update
+            currentRow = link;
+            $("#linkId").value = link.link_id || "";
+            $("#linkUrl").value = link.url || "";
+            $("#linkTheme").value = link.theme_id || "";
+            $("#saveBtn").textContent = "Update";
             drawQR();
           };
+
           const delBtn = document.createElement("button");
           delBtn.className = "btn warn";
           delBtn.textContent = "Delete";
           delBtn.onclick = () => {
-            const rest = db.links().filter((l) => l.id !== link.id);
-            db.saveLinks(rest);
-            renderLinksList();
-            refreshAnalyticsSelectors();
+            if (!confirm(`Delete link "${link.link_id}"?`)) return;
+            deleteLink(link.id); // Supabase table PK
           };
+
           actions.append(openBtn, editBtn, delBtn);
           div.append(target, actions);
           list.appendChild(div);
         }
+
         refreshAnalyticsSelectors();
       }
 
@@ -3515,105 +3536,101 @@
       cloudSyncDown().catch(console.warn);
 
       // Track what’s currently loaded into the form.
-// If null => we’re creating a new link. If set => we’re updating that row in Supabase.
-let currentRow = null;
+      // If null => we’re creating a new link. If set => we’re updating that row in Supabase.
+      let currentRow = null;
 
-// Convenience: read form values
-function readForm() {
-  return {
-    link_id: $("#linkId").value.trim(),
-    url: $("#linkUrl").value.trim(),
-    theme_id: $("#linkTheme").value || null,
-  };
-}
+      // Convenience: read form values
+      function readForm() {
+        return {
+          link_id: $("#linkId").value.trim(),
+          url: $("#linkUrl").value.trim(),
+          theme_id: $("#linkTheme").value || null,
+        };
+      }
 
-// Reset form to defaults and switch to "new" mode
-function resetFormToNew() {
-  currentRow = null;
-  $("#linkId").value = "";
-  $("#linkUrl").value = "";
-  $("#linkTheme").value = "";
-  $("#saveBtn").textContent = "Save";   // make sure your Save button has id="saveBtn"
-}
+      // Reset form to defaults and switch to "new" mode
+      function resetFormToNew() {
+        currentRow = null;
+        $("#linkId").value = "";
+        $("#linkUrl").value = "";
+        $("#linkTheme").value = "";
+        $("#saveBtn").textContent = "Save"; // make sure your Save button has id="saveBtn"
+      }
 
-// Fetch all links from Supabase (you can filter/order as you like)
-async function fetchLinks() {
-  const { data, error } = await supabase
-    .from("links")
-    .select("*")
-    .order("updated_at", { ascending: false });
+      // Fetch all links from Supabase (you can filter/order as you like)
+      async function fetchLinks() {
+        const { data, error } = await supabase
+          .from("links")
+          .select("*")
+          .order("updated_at", { ascending: false });
 
-  if (error) {
-    console.error("fetchLinks error:", error);
-    alert("Could not load links from server.");
-    return [];
-  }
-  return data || [];
-}
+        if (error) {
+          console.error("fetchLinks error:", error);
+          alert("Could not load links from server.");
+          return [];
+        }
+        return data || [];
+      }
 
-// Create or update in Supabase depending on currentRow
-async function saveOrUpdateLink() {
-  const payload = readForm();
-  if (!payload.link_id) {
-    alert("Please enter a Link ID.");
-    return;
-  }
+      // Create or update in Supabase depending on currentRow
+      async function saveOrUpdateLink() {
+        const payload = readForm();
+        if (!payload.link_id) {
+          alert("Please enter a Link ID.");
+          return;
+        }
 
-  // Always refresh updated_at
-  payload.updated_at = new Date().toISOString();
+        // Always refresh updated_at
+        payload.updated_at = new Date().toISOString();
 
-  let resp;
-  if (currentRow && currentRow.id) {
-    // UPDATE existing row by the table PK (id)
-    resp = await supabase
-      .from("links")
-      .update(payload)
-      .eq("id", currentRow.id)
-      .select()
-      .single();
-  } else {
-    // INSERT new row
-    resp = await supabase
-      .from("links")
-      .insert(payload)
-      .select()
-      .single();
-  }
+        let resp;
+        if (currentRow && currentRow.id) {
+          // UPDATE existing row by the table PK (id)
+          resp = await supabase
+            .from("links")
+            .update(payload)
+            .eq("id", currentRow.id)
+            .select()
+            .single();
+        } else {
+          // INSERT new row
+          resp = await supabase.from("links").insert(payload).select().single();
+        }
 
-  const { data, error } = resp;
-  if (error) {
-    console.error("saveOrUpdateLink error:", error);
-    alert("Could not save link. See console for details.");
-    return;
-  }
+        const { data, error } = resp;
+        if (error) {
+          console.error("saveOrUpdateLink error:", error);
+          alert("Could not save link. See console for details.");
+          return;
+        }
 
-  // Keep the form “loaded” with the up-to-date row (so subsequent Save = update)
-  currentRow = data;
-  $("#saveBtn").textContent = "Update";
-  await renderLinksList(); // refresh the list
-  alert("Saved!");
-}
+        // Keep the form “loaded” with the up-to-date row (so subsequent Save = update)
+        currentRow = data;
+        $("#saveBtn").textContent = "Update";
+        await renderLinksList(); // refresh the list
+        alert("Saved!");
+      }
 
-// Delete a row from Supabase
-async function deleteLink(rowId) {
-  const { error } = await supabase.from("links").delete().eq("id", rowId);
-  if (error) {
-    console.error("deleteLink error:", error);
-    alert("Could not delete link.");
-    return;
-  }
-  // If we just deleted the one that was loaded, reset the form
-  if (currentRow && currentRow.id === rowId) resetFormToNew();
-  await renderLinksList();
-}
-// Run once DOM is ready
-document.addEventListener("DOMContentLoaded", () => {
-  $("#saveBtn").onclick = saveOrUpdateLink;
-  $("#newBtn").onclick = resetFormToNew;
+      // Delete a row from Supabase
+      async function deleteLink(rowId) {
+        const { error } = await supabase.from("links").delete().eq("id", rowId);
+        if (error) {
+          console.error("deleteLink error:", error);
+          alert("Could not delete link.");
+          return;
+        }
+        // If we just deleted the one that was loaded, reset the form
+        if (currentRow && currentRow.id === rowId) resetFormToNew();
+        await renderLinksList();
+      }
+      // Run once DOM is ready
+      document.addEventListener("DOMContentLoaded", () => {
+        $("#saveBtn").onclick = saveOrUpdateLink;
+        $("#newBtn").onclick = resetFormToNew;
 
-  // Optionally render the list immediately on page load
-  renderLinksList();
-});
+        // Optionally render the list immediately on page load
+        renderLinksList();
+      });
     </script>
   </body>
 </html>
