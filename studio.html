@@ -1113,6 +1113,13 @@
             </div>
           </div>
         </div>
+        <input type="text" id="searchBox" placeholder="Search GIFs..." />
+        <button
+          onclick="searchGifs(document.getElementById('searchBox').value)"
+        >
+          Search
+        </button>
+        <div id="results"></div>
 
         <!-- ===== OVERLAY ===== -->
         <div id="overlay" class="pad" hidden>
@@ -3439,6 +3446,22 @@
           openMerchWithSelection();
         });
 
+      async function searchGifs(query) {
+        const res = await fetch(
+          `/api/giphy-search?q=${encodeURIComponent(query)}`
+        );
+        const data = await res.json();
+        console.log(data); // test output
+
+        const results = document.getElementById("results");
+        results.innerHTML = "";
+
+        data.data.forEach((gif) => {
+          const img = document.createElement("img");
+          img.src = gif.images.fixed_height.url; // pick the format you want
+          results.appendChild(img);
+        });
+      }
       /***********************
        * Init
        ************************/
