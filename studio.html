@@ -890,6 +890,7 @@
                 <button class="btn primary" id="saveLink">
                   Save / Update Link
                 </button>
+                <button id="newBtn" class="btn secondary">New</button>
                 <button class="btn" id="downloadQR">Download PNG</button>
                 <span class="muted small"
                   >Encoded URL: <span id="encoded" class="code">—</span></span
@@ -1907,7 +1908,7 @@
           editBtn.className = "btn";
           editBtn.textContent = "Load";
           editBtn.onclick = () => {
-            $("#linkId").value = link.link_id;
+            $("#linkId").value = link.id;
             $("#linkUrl").value = link.url;
             $("#linkTheme").value = link.themeId || "";
             drawQR();
@@ -3512,6 +3513,107 @@
 
       // Also pull themes/links down once after init
       cloudSyncDown().catch(console.warn);
+
+      // Track what’s currently loaded into the form.
+// If null => we’re creating a new link. If set => we’re updating that row in Supabase.
+let currentRow = null;
+
+// Convenience: read form values
+function readForm() {
+  return {
+    link_id: $("#linkId").value.trim(),
+    url: $("#linkUrl").value.trim(),
+    theme_id: $("#linkTheme").value || null,
+  };
+}
+
+// Reset form to defaults and switch to "new" mode
+function resetFormToNew() {
+  currentRow = null;
+  $("#linkId").value = "";
+  $("#linkUrl").value = "";
+  $("#linkTheme").value = "";
+  $("#saveBtn").textContent = "Save";   // make sure your Save button has id="saveBtn"
+}
+
+// Fetch all links from Supabase (you can filter/order as you like)
+async function fetchLinks() {
+  const { data, error } = await supabase
+    .from("links")
+    .select("*")
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    console.error("fetchLinks error:", error);
+    alert("Could not load links from server.");
+    return [];
+  }
+  return data || [];
+}
+
+// Create or update in Supabase depending on currentRow
+async function saveOrUpdateLink() {
+  const payload = readForm();
+  if (!payload.link_id) {
+    alert("Please enter a Link ID.");
+    return;
+  }
+
+  // Always refresh updated_at
+  payload.updated_at = new Date().toISOString();
+
+  let resp;
+  if (currentRow && currentRow.id) {
+    // UPDATE existing row by the table PK (id)
+    resp = await supabase
+      .from("links")
+      .update(payload)
+      .eq("id", currentRow.id)
+      .select()
+      .single();
+  } else {
+    // INSERT new row
+    resp = await supabase
+      .from("links")
+      .insert(payload)
+      .select()
+      .single();
+  }
+
+  const { data, error } = resp;
+  if (error) {
+    console.error("saveOrUpdateLink error:", error);
+    alert("Could not save link. See console for details.");
+    return;
+  }
+
+  // Keep the form “loaded” with the up-to-date row (so subsequent Save = update)
+  currentRow = data;
+  $("#saveBtn").textContent = "Update";
+  await renderLinksList(); // refresh the list
+  alert("Saved!");
+}
+
+// Delete a row from Supabase
+async function deleteLink(rowId) {
+  const { error } = await supabase.from("links").delete().eq("id", rowId);
+  if (error) {
+    console.error("deleteLink error:", error);
+    alert("Could not delete link.");
+    return;
+  }
+  // If we just deleted the one that was loaded, reset the form
+  if (currentRow && currentRow.id === rowId) resetFormToNew();
+  await renderLinksList();
+}
+// Run once DOM is ready
+document.addEventListener("DOMContentLoaded", () => {
+  $("#saveBtn").onclick = saveOrUpdateLink;
+  $("#newBtn").onclick = resetFormToNew;
+
+  // Optionally render the list immediately on page load
+  renderLinksList();
+});
     </script>
   </body>
 </html>
