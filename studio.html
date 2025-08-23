@@ -1477,36 +1477,46 @@
       }
 
       // Top-right auth nav (Log in / Sign up / Log out)
-      async function renderAuthNav(session) {
+      async function renderAuthNav() {
+        const { data } = await sb.auth.getSession();
+        const session = data?.session || null;
         const el = document.getElementById("authNavFixed");
         if (!el) return;
 
         if (!session) {
           el.innerHTML = `
-            <a class="auth-link" href="/login">Log in</a>
-            <span class="auth-sep">•</span>
-            <a class="auth-link" href="/login?mode=signup">Sign up</a>
-          `;
-          return;
+        <a id="lnkLogin"  class="auth-link" href="#">Log in</a>
+        <span class="auth-sep">•</span>
+        <a id="lnkSignup" class="auth-link" href="#">Sign up</a>
+      `;
+          const redirectTo = "https://www.themeqr.com/studio.html"; // after login
+          const goGoogle = (e) => {
+            e.preventDefault();
+            sb.auth.signInWithOAuth({
+              provider: "google",
+              options: { redirectTo },
+            });
+          };
+          document.getElementById("lnkLogin").onclick = goGoogle;
+          document.getElementById("lnkSignup").onclick = goGoogle;
+        } else {
+          const email = session.user?.email || "Account";
+          el.innerHTML = `
+        <span class="auth-link">Signed in as ${email}</span>
+        <span class="auth-sep">•</span>
+        <a id="lnkLogout" class="auth-link" href="#">Log out</a>
+      `;
+          document.getElementById("lnkLogout").onclick = async (e) => {
+            e.preventDefault();
+            await sb.auth.signOut();
+            renderAuthNav();
+          };
         }
-        const email = session.user?.email || "Account";
-        el.innerHTML = `
-          <span class="auth-link" id="signedAs"></span>
-          <span class="auth-sep">•</span>
-          <a class="auth-link" href="#" id="lnkLogout">Log out</a>
-        `;
-        document.getElementById(
-          "signedAs"
-        ).textContent = `Signed in as ${email}`;
-        document.getElementById("lnkLogout").onclick = async (e) => {
-          e.preventDefault();
-          await sb.auth.signOut();
-          renderAuthNav(null);
-        };
       }
-      // Initial + live updates
-      sb.auth.getSession().then(({ data }) => renderAuthNav(data.session));
-      sb.auth.onAuthStateChange((_e, session) => renderAuthNav(session));
+
+      // initial + react to changes
+      sb.auth.getSession().then(renderAuthNav);
+      sb.auth.onAuthStateChange((_e, _s) => renderAuthNav());
 
       /***********************
        * App utilities
