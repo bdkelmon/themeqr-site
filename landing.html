@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>QR Landing</title>
+    <style>
+      :root {
+        --bg1: #101635;
+        --bg2: #0b0f23;
+        --fg: #f3f6ff;
+        --cta-bg: #6c7dff;
+        --cta-fg: #09122a;
+        --font: Inter, system-ui, -apple-system, Segoe UI, Roboto,
+          "Helvetica Neue", Arial, "Noto Sans";
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        color: var(--fg);
+        font-family: var(--font);
+        background: linear-gradient(140deg, var(--bg1), var(--bg2));
+        display: grid;
+        min-height: 100vh;
+        grid-template-rows: auto 1fr auto;
+      }
+      header,
+      footer {
+        padding: 14px 18px;
+        opacity: 0.9;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: conic-gradient(from 200deg, #6c7dff, #2de6c5);
+      }
+      main {
+        display: grid;
+        grid-template-columns: minmax(280px, 860px);
+        justify-content: center;
+        padding: 14px;
+      }
+      .card {
+        display: inline-block;
+        max-width: min(95vw, 860px);
+        margin: 0 auto;
+        background: rgba(6, 9, 24, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        overflow: hidden;
+        backdrop-filter: saturate(110%) blur(8px);
+      }
+      /* Key fix: clamp height so media never gets too tall */
+      .media {
+        background: #070a18;
+        position: relative;
+        height: auto;
+      }
+      .media img,
+      .media video {
+        display: block;
+        width: 100%;
+        height: auto;
+        object-fit: contain; /* fit inside the box, don't crop */
+      }
+      .media .box {
+        display: inline-block;
+        width: var(--media-w, auto); /* set from JS: e.g., 320px */
+        max-width: min(95vw, 860px); /* never overflow the page */
+      }
+      /* Actual media: fill the wrapper width, keep aspect, never overflow vertically */
+      .media .box img,
+      .media .box video {
+        display: block;
+        width: 100%;
+        height: auto; /* keep aspect ratio */
+        object-fit: contain; /* avoid cropping */
+        max-height: var(
+          --media-maxh,
+          70vh
+        ); /* set from JS so whole card fits on screen */
+      }
+      .media .placeholder {
+        padding: 40px 12px;
+        text-align: center;
+        color: #bac2ffb3;
+      }
+      .content {
+        padding: 16px;
+      }
+      h1 {
+        margin: 0 0 6px 0;
+      }
+      .muted {
+        color: #bac2ffb3;
+      }
+      .cta {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 11px 16px;
+        border-radius: 12px;
+        background: var(--cta-bg);
+        color: var(--cta-fg);
+        text-decoration: none;
+        font-weight: 700;
+        box-shadow: 0 6px 20px rgba(108, 125, 255, 0.3);
+      }
+      .small {
+        font-size: 12px;
+      }
+
+      /* Live landing QR overlay */
+      .qr-overlay {
+        position: absolute;
+        left: 16px;
+        top: 16px;
+        width: 160px;
+        height: 160px;
+        display: grid;
+        place-items: center;
+        z-index: 5;
+        opacity: 1;
+        -webkit-user-drag: none;
+        user-select: none;
+        -webkit-user-select: none;
+        pointer-events: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="dot"></div>
+      <div class="muted small">QR Landing</div>
+    </header>
+    <main>
+      <div class="card">
+        <div class="media" id="media">
+          <div class="muted">No media in theme.</div>
+        </div>
+        <div class="content">
+          <h1 id="title">Hello 👋</h1>
+          <div id="subtitle" class="muted">Welcome!</div>
+          <a id="cta" class="cta" href="#" target="_blank" rel="noopener"
+            >Learn more</a
+          >
+          <div id="note" class="small muted" style="margin-top: 10px"></div>
+        </div>
+      </div>
+    </main>
+    <footer class="small muted" id="foot">Powered by ThemeQR</footer>
+
+    <!-- QRCode CDN for live overlay -->
+    <!-- QRCode CDN for live overlay (keep this) -->
+    <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+    <script type="module">
+      import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+      /* ===================== CONFIG: Supabase ===================== */
+      const SUPABASE_URL = "https://hvfqdrfdefgfqbfdikpn.supabase.co"; // <-- replace
+      const SUPABASE_ANON_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9zOUjFu7fi-4oRVY-D61NCJU"; // <-- replace
+      const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      /* ===================== QS params ===================== */
+      const qs = new URLSearchParams(location.search);
+      const linkId = qs.get("linkId") || "";
+      const themeId = qs.get("themeId") || "";
+
+      /* ===================== Helpers ===================== */
+      const isNumericId = (v) => /^\d+$/.test(String(v || ""));
+      function normalizeHttpUrl(input) {
+        if (!input) return "";
+        const u = String(input).trim();
+        if (u.startsWith("//")) return "https:" + u;
+        if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(u)) return u;
+        return "https://" + u.replace(/^\/+/, "");
+      }
+      const store = {
+        get(key) {
+          try {
+            return JSON.parse(localStorage.getItem(key));
+          } catch {
+            return null;
+          }
+        },
+      };
+      async function fetchJson(path) {
+        try {
+          const r = await fetch(path, { cache: "no-store" });
+          if (!r.ok) return null;
+          return await r.json();
+        } catch {
+          return null;
+        }
+      }
+
+      /* ===================== UI: apply theme, overlay, redirect ===================== */
+      function applyTheme(theme) {
+        if (!theme) return;
+
+        // colors/typography
+        const root = document.documentElement.style;
+        root.setProperty("--bg1", theme.colors?.bg1 || "#101635");
+        root.setProperty("--bg2", theme.colors?.bg2 || "#0b0f23");
+        root.setProperty("--fg", theme.colors?.fg || "#f3f6ff");
+        root.setProperty("--cta-bg", theme.colors?.ctaBg || "#6c7dff");
+        root.setProperty("--cta-fg", theme.colors?.ctaFg || "#09122a");
+        root.setProperty("--font", theme.font || "Inter, system-ui");
+
+        // text + CTA
+        const title = document.getElementById("title");
+        const subtitle = document.getElementById("subtitle");
+        const cta = document.getElementById("cta");
+        title.textContent = theme.title || "Hello 👋";
+        subtitle.textContent = theme.subtitle || "Welcome!";
+        cta.textContent = theme.cta?.text || "Learn more";
+        cta.href = normalizeHttpUrl(theme.cta?.url || "#");
+
+        // media (honor saved preview width)
+        const media = document.getElementById("media");
+        media.innerHTML = "";
+
+        const box = document.createElement("div");
+        box.className = "box";
+
+        const savedW = Number(theme?.settings?.mediaBox?.w);
+        if (Number.isFinite(savedW) && savedW > 0) {
+          media.style.setProperty("--media-w", savedW + "px");
+          box.style.setProperty("--media-w", savedW + "px");
+        }
+
+        function fitToViewport() {
+          const headerH = document.querySelector("header")?.offsetHeight ?? 0;
+          const footerH = document.querySelector("footer")?.offsetHeight ?? 0;
+          const contentEl = document.querySelector(".content");
+          // estimate non-media content height (contentEl includes media and text; subtract media height)
+          const contentBelow = contentEl
+            ? Math.max(0, contentEl.offsetHeight - media.offsetHeight)
+            : 0;
+          const pad = 24;
+          const available = Math.max(
+            160,
+            window.innerHeight - headerH - footerH - contentBelow - pad
+          );
+          media.style.setProperty("--media-maxh", Math.round(available) + "px");
+        }
+
+        const onReady = () => {
+          fitToViewport();
+          media.dispatchEvent(new Event("media-ready"));
+        };
+
+        if (theme.media?.kind === "image" && theme.media.data) {
+          const img = document.createElement("img");
+          img.src = theme.media.data;
+          img.alt = theme.media.alt || "";
+          img.addEventListener("load", onReady, { once: true });
+          box.appendChild(img);
+          media.appendChild(box);
+        } else if (theme.media?.kind === "video" && theme.media.data) {
+          const v = document.createElement("video");
+          v.src = theme.media.data;
+          v.autoplay = true;
+          v.loop = true;
+          v.muted = true;
+          v.playsInline = true;
+          v.controls = false;
+          v.addEventListener("loadedmetadata", onReady, { once: true });
+          box.appendChild(v);
+          media.appendChild(box);
+        } else {
+          media.innerHTML = '<div class="muted">No media in theme.</div>';
+        }
+
+        window.addEventListener("resize", fitToViewport);
+        window.addEventListener("orientationchange", () =>
+          setTimeout(fitToViewport, 60)
+        );
+      }
+
+      function renderQRTo(host, text, size, fg = "#000000", bg = "#ffffff00") {
+        host.innerHTML = "";
+        const c = document.createElement("canvas");
+        c.width = c.height = Math.max(64, size || 160);
+        if (window.QRCode?.toCanvas) {
+          QRCode.toCanvas(c, String(text || ""), {
+            errorCorrectionLevel: "medium",
+            color: { dark: fg, light: bg },
+            width: c.width,
+            margin: 0,
+          });
+          host.appendChild(c);
+        } else {
+          const img = new Image();
+          img.width = img.height = c.width;
+          img.crossOrigin = "anonymous";
+          const hex = (x) => String(x || "#000").replace("#", "");
+          img.src =
+            "https://api.qrserver.com/v1/create-qr-code/?" +
+            `size=${c.width}x${c.height}&ecc=M&color=${hex(fg)}&bgcolor=${hex(
+              "ffffff"
+            )}` +
+            `&data=${encodeURIComponent(String(text || ""))}`;
+          host.appendChild(img);
+        }
+      }
+
+      function placeOverlay(theme, link) {
+        const ov = theme?.settings?.overlay;
+        if (!ov || ov.show === false) return;
+
+        const media = document.getElementById("media");
+        if (!media) return;
+
+        // create overlay box
+        const box = document.createElement("div");
+        box.className = "qr-overlay";
+        box.style.position = "absolute";
+        box.style.opacity = String(ov.opacity ?? 1);
+        const size = Math.max(64, ov.size || 160);
+        box.style.width = box.style.height = size + "px";
+        box.style.pointerEvents = "none"; // overlay is display-only here
+
+        // compute position
+        function positionBox() {
+          const pad = 16;
+          const W = media.clientWidth;
+          const H = media.clientHeight;
+          let x = ov.x ?? pad,
+            y = ov.y ?? pad;
+          if (ov.pos && ov.pos !== "custom") {
+            const map = {
+              "top-left": { x: pad, y: pad },
+              "top-right": { x: W - size - pad, y: pad },
+              "bottom-left": { x: pad, y: H - size - pad },
+              "bottom-right": { x: W - size - pad, y: H - size - pad },
+            };
+            const p = map[ov.pos] || map["bottom-right"];
+            x = p.x;
+            y = p.y;
+          }
+          box.style.left = x + "px";
+          box.style.top = y + "px";
+        }
+
+        // render QR
+        const inner = document.createElement("div");
+        const dest = normalizeHttpUrl(
+          link?.url || theme?.cta?.url || location.href
+        );
+        renderQRTo(inner, dest, size, "#000000", "#ffffff00");
+
+        box.appendChild(inner);
+        media.style.position = "relative"; // ensure absolute positioning works
+        media.appendChild(box);
+
+        positionBox();
+        media.addEventListener("media-ready", positionBox);
+        window.addEventListener("resize", () => {
+          if ((ov.pos || "") !== "custom") positionBox();
+        });
+      }
+
+      function resolveLink(link, theme) {
+        // Normalize both possible URLs
+        const linkUrl = link?.url ? normalizeHttpUrl(link.url) : "";
+        const themeCtaUrl = theme?.cta?.url
+          ? normalizeHttpUrl(theme.cta.url)
+          : "";
+
+        // Compute the chosen policy:
+        // Priority: link.redirect_policy → theme.settings.overrideWithThemeUrl → default 'link'
+        const themeOverride = !!theme?.settings?.overrideWithThemeUrl;
+        const policy = link?.redirect_policy
+          ? link.redirect_policy // 'link' | 'theme' | 'none'
+          : themeOverride
+          ? "theme"
+          : "link";
+
+        // Determine target URL based on policy
+        let dest = "";
+        if (policy === "link") dest = linkUrl;
+        else if (policy === "theme") dest = themeCtaUrl;
+        else dest = ""; // 'none' → no redirect
+
+        // Pull optional delay/skip from theme settings (fallbacks ok)
+        const delay = Number(theme?.settings?.redirectDelay ?? 2);
+        const showSkip = theme?.settings?.showSkip ?? true;
+        const skipText = theme?.settings?.skipText || "Skip";
+
+        const note = document.getElementById("note");
+        note.innerHTML = "";
+
+        // No redirect requested
+        if (policy === "none" || !dest) {
+          if (policy !== "none" && !dest) {
+            // If a policy was set but URL was missing, you may show a gentle info
+            note.textContent = "No redirect URL set.";
+          }
+          return;
+        }
+
+        // Build the UI note + countdown, respecting delay and skip
+        const secSpan = document.createElement("b");
+        secSpan.id = "sec";
+
+        const stayLink = document.createElement("a");
+        stayLink.href = "#";
+        stayLink.textContent = showSkip ? skipText : "";
+        stayLink.style.marginLeft = showSkip ? "6px" : "0";
+        if (!showSkip) stayLink.style.display = "none";
+
+        if (delay > 0) {
+          // note: "You’ll be redirected to <dest> in X… [Skip]"
+          note.innerHTML = `You’ll be redirected to <span class="muted">${dest}</span> in `;
+          note.appendChild(secSpan);
+          note.appendChild(document.createTextNode("… "));
+          note.appendChild(stayLink);
+
+          let s = delay;
+          secSpan.textContent = s;
+          const id = setInterval(() => {
+            s -= 1;
+            secSpan.textContent = s;
+            if (s <= 0) {
+              clearInterval(id);
+              location.assign(dest);
+            }
+          }, 1000);
+
+          stayLink.onclick = (e) => {
+            e.preventDefault();
+            clearInterval(id);
+            note.textContent = "";
+          };
+        } else {
+          // No delay → immediate redirect
+          location.assign(dest);
+        }
+      }
+
+      /* ===================== Data loaders ===================== */
+      async function loadDataViaSupabase(linkId, themeId) {
+        let link = null;
+        if (linkId) {
+          const { data: linkRow, error } = await sb
+            .from("links")
+            .select("*")
+            .eq("link_id", linkId)
+            .maybeSingle();
+          if (!error && linkRow) link = linkRow;
+        }
+
+        let theme = null;
+        const resolvedThemeId = themeId || link?.theme_id || link?.themeId;
+        if (resolvedThemeId) {
+          const wantedId = isNumericId(resolvedThemeId)
+            ? Number(resolvedThemeId)
+            : resolvedThemeId;
+          const { data, error } = await sb
+            .from("themes")
+            .select("*")
+            .eq("id", wantedId)
+            .maybeSingle();
+          if (!error && data) {
+            theme = {
+              id: data.id,
+              name: data.name,
+              title: data.title,
+              subtitle: data.subtitle,
+              font: data.font,
+              colors: data.colors || {},
+              cta: data.cta || {},
+              media: data.media || {},
+              settings: data.settings || {
+                redirectDelay: 2,
+                showSkip: true,
+                skipText: "Skip",
+              },
+            };
+          }
+        }
+
+        const themes = theme ? [theme] : [];
+        const links = link
+          ? [
+              {
+                id: link.link_id, // ← expose friendly id so start() can match
+                numericId: link.id, // (optional) keep the DB id if you need it later
+                url: link.url,
+                themeId: link.theme_id ?? link.themeId,
+              },
+            ]
+          : [];
+        return { themes, links, theme };
+      }
+
+      async function loadData() {
+        let themes = store.get("qrstudio.themes");
+        let links = store.get("qrstudio.links");
+
+        const sbData = await loadDataViaSupabase(linkId, themeId);
+
+        const supaTheme = sbData.theme || null;
+        if (!Array.isArray(themes))
+          themes = sbData.themes.length ? sbData.themes : null;
+        if (!Array.isArray(links))
+          links = sbData.links.length ? sbData.links : null;
+
+        if (!Array.isArray(themes)) {
+          const j = await fetchJson("/qrstudio-themes.json");
+          themes = j?.themes ?? [];
+        }
+        if (!Array.isArray(links)) {
+          const j = await fetchJson("/qrstudio-links.json");
+          links = j?.links ?? [];
+        }
+
+        return { themes, links, theme: supaTheme };
+      }
+
+      /* ===================== Boot ===================== */
+      (async function start() {
+        // loadData should return { themes, links, theme } where `theme` is optional preselected
+        const { themes, links, theme } = await loadData();
+
+        // linkId/themeId come from the URL, e.g. landing.html?linkId=...&themeId=...
+        // (make sure you declared these once at the top from URLSearchParams)
+        // const qs = new URLSearchParams(location.search);
+        // const linkId = qs.get('linkId') || '';
+        // const themeId = qs.get('themeId') || '';
+
+        // Find the link by its ID (for local-storage format where `id` is the human linkId string)
+        const link = linkId
+          ? (links || []).find((l) => String(l.id) === String(linkId))
+          : null;
+
+        // Choose a theme with layered fallback precedence:
+        // 1) explicit `theme` returned by loadData() (e.g., remote-resolved)
+        // 2) themeId from the URL (?themeId=...)
+        // 3) themeId attached to the link record (link.themeId)
+        let chosenTheme =
+          theme ||
+          (themeId
+            ? (themes || []).find(
+                (t) => String(t.id ?? t.remoteId) === String(themeId)
+              )
+            : null) ||
+          (link?.themeId
+            ? (themes || []).find(
+                (t) => String(t.id ?? t.remoteId) === String(link.themeId)
+              )
+            : null) ||
+          null;
+
+        // Apply visuals first (colors, fonts, media, text)
+        applyTheme(chosenTheme);
+
+        // If you overlay QR or extra UI bits tied to theme/link, do that here
+        if (typeof placeOverlay === "function") {
+          placeOverlay(chosenTheme, link);
+        }
+
+        // Finally, resolve navigation behavior:
+        // - If link.url exists and no override, you may show countdown/redirect
+        // - If chosenTheme.settings?.overrideWithThemeUrl is true and theme CTA URL exists,
+        //   honor the theme CTA URL instead of link.url
+        if (typeof resolveLink === "function") {
+          if (link) resolveLink(link, chosenTheme);
+        }
+      })();
+    </script>
+  </body>
+</html>

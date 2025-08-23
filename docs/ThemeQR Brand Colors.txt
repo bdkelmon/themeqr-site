@@ -1,0 +1,8 @@
+ThemeQR Brand Colors
+
+Header - #0a2540
+Background - #fff
+Btn - #00b894
+Btn text - #fff
+Footer - #f1f1f1
+Footer text - #666
