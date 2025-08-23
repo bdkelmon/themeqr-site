@@ -1,6 +1,8 @@
 // api/giphy-search.js
 export default async function handler(req, res) {
-  try {
+    console.log("DEBUG GIPHY_API_KEY:", process.env.GIPHY_API_KEY ? "SET" : "NOT SET");
+    
+    try {
     const q = (req.query?.q || "").trim();
     if (!q) return res.status(400).json({ error: "Missing q" });
 
