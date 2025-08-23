@@ -796,10 +796,10 @@
         height="16"
       />
       <span>ThemeQR</span><span class="muted small"></span>
+      <!-- Top-right auth nav -->
+      <div id="authNavFixed" class="auth-fixed"></div>
     </div>
 
-    <!-- Top-right auth nav -->
-    <div id="authNavFixed" class="auth-fixed"></div>
 
     <main>
       <!-- LEFT NAV -->
@@ -1907,7 +1907,7 @@
           editBtn.className = "btn";
           editBtn.textContent = "Load";
           editBtn.onclick = () => {
-            $("#linkId").value = link.id;
+            $("#linkId").value = link.link_id;
             $("#linkUrl").value = link.url;
             $("#linkTheme").value = link.themeId || "";
             drawQR();
