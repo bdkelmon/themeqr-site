@@ -1670,6 +1670,16 @@
           }
         }
 
+        // Ensure the container exists before we render
+        document.addEventListener("DOMContentLoaded", () => {
+          if (!document.getElementById("authNavFixed")) {
+            const n = document.createElement("div");
+            n.id = "authNavFixed";
+            n.className = "auth-fixed";
+            document.body.appendChild(n);
+          }
+          renderAuthNav(); // initial paint
+        });
         // initial + react to changes
         sb.auth.getSession().then(renderAuthNav);
         sb.auth.onAuthStateChange((_e, _s) => renderAuthNav());
