@@ -911,6 +911,155 @@
         border-radius: 6px;
         font: 12px/1.2 ui-sans-serif, system-ui;
       }
+      /* === Unified app layout (desktop == mobile) === */
+      :root {
+        --header-h: 56px; /* tune if you tweak .logo padding */
+        --nav-h: 56px; /* height of pill bar */
+      }
+
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        overflow: hidden; /* page itself doesn’t scroll */
+      }
+
+      #layout {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      /* 1) Header bar (.logo) = pinned at the very top */
+      .logo {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: var(--header-h);
+        padding: 0 16px;
+        background: linear-gradient(180deg, #15182a, #12162a);
+        border-bottom: 1px solid #232741;
+      }
+
+      /* 2) <main> becomes a single column everywhere */
+      main {
+        display: block !important; /* override previous grid */
+        max-width: 1400px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 0; /* nav/content manage their own padding */
+        height: calc(100vh - var(--header-h));
+        overflow: hidden;
+      }
+
+      /* 3) Sidebar becomes a top pill bar (sticky under header) */
+      aside#sidebar {
+        position: sticky !important;
+        top: var(--header-h) !important;
+        z-index: 15;
+        height: var(--nav-h);
+        display: block;
+        background: linear-gradient(180deg, #15182a, #12162a);
+        border: 0; /* override card styling */
+        border-bottom: 1px solid #232741;
+        border-radius: 0;
+        box-shadow: none;
+        padding: 0;
+        overflow: hidden !important; /* the inner scroller handles overflow */
+      }
+
+      /* Horizontal scroller that holds the pills */
+      #sidebar .nav-group {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center;
+        gap: 8px;
+        height: 100%;
+        padding: 0 10px;
+        margin: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-snap-type: x proximity;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+      }
+      #sidebar .nav-group::-webkit-scrollbar {
+        height: 6px;
+      }
+      #sidebar .nav-group::-webkit-scrollbar-thumb {
+        background: #232741;
+        border-radius: 999px;
+      }
+
+      /* Pill buttons sized by their text */
+      #sidebar .nav-btn {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        border-radius: 999px;
+        padding: 10px 14px;
+        font-size: 14px;
+        line-height: 1;
+        text-align: center;
+        background: #1b1f35;
+        color: var(--text);
+        border: 1px solid #262a45;
+        scroll-snap-align: center;
+      }
+      #sidebar .nav-btn.active {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(108, 125, 255, 0.25) inset;
+        background: linear-gradient(
+          180deg,
+          rgba(108, 125, 255, 0.1),
+          transparent
+        );
+      }
+
+      /* 4) Content region = centered, resizes with screen, is the ONLY scroller */
+      section#content {
+        height: calc(100vh - var(--header-h) - var(--nav-h));
+        overflow-y: auto !important;
+        overflow-x: hidden;
+        padding: 18px; /* outer breathing room */
+        background: rgba(18, 22, 43, 0); /* keep the card look on inner pads */
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      /* Center each selected screen and cap width responsively */
+      #content > .pad {
+        max-width: clamp(360px, 92vw, 980px); /* centered & fluid */
+        margin-inline: auto;
+        background: rgba(18, 22, 43, 0.65);
+        backdrop-filter: saturate(110%) blur(6px);
+        border: 1px solid #232741;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 16px;
+      }
+
+      /* Optional: make QR layout stack at all sizes so it’s consistent */
+      .qr-wrap {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      /* Remove previous “sidebar as card” visuals and debug color blocks */
+      #sidebar > div,
+      #sidebar > div > div {
+        background: transparent !important;
+      }
+
+      /* Make sure any old responsive rules don’t fight us */
+      @media (max-width: 900px) {
+        /* no behavior change – desktop == mobile now */
+      }
     </style>
   </head>
   <body>
@@ -925,7 +1074,6 @@
         />
         <span>ThemeQR</span><span class="muted small"></span>
         <!-- Top-right auth nav -->
-         
       </div>
 
       <main>
