@@ -841,27 +841,21 @@
         height: auto;
         display: block;
       }
-      /* Ensure the section itself can host a scrollable child in flex/grid layouts */
+      /* Let the section expand with its content */
       .section-content {
-        display: flex;
-        flex-direction: column;
-        min-height: 0; /* critical for flex children to shrink vertically */
+        height: auto !important;
+        min-height: unset;
+        max-height: none;
+        overflow: visible;
       }
 
-      /* Make the Themes area the scrollable region */
+      /* Make sure no fixed heights are forcing clipping */
       #themes,
       #themesList,
       .themes-grid {
-        max-height: clamp(240px, 50vh, 600px); /* adjust as you like */
-        overflow-y: auto;
-        overflow-x: hidden;
-        min-height: 0; /* prevents forced expansion in flex parents */
-      }
-
-      /* If the Themes grid is inside a flex parent, allow it to take remaining space */
-      .themes-grid {
-        flex: 1 1 auto;
-        min-height: 0;
+        max-height: none !important;
+        height: auto !important;
+        overflow: visible !important;
       }
     </style>
   </head>
