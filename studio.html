@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+#saveLink<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -885,17 +885,12 @@
                   </select>
                 </div>
               </div>
-              <div class="stack" style="margin-top: 8px">
-                <button class="btn primary" id="saveBtn">
-                  Save / Update Link
-                </button>
-                <button id="newBtn" class="btn secondary">New</button>
-                <button class="btn" id="downloadQR">Download PNG</button>
-                <span class="muted small"
-                  >Encoded URL:
-                  <span id="encoded" class="code">—</span>
-                </span>
-              </div>
+             <div class="stack" style="margin-top: 8px">
+               <button class="btn primary" id="saveBtn">Save / Update Link</button>
+               <button id="newBtn" class="btn secondary">New</button>
+               <button class="btn" id="downloadQR">Download PNG</button>
+               <span class="muted small">Encoded URL: <span id="encoded" class="code">—</span></span>
+             </div>
 
               <div style="margin-top: 14px">
                 <label>Saved Dynamic Links</label>
@@ -1881,13 +1876,15 @@
         drawQR
       );
 
-      function resetFormToNew() {
+function resetFormToNew() {
   $("#linkId").value = "";
   $("#linkUrl").value = "";
   $("#linkTheme").value = "";
-  drawQR(); // redraw a blank/default QR
+  // If you change the Save button label when editing, reset it here:
+  const save = document.getElementById("saveBtn");
+  if (save) save.textContent = "Save / Update Link";
+  drawQR();
 }
-
 
 function renderLinksList() {
   const list = $("#linksList");
@@ -1998,7 +1995,7 @@ function renderLinksList() {
         }
       }
 
-      $("#saveLink").addEventListener("click", async () => {
+      $("#saveBtn").addEventListener("click", async () => {
         // 1) Read + normalize inputs
         const rawId = ($("#linkId").value || "").trim();
         const cleanedId = slugifyLinkId(rawId);
@@ -2066,6 +2063,8 @@ function renderLinksList() {
           console.error("[links] Unexpected error:", err);
         }
       });
+
+      document.getElementById("newBtn").addEventListener("click", resetFormToNew);
 
       $("#downloadQR").addEventListener("click", () => {
         let node = qrCanvasHost.querySelector("canvas, img");
@@ -3560,15 +3559,6 @@ function renderLinksList() {
         };
       }
 
-      // Reset form to defaults and switch to "new" mode
-      function resetFormToNew() {
-        currentRow = null;
-        $("#linkId").value = "";
-        $("#linkUrl").value = "";
-        $("#linkTheme").value = "";
-        $("#saveBtn").textContent = "Save"; // make sure your Save button has id="saveBtn"
-      }
-
       // Fetch all links from Supabase (you can filter/order as you like)
       async function fetchLinks() {
         const { data, error } = await supabase
@@ -3636,7 +3626,7 @@ function renderLinksList() {
         await renderLinksList();
       }
       document.addEventListener("DOMContentLoaded", () => {
-        const saveEl = $("#saveLink"); // matches your existing button id
+        const saveEl = $("#saveBtn"); // matches your existing button id
         if (saveEl) saveEl.onclick = saveOrUpdateLink;
 
         const newEl = $("#newBtn"); // we’ll add this button next
