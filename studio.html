@@ -513,9 +513,13 @@
         position: fixed;
         top: 12px;
         right: 16px;
+        left: auto;
+        bottom: auto;
+        pointer-events: auto;
+        mix-blend-mode: normal;
+        isolation: isolate;
         display: flex;
-        align-items: center;
-        gap: 14px;
+
         z-index: 1000;
       }
       .auth-link {
@@ -866,6 +870,11 @@
         overflow: hidden;
       }
 
+      #layout,
+      .logo {
+        overflow: visible !important;
+      }
+
       header {
         flex-shrink: 0;
         position: sticky;
@@ -885,15 +894,23 @@
         height: 100%;
         padding: 18px;
       }
-#sidebar > div {
-  background: rgba(255, 0, 0, 0.1); /* light red */
-}
+      #sidebar > div {
+        background: rgba(255, 0, 0, 0.1); /* light red */
+      }
 
-#sidebar > div > div {
-  background: rgba(0, 255, 0, 0.1); /* light green */
-}
+      #sidebar > div > div {
+        background: rgba(0, 255, 0, 0.1); /* light green */
+      }
 
-
+      /* Optional: quick visual guard while testing */
+      .auth-fixed:empty::after {
+        content: "authNavFixed (empty)";
+        color: #ff9;
+        background: rgba(0, 0, 0, 0.4);
+        padding: 4px 8px;
+        border-radius: 6px;
+        font: 12px/1.2 ui-sans-serif, system-ui;
+      }
     </style>
   </head>
   <body>
