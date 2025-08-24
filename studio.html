@@ -1881,74 +1881,83 @@
         drawQR
       );
 
-      async function renderLinksList() {
-        const list = $("#linksList");
-        list.innerHTML = "";
+      function resetFormToNew() {
+  $("#linkId").value = "";
+  $("#linkUrl").value = "";
+  $("#linkTheme").value = "";
+  drawQR(); // redraw a blank/default QR
+}
 
-        const links = await fetchLinks(); // ← from Supabase
 
-        // If you still have themes locally:
-        const themes = db.themes ? db.themes() : []; // or fetch from Supabase if needed
+function renderLinksList() {
+  const list = $("#linksList");
+  list.innerHTML = "";
 
-        for (const link of links) {
-          const div = document.createElement("div");
-          div.className = "item small";
+  // pull whatever is in local cache (which includes cloud-synced rows)
+  const links = db.links();
 
-          const theme = themes.find((t) => t.id === link.theme_id);
+  for (const link of links) {
+    // prefer cloud schema; fall back to older local schema
+    const displayId = link.link_id ?? link.id ?? "";            // 👈 show link_id if available
+    const themeIdVal = link.theme_id ?? link.themeId ?? "";      // 👈 support theme_id or themeId
+    const updatedIso = link.updated || link.last_updated || new Date().toISOString();
 
-          const target = document.createElement("div");
-          target.innerHTML = `
+    const theme = db.themes().find((t) => String(t.id) === String(themeIdVal));
+
+    const div = document.createElement("div");
+    div.className = "item small";
+
+    const target = document.createElement("div");
+    target.innerHTML = `
       <div>
-        <b>${escapeHtml(link.link_id)}</b> → 
-        <span class="muted">${escapeHtml(
-          link.url || "(no destination set)"
-        )}</span>
+        <b>${escapeHtml(displayId)}</b> → 
+        <span class="muted">${escapeHtml(link.url || "(no destination set)")}</span>
       </div>
       <div class="muted">
         Theme: ${theme ? escapeHtml(theme.name) : "—"} · 
-        Last updated: ${new Date(
-          link.updated_at || link.updated || Date.now()
-        ).toLocaleString()}
+        Last updated: ${new Date(updatedIso).toLocaleString()}
       </div>`;
 
-          const actions = document.createElement("div");
-          actions.className = "stack";
+    const actions = document.createElement("div");
+    actions.className = "stack";
 
-          const openBtn = document.createElement("a");
-          openBtn.className = "btn";
-          openBtn.textContent = "Open";
-          // IMPORTANT: use link.link_id + link.theme_id
-          openBtn.href = currentLandingUrl(link.link_id, link.theme_id);
-          openBtn.target = "_blank";
+    // Open button → the public landing URL
+    const openBtn = document.createElement("a");
+    openBtn.className = "btn";
+    openBtn.textContent = "Open";
+    openBtn.href = currentLandingUrl(displayId, themeIdVal || "");
+    openBtn.target = "_blank";
 
-          const editBtn = document.createElement("button");
-          editBtn.className = "btn";
-          editBtn.textContent = "Load";
-          editBtn.onclick = () => {
-            // Load row into the form and switch Save → Update
-            currentRow = link;
-            $("#linkId").value = link.link_id || "";
-            $("#linkUrl").value = link.url || "";
-            $("#linkTheme").value = link.theme_id || "";
-            $("#saveBtn").textContent = "Update";
-            drawQR();
-          };
+    // Load button → populate the form from this row
+    const editBtn = document.createElement("button");
+    editBtn.className = "btn";
+    editBtn.textContent = "Load";
+    editBtn.onclick = () => {
+      $("#linkId").value = displayId;
+      $("#linkUrl").value = link.url || "";
+      $("#linkTheme").value = themeIdVal || "";
+      drawQR();
+    };
 
-          const delBtn = document.createElement("button");
-          delBtn.className = "btn warn";
-          delBtn.textContent = "Delete";
-          delBtn.onclick = () => {
-            if (!confirm(`Delete link "${link.link_id}"?`)) return;
-            deleteLink(link.id); // Supabase table PK
-          };
+    // Delete (local only) — keep as-is
+    const delBtn = document.createElement("button");
+    delBtn.className = "btn warn";
+    delBtn.textContent = "Delete";
+    delBtn.onclick = () => {
+      const rest = db.links().filter((l) => (l.link_id ?? l.id) !== displayId);
+      db.saveLinks(rest);
+      renderLinksList();
+      refreshAnalyticsSelectors();
+    };
 
-          actions.append(openBtn, editBtn, delBtn);
-          div.append(target, actions);
-          list.appendChild(div);
-        }
+    actions.append(openBtn, editBtn, delBtn);
+    div.append(target, actions);
+    list.appendChild(div);
+  }
 
-        refreshAnalyticsSelectors();
-      }
+  refreshAnalyticsSelectors();
+}
+
 
       async function syncLinksFromCloud() {
         try {
@@ -2402,6 +2411,8 @@
             $("#themeDelay").value = t.settings?.redirectDelay ?? 2;
             $("#themeShowSkip").checked = t.settings?.showSkip ?? true;
             $("#themeSkipText").value = t.settings?.skipText ?? "Skip";
+            $("#saveBtn").onclick = saveOrUpdateLink;
+            $("#newBtn").onclick = resetFormToNew;
             const chk = document.getElementById("themeOverrideUrl");
             if (chk) chk.checked = !!t.settings?.overrideWithThemeUrl;
 
@@ -3449,6 +3460,7 @@
           range.value = String(w);
           saveW(w);
         };
+        
       }
 
       function openMerchWithSelection() {
@@ -3623,12 +3635,13 @@
         if (currentRow && currentRow.id === rowId) resetFormToNew();
         await renderLinksList();
       }
-      // Run once DOM is ready
       document.addEventListener("DOMContentLoaded", () => {
-        $("#saveBtn").onclick = saveOrUpdateLink;
-        $("#newBtn").onclick = resetFormToNew;
+        const saveEl = $("#saveLink"); // matches your existing button id
+        if (saveEl) saveEl.onclick = saveOrUpdateLink;
 
-        // Optionally render the list immediately on page load
+        const newEl = $("#newBtn"); // we’ll add this button next
+        if (newEl) newEl.onclick = resetFormToNew;
+
         renderLinksList();
       });
     </script>
