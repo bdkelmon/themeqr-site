@@ -1050,6 +1050,15 @@
       #sidebar .nav-btn {
         scroll-margin-inline: var(--nav-edge-pad);
       }
+
+      section#content {
+        overflow-y: auto;
+        scrollbar-width: none; /* Firefox */
+      }
+      section#content::-webkit-scrollbar {
+        /* Chromium/Safari */
+        display: none;
+      }
     </style>
   </head>
   <body>
