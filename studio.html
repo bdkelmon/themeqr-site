@@ -482,7 +482,7 @@
         main {
           grid-template-columns: 1fr;
         }
-       
+
         .qr-wrap {
           grid-template-columns: 1fr;
         }
@@ -1035,6 +1035,21 @@
       @media (max-width: 900px) {
         /* no behavior change – desktop == mobile now */
       }
+      :root {
+        --nav-edge-pad: 16px;
+      } /* tweak to taste: 12–24px works well */
+
+      /* Keep a gap from the screen edge on BOTH sides */
+      #sidebar .nav-group {
+        padding-inline: var(--nav-edge-pad);
+        /* makes snapping & scrollIntoView leave the same inset */
+        scroll-padding-inline: var(--nav-edge-pad);
+      }
+
+      /* If you call element.scrollIntoView on a nav pill, keep a little margin */
+      #sidebar .nav-btn {
+        scroll-margin-inline: var(--nav-edge-pad);
+      }
     </style>
   </head>
   <body>
@@ -1057,9 +1072,7 @@
           <button class="nav-btn active" data-tab="qr">QR Studio</button>
           <button class="nav-btn" data-tab="themes">Theme Studio</button>
           <button class="nav-btn" data-tab="overlay">QR Overlay</button>
-          <button class="nav-btn" data-tab="modes">
-            Modes (Event/Social)
-          </button>
+          <button class="nav-btn" data-tab="modes">Modes (Event/Social)</button>
           <button class="nav-btn" data-tab="analytics">Analytics</button>
           <button class="nav-btn" data-tab="io">Export / Import</button>
           <button class="nav-btn" data-tab="help">Help</button>
@@ -1068,7 +1081,6 @@
         </div>
       </aside>
       <main>
-
         <!-- CONTENT -->
         <section id="content">
           <!-- ===== QR ===== -->
