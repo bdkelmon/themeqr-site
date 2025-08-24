@@ -71,17 +71,6 @@
         max-width: 1400px;
         margin: 0 auto;
       }
-      aside#sidebar {
-        background: var(--panel);
-        border: 1px solid #232741;
-        border-radius: var(--radius);
-        box-shadow: var(--shadow);
-        padding: 12px;
-        height: calc(100vh - 110px);
-        position: sticky;
-        top: 0;
-        overflow-y: auto;
-      }
 
       .nav-group {
         display: flex;
@@ -102,7 +91,6 @@
         background: #1b1f35;
         color: var(--text);
         border: 1px solid #262a45;
-        border-radius: 10px;
         padding: 10px 12px;
         cursor: pointer;
         text-decoration: none;
@@ -177,7 +165,6 @@
         border: 1px solid #2b2f4e;
         background: #171b34;
         color: #e8ebff;
-        border-radius: 10px;
         padding: 10px 12px;
         cursor: pointer;
       }
@@ -495,10 +482,7 @@
         main {
           grid-template-columns: 1fr;
         }
-        aside#sidebar {
-          position: static;
-          height: auto;
-        }
+       
         .qr-wrap {
           grid-template-columns: 1fr;
         }
@@ -959,14 +943,9 @@
       aside#sidebar {
         position: sticky !important;
         top: var(--header-h) !important;
-        z-index: 15;
         height: var(--nav-h);
         display: block;
         background: linear-gradient(180deg, #15182a, #12162a);
-        border: 0; /* override card styling */
-        border-bottom: 1px solid #232741;
-        border-radius: 0;
-        box-shadow: none;
         padding: 0;
         overflow: hidden !important; /* the inner scroller handles overflow */
       }
@@ -978,12 +957,10 @@
         align-items: center;
         gap: 8px;
         height: 100%;
-        padding: 0 10px;
         margin: 0;
         overflow-x: auto;
         overflow-y: hidden;
         scroll-snap-type: x proximity;
-        -webkit-overflow-scrolling: touch;
         scrollbar-width: thin;
       }
       #sidebar .nav-group::-webkit-scrollbar {
@@ -998,7 +975,6 @@
       #sidebar .nav-btn {
         flex: 0 0 auto;
         white-space: nowrap;
-        border-radius: 999px;
         padding: 10px 14px;
         font-size: 14px;
         line-height: 1;
@@ -1009,7 +985,7 @@
         scroll-snap-align: center;
       }
       #sidebar .nav-btn.active {
-        border-color: var(--accent);
+        border-color: #19cd32;
         box-shadow: 0 0 0 2px rgba(108, 125, 255, 0.25) inset;
         background: linear-gradient(
           180deg,
@@ -1075,23 +1051,23 @@
         <!-- Top-right auth nav -->
       </div>
 
+      <!-- LEFT NAV -->
+      <aside id="sidebar">
+        <div class="nav-group" id="navWork">
+          <button class="nav-btn active" data-tab="qr">QR Studio</button>
+          <button class="nav-btn" data-tab="themes">Theme Studio</button>
+          <button class="nav-btn" data-tab="overlay">QR Overlay</button>
+          <button class="nav-btn" data-tab="modes">
+            Modes (Event/Social)
+          </button>
+          <button class="nav-btn" data-tab="analytics">Analytics</button>
+          <button class="nav-btn" data-tab="io">Export / Import</button>
+          <button class="nav-btn" data-tab="help">Help</button>
+          <button class="btn nav-btn" id="btnQrDemo">QR Demo</button>
+          <button class="btn nav-btn" id="btnMerch">ThemeQR Merch</button>
+        </div>
+      </aside>
       <main>
-        <!-- LEFT NAV -->
-        <aside id="sidebar">
-          <div class="nav-group" id="navWork">
-            <button class="nav-btn active" data-tab="qr">QR Studio</button>
-            <button class="nav-btn" data-tab="themes">Theme Studio</button>
-            <button class="nav-btn" data-tab="overlay">QR Overlay</button>
-            <button class="nav-btn" data-tab="modes">
-              Modes (Event/Social)
-            </button>
-            <button class="nav-btn" data-tab="analytics">Analytics</button>
-            <button class="nav-btn" data-tab="io">Export / Import</button>
-            <button class="nav-btn" data-tab="help">Help</button>
-            <button class="btn nav-btn" id="btnQrDemo">QR Demo</button>
-            <button class="btn nav-btn" id="btnMerch">ThemeQR Merch</button>
-          </div>
-        </aside>
 
         <!-- CONTENT -->
         <section id="content">
@@ -1477,40 +1453,40 @@
                 </div>
               </div>
             </div>
+            <div class="theme-card" style="width: 320px" style="margin-top: 10px">
+              <header><strong>Social Playlist</strong></header>
+              <div class="body">
+                <div class="small muted">
+                  Add themes to rotate when in Social Mode.
+                </div>
+                <div id="playlist" class="list" style="margin: 8px 0"></div>
+                <div class="stack">
+                  <button class="btn" id="nextPreset">Next</button>
+                  <button class="btn ghost" id="shufflePreset">Random</button>
+                  <label
+                    class="pill small"
+                    title="Auto-apply next preset on a timer"
+                    style="margin-left: 6px"
+                  >
+                    <input id="autoRotate" type="checkbox" /> Auto-rotate
+                  </label>
+                  <input
+                    id="rotateSec"
+                    type="number"
+                    min="5"
+                    value="15"
+                    style="width: 80px"
+                    title="Seconds"
+                  />
+                </div>
+              </div>
+            </div>
 
             <div class="row" style="margin-top: 10px">
               <div class="theme-card" style="flex: 2">
                 <header><strong id="modesHeader">Event Presets</strong></header>
                 <div class="body">
                   <div id="presetsGrid" class="modes-grid"></div>
-                </div>
-              </div>
-              <div class="theme-card" style="width: 320px">
-                <header><strong>Social Playlist</strong></header>
-                <div class="body">
-                  <div class="small muted">
-                    Add themes to rotate when in Social Mode.
-                  </div>
-                  <div id="playlist" class="list" style="margin: 8px 0"></div>
-                  <div class="stack">
-                    <button class="btn" id="nextPreset">Next</button>
-                    <button class="btn ghost" id="shufflePreset">Random</button>
-                    <label
-                      class="pill small"
-                      title="Auto-apply next preset on a timer"
-                      style="margin-left: 6px"
-                    >
-                      <input id="autoRotate" type="checkbox" /> Auto-rotate
-                    </label>
-                    <input
-                      id="rotateSec"
-                      type="number"
-                      min="5"
-                      value="15"
-                      style="width: 80px"
-                      title="Seconds"
-                    />
-                  </div>
                 </div>
               </div>
             </div>
