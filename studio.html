@@ -783,6 +783,64 @@
           max-width: 220px;
         }
       }
+      /* --- Hotfix: keep Themes inside the section content container --- */
+
+      /* 1) Make the section content allow its children to shrink inside flex/grid layouts */
+      .section-content {
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
+        min-width: 0; /* critical for flex/grid overflow */
+      }
+
+      /* 2) Themes container should never exceed its parent */
+      #themes,
+      #themesList,
+      .themes-grid {
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
+        min-width: 0;
+        overflow: hidden; /* prevents visual spill; switch to auto if you prefer scroll */
+      }
+
+      /* 3) If Themes uses grid, ensure cards wrap instead of stretching the container */
+      .themes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+        align-items: stretch;
+      }
+
+      /* 4) If Themes uses flex anywhere, allow items to shrink */
+      .themes-grid,
+      .themes-row,
+      .theme-card-container {
+        min-width: 0;
+        flex: 1 1 auto;
+      }
+
+      /* 5) Prevent long titles/URLs inside cards from blowing out the width */
+      .theme-card,
+      .theme-item,
+      .item.small {
+        min-width: 0;
+      }
+
+      .theme-card *,
+      .item.small * {
+        overflow-wrap: anywhere; /* wrap long words/urls */
+        word-break: break-word;
+      }
+
+      /* 6) Images/thumbnails should fit inside cards */
+      .theme-card img,
+      .theme-thumb,
+      .item.small img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+      }
     </style>
   </head>
 
@@ -885,12 +943,16 @@
                   </select>
                 </div>
               </div>
-             <div class="stack" style="margin-top: 8px">
-               <button class="btn primary" id="saveBtn">Save / Update Link</button>
-               <button id="newBtn" class="btn secondary">New</button>
-               <button class="btn" id="downloadQR">Download PNG</button>
-               <span class="muted small">Encoded URL: <span id="encoded" class="code">—</span></span>
-             </div>
+              <div class="stack" style="margin-top: 8px">
+                <button class="btn primary" id="saveBtn">
+                  Save / Update Link
+                </button>
+                <button id="newBtn" class="btn secondary">New</button>
+                <button class="btn" id="downloadQR">Download PNG</button>
+                <span class="muted small"
+                  >Encoded URL: <span id="encoded" class="code">—</span></span
+                >
+              </div>
 
               <div style="margin-top: 14px">
                 <label>Saved Dynamic Links</label>
@@ -1876,85 +1938,91 @@
         drawQR
       );
 
-function resetFormToNew() {
-  $("#linkId").value = "";
-  $("#linkUrl").value = "";
-  $("#linkTheme").value = "";
-  // If you change the Save button label when editing, reset it here:
-  const save = document.getElementById("saveBtn");
-  if (save) save.textContent = "Save / Update Link";
-  drawQR();
-}
+      function resetFormToNew() {
+        $("#linkId").value = "";
+        $("#linkUrl").value = "";
+        $("#linkTheme").value = "";
+        // If you change the Save button label when editing, reset it here:
+        const save = document.getElementById("saveBtn");
+        if (save) save.textContent = "Save / Update Link";
+        drawQR();
+      }
 
-function renderLinksList() {
-  const list = $("#linksList");
-  list.innerHTML = "";
+      function renderLinksList() {
+        const list = $("#linksList");
+        list.innerHTML = "";
 
-  // pull whatever is in local cache (which includes cloud-synced rows)
-  const links = db.links();
+        // pull whatever is in local cache (which includes cloud-synced rows)
+        const links = db.links();
 
-  for (const link of links) {
-    // prefer cloud schema; fall back to older local schema
-    const displayId = link.link_id ?? link.id ?? "";            // 👈 show link_id if available
-    const themeIdVal = link.theme_id ?? link.themeId ?? "";      // 👈 support theme_id or themeId
-    const updatedIso = link.updated || link.last_updated || new Date().toISOString();
+        for (const link of links) {
+          // prefer cloud schema; fall back to older local schema
+          const displayId = link.link_id ?? link.id ?? ""; // 👈 show link_id if available
+          const themeIdVal = link.theme_id ?? link.themeId ?? ""; // 👈 support theme_id or themeId
+          const updatedIso =
+            link.updated || link.last_updated || new Date().toISOString();
 
-    const theme = db.themes().find((t) => String(t.id) === String(themeIdVal));
+          const theme = db
+            .themes()
+            .find((t) => String(t.id) === String(themeIdVal));
 
-    const div = document.createElement("div");
-    div.className = "item small";
+          const div = document.createElement("div");
+          div.className = "item small";
 
-    const target = document.createElement("div");
-    target.innerHTML = `
+          const target = document.createElement("div");
+          target.innerHTML = `
       <div>
         <b>${escapeHtml(displayId)}</b> → 
-        <span class="muted">${escapeHtml(link.url || "(no destination set)")}</span>
+        <span class="muted">${escapeHtml(
+          link.url || "(no destination set)"
+        )}</span>
       </div>
       <div class="muted">
         Theme: ${theme ? escapeHtml(theme.name) : "—"} · 
         Last updated: ${new Date(updatedIso).toLocaleString()}
       </div>`;
 
-    const actions = document.createElement("div");
-    actions.className = "stack";
+          const actions = document.createElement("div");
+          actions.className = "stack";
 
-    // Open button → the public landing URL
-    const openBtn = document.createElement("a");
-    openBtn.className = "btn";
-    openBtn.textContent = "Open";
-    openBtn.href = currentLandingUrl(displayId, themeIdVal || "");
-    openBtn.target = "_blank";
+          // Open button → the public landing URL
+          const openBtn = document.createElement("a");
+          openBtn.className = "btn";
+          openBtn.textContent = "Open";
+          openBtn.href = currentLandingUrl(displayId, themeIdVal || "");
+          openBtn.target = "_blank";
 
-    // Load button → populate the form from this row
-    const editBtn = document.createElement("button");
-    editBtn.className = "btn";
-    editBtn.textContent = "Load";
-    editBtn.onclick = () => {
-      $("#linkId").value = displayId;
-      $("#linkUrl").value = link.url || "";
-      $("#linkTheme").value = themeIdVal || "";
-      drawQR();
-    };
+          // Load button → populate the form from this row
+          const editBtn = document.createElement("button");
+          editBtn.className = "btn";
+          editBtn.textContent = "Load";
+          editBtn.onclick = () => {
+            $("#linkId").value = displayId;
+            $("#linkUrl").value = link.url || "";
+            $("#linkTheme").value = themeIdVal || "";
+            drawQR();
+          };
 
-    // Delete (local only) — keep as-is
-    const delBtn = document.createElement("button");
-    delBtn.className = "btn warn";
-    delBtn.textContent = "Delete";
-    delBtn.onclick = () => {
-      const rest = db.links().filter((l) => (l.link_id ?? l.id) !== displayId);
-      db.saveLinks(rest);
-      renderLinksList();
-      refreshAnalyticsSelectors();
-    };
+          // Delete (local only) — keep as-is
+          const delBtn = document.createElement("button");
+          delBtn.className = "btn warn";
+          delBtn.textContent = "Delete";
+          delBtn.onclick = () => {
+            const rest = db
+              .links()
+              .filter((l) => (l.link_id ?? l.id) !== displayId);
+            db.saveLinks(rest);
+            renderLinksList();
+            refreshAnalyticsSelectors();
+          };
 
-    actions.append(openBtn, editBtn, delBtn);
-    div.append(target, actions);
-    list.appendChild(div);
-  }
+          actions.append(openBtn, editBtn, delBtn);
+          div.append(target, actions);
+          list.appendChild(div);
+        }
 
-  refreshAnalyticsSelectors();
-}
-
+        refreshAnalyticsSelectors();
+      }
 
       async function syncLinksFromCloud() {
         try {
@@ -2064,7 +2132,9 @@ function renderLinksList() {
         }
       });
 
-      document.getElementById("newBtn").addEventListener("click", resetFormToNew);
+      document
+        .getElementById("newBtn")
+        .addEventListener("click", resetFormToNew);
 
       $("#downloadQR").addEventListener("click", () => {
         let node = qrCanvasHost.querySelector("canvas, img");
@@ -3459,7 +3529,6 @@ function renderLinksList() {
           range.value = String(w);
           saveW(w);
         };
-        
       }
 
       function openMerchWithSelection() {
