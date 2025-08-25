@@ -2264,11 +2264,10 @@
           return { type: "img", el: img };
         }
 
-        function currentLandingUrl(linkId, themeId) {
+        function currentLandingUrl(linkId) {
           const base = "https://www.themeqr.com/landing.html";
           const url = new URL(base);
           url.searchParams.set("linkId", linkId);
-          if (themeId) url.searchParams.set("themeId", themeId);
           return url.toString();
         }
 
@@ -2283,10 +2282,11 @@
             bg = $("#qrBg").value,
             ecc = $("#qrEcc").value;
           const linkId = ($("#linkId").value || "").trim();
-         
+
           const payloadUrl = linkId
-            ? currentLandingUrl(linkId, themeId)
+            ? currentLandingUrl(linkId)
             : "https://example.com";
+
           const result = await renderQRInto(qrCanvasHost, payloadUrl, {
             size,
             bg,
@@ -2296,9 +2296,7 @@
           $("#encoded").textContent = payloadUrl;
           qrCanvasHost.dataset.qrType = result.type;
         }
-        $(
-          "#qrSize, #qrFg, #qrBg, #qrEcc, #linkId, #linkTheme"
-        ).addEventListener("input", drawQR);
+        $("#qrSize, #qrFg, #qrBg, #qrEcc, #linkId").addEventListener("input", drawQR);
 
         function resetFormToNew() {
           $("#linkId").value = "";
@@ -2351,7 +2349,7 @@
             const openBtn = document.createElement("a");
             openBtn.className = "btn";
             openBtn.textContent = "Open";
-            openBtn.href = currentLandingUrl(displayId, themeIdVal || "");
+            openBtn.href = currentLandingUrl(displayId);
             openBtn.target = "_blank";
 
             // Load button → populate the form from this row
