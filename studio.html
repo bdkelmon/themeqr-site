@@ -2283,7 +2283,7 @@
             bg = $("#qrBg").value,
             ecc = $("#qrEcc").value;
           const linkId = ($("#linkId").value || "").trim();
-          const themeId = $("#linkTheme").value || "";
+         
           const payloadUrl = linkId
             ? currentLandingUrl(linkId, themeId)
             : "https://example.com";
