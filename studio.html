@@ -4003,7 +4003,7 @@
 
         // Fetch all links from Supabase (you can filter/order as you like)
         async function fetchLinks() {
-          const { data, error } = await supabase
+          const { data, error } = await sb
             .from("links")
             .select("*")
             .order("updated_at", { ascending: false });
@@ -4030,7 +4030,7 @@
           let resp;
           if (currentRow && currentRow.id) {
             // UPDATE existing row by the table PK (id)
-            resp = await supabase
+            resp = await sb
               .from("links")
               .update(payload)
               .eq("id", currentRow.id)
@@ -4038,7 +4038,7 @@
               .single();
           } else {
             // INSERT new row
-            resp = await supabase
+            resp = await sb
               .from("links")
               .insert(payload)
               .select()
@@ -4061,7 +4061,7 @@
 
         // Delete a row from Supabase
         async function deleteLink(rowId) {
-          const { error } = await supabase
+          const { error } = await sb
             .from("links")
             .delete()
             .eq("id", rowId);
