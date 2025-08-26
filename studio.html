@@ -1787,7 +1787,87 @@
             auth: { persistSession: true },
           });
         }
+        (() => {
+          const HOST_ID = "authNavFixed";
 
+          function ensureHost() {
+            // De-dupe any accidental duplicates of #authNavFixed
+            const all = Array.from(document.querySelectorAll("#" + HOST_ID));
+            let el = all[0] || null;
+            all.slice(1).forEach((n) => n.remove());
+
+            if (!el) {
+              el = document.createElement("div");
+              el.id = HOST_ID;
+              el.className = "auth-fixed";
+            }
+            // Make sure it sits under <body> so it's predictable and not clipped
+            if (el.parentElement !== document.body) {
+              document.body.appendChild(el);
+            }
+            return el;
+          }
+
+          function paintAnon(el) {
+            el.innerHTML = `
+      <a id="lnkLogin"  class="auth-link" href="#">Log in</a>
+      <span class="auth-sep">•</span>
+      <a id="lnkSignup" class="auth-link" href="#">Sign up</a>
+    `;
+            // Use the current page as the return URL
+            const redirectTo = location.origin + location.pathname;
+            const go = (e) => {
+              e.preventDefault();
+              if (!window.sb?.auth) return;
+              sb.auth.signInWithOAuth({
+                provider: "google",
+                options: { redirectTo },
+              });
+            };
+            el.querySelector("#lnkLogin").onclick = go;
+            el.querySelector("#lnkSignup").onclick = go;
+          }
+
+          async function paint() {
+            const el = ensureHost();
+
+            // Paint something immediately so :empty never triggers the debug badge
+            if (!el.innerHTML.trim()) paintAnon(el);
+
+            try {
+              if (!window.sb?.auth) return; // Supabase not ready yet; anon paint is fine
+              const { data } = await sb.auth.getSession();
+              const session = data?.session || null;
+
+              if (session) {
+                const email = session.user?.email || "Account";
+                el.innerHTML = `
+          <span class="auth-link">Signed in as ${email}</span>
+          <span class="auth-sep">•</span>
+          <a id="lnkLogout" class="auth-link" href="#">Log out</a>
+        `;
+                el.querySelector("#lnkLogout").onclick = async (e) => {
+                  e.preventDefault();
+                  await sb.auth.signOut();
+                  paint(); // revert to anon UI
+                };
+              } else {
+                // Not signed in
+                paintAnon(el);
+              }
+            } catch (err) {
+              console.warn("auth nav paint failed", err);
+              // Fall back to anon UI if anything goes sideways
+              paintAnon(el);
+            }
+          }
+
+          // First paint
+          window.addEventListener("DOMContentLoaded", paint);
+
+          // Also repaint when auth state changes
+          window.sb?.auth?.onAuthStateChange?.(() => paint());
+        })();
         // Canonical session helper
         async function sbSession() {
           const { data } = await sb.auth.getSession();
