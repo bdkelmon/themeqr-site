@@ -4535,6 +4535,128 @@
             refreshThemeDropdown();
           });
         })();
+
+        (() => {
+          if (!window.sb) {
+            console.warn("[links] Supabase client (sb) not ready");
+            return;
+          }
+
+          async function getUserId() {
+            try {
+              return (await sb.auth.getUser()).data?.user?.id ?? null;
+            } catch {
+              return null;
+            }
+          }
+
+          function setSelectIfExists(selId, value) {
+            const el = document.getElementById(selId);
+            if (!el) return;
+            el.value = value ?? "";
+          }
+
+          function cloudOpenUrl(linkId) {
+            // uses your existing helper (1-arg version also exists in the file)
+            return typeof currentLandingUrl === "function"
+              ? currentLandingUrl(linkId)
+              : `https://www.themeqr.com/landing.html?linkId=${encodeURIComponent(
+                  linkId
+                )}`;
+          }
+
+          async function fetchCloudLinks() {
+            const uid = await getUserId();
+            if (!uid) return [];
+            const { data, error } = await sb
+              .from("links")
+              .select("id, link_id, url, theme_id, updated_at")
+              .eq("user_id", uid)
+              .order("updated_at", { ascending: false });
+            if (error) {
+              console.error("[links] fetch error", error);
+              return [];
+            }
+            return data ?? [];
+          }
+
+          window.renderLinksList = async function renderLinksList() {
+            const list = document.getElementById("linksList");
+            if (!list) return;
+
+            list.innerHTML = `<div class="muted small">Loading…</div>`;
+            const rows = await fetchCloudLinks();
+            if (!rows.length) {
+              list.innerHTML = `<div class="muted small">No links yet. Create one above.</div>`;
+              return;
+            }
+
+            list.innerHTML = "";
+            for (const row of rows) {
+              const displayId = String(row.link_id ?? row.id ?? "");
+              const themeIdVal = row.theme_id ?? "";
+
+              const item = document.createElement("div");
+              item.className = "item small";
+
+              const left = document.createElement("div");
+              left.innerHTML = `<div><b>${displayId}</b> → <span class="muted">${
+                row.url || "(no destination set)"
+              }</span></div>
+         <div class="muted">Theme: ${
+           themeIdVal ? "#" + themeIdVal : "—"
+         }</div>`;
+
+              const stack = document.createElement("div");
+              stack.className = "stack";
+
+              const openBtn = document.createElement("a");
+              openBtn.className = "btn";
+              openBtn.textContent = "Open";
+              openBtn.href = cloudOpenUrl(displayId); // QR behavior = linkId-only
+              openBtn.target = "_blank";
+
+              const loadBtn = document.createElement("button");
+              loadBtn.className = "btn";
+              loadBtn.textContent = "Load";
+              loadBtn.onclick = () => {
+                document.getElementById("linkId").value = displayId;
+                document.getElementById("linkUrl").value = row.url || "";
+                setSelectIfExists(
+                  "linkTheme",
+                  themeIdVal ? String(themeIdVal) : ""
+                );
+                window.currentRow = row; // keep “Update” mode
+                document.getElementById("saveBtn").textContent = "Update";
+                if (typeof drawQR === "function") drawQR(); // QR stays stable
+              };
+
+              const delBtn = document.createElement("button");
+              delBtn.className = "btn warn";
+              delBtn.textContent = "Delete";
+              delBtn.onclick = async () => {
+                if (!confirm("Delete this link?")) return;
+                const { error } = await sb
+                  .from("links")
+                  .delete()
+                  .eq("id", row.id);
+                if (error) {
+                  alert("Delete failed");
+                  return;
+                }
+                renderLinksList();
+              };
+
+              stack.append(openBtn, loadBtn, delBtn);
+              item.append(left, stack);
+              list.appendChild(item);
+            }
+          };
+
+          // initial + keep fresh on auth changes
+          document.addEventListener("DOMContentLoaded", renderLinksList);
+          sb.auth.onAuthStateChange(renderLinksList);
+        })();
       </script>
     </div>
   </body>
