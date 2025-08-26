@@ -1784,90 +1784,17 @@
         // Reuse if already present (avoid multiple GoTrueClient instances)
         if (!window.sb) {
           window.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-            auth: { persistSession: true },
+            auth: {
+              persistSession: true,
+              autoRefreshToken: true,
+              detectSessionInUrl: true,
+              flowType: "pkce",
+              // (optional) custom storage key to avoid collisions with other apps
+              storageKey: "themeqr-auth",
+            },
           });
         }
-        (() => {
-          const HOST_ID = "authNavFixed";
 
-          function ensureHost() {
-            // De-dupe any accidental duplicates of #authNavFixed
-            const all = Array.from(document.querySelectorAll("#" + HOST_ID));
-            let el = all[0] || null;
-            all.slice(1).forEach((n) => n.remove());
-
-            if (!el) {
-              el = document.createElement("div");
-              el.id = HOST_ID;
-              el.className = "auth-fixed";
-            }
-            // Make sure it sits under <body> so it's predictable and not clipped
-            if (el.parentElement !== document.body) {
-              document.body.appendChild(el);
-            }
-            return el;
-          }
-
-          function paintAnon(el) {
-            el.innerHTML = `
-      <a id="lnkLogin"  class="auth-link" href="#">Log in</a>
-      <span class="auth-sep">•</span>
-      <a id="lnkSignup" class="auth-link" href="#">Sign up</a>
-    `;
-            // Use the current page as the return URL
-            const redirectTo = location.origin + location.pathname;
-            const go = (e) => {
-              e.preventDefault();
-              if (!window.sb?.auth) return;
-              sb.auth.signInWithOAuth({
-                provider: "google",
-                options: { redirectTo },
-              });
-            };
-            el.querySelector("#lnkLogin").onclick = go;
-            el.querySelector("#lnkSignup").onclick = go;
-          }
-
-          async function paint() {
-            const el = ensureHost();
-
-            // Paint something immediately so :empty never triggers the debug badge
-            if (!el.innerHTML.trim()) paintAnon(el);
-
-            try {
-              if (!window.sb?.auth) return; // Supabase not ready yet; anon paint is fine
-              const { data } = await sb.auth.getSession();
-              const session = data?.session || null;
-
-              if (session) {
-                const email = session.user?.email || "Account";
-                el.innerHTML = `
-          <span class="auth-link">Signed in as ${email}</span>
-          <span class="auth-sep">•</span>
-          <a id="lnkLogout" class="auth-link" href="#">Log out</a>
-        `;
-                el.querySelector("#lnkLogout").onclick = async (e) => {
-                  e.preventDefault();
-                  await sb.auth.signOut();
-                  paint(); // revert to anon UI
-                };
-              } else {
-                // Not signed in
-                paintAnon(el);
-              }
-            } catch (err) {
-              console.warn("auth nav paint failed", err);
-              // Fall back to anon UI if anything goes sideways
-              paintAnon(el);
-            }
-          }
-
-          // First paint
-          window.addEventListener("DOMContentLoaded", paint);
-
-          // Also repaint when auth state changes
-          window.sb?.auth?.onAuthStateChange?.(() => paint());
-        })();
         // Canonical session helper
         async function sbSession() {
           const { data } = await sb.auth.getSession();
@@ -1875,39 +1802,54 @@
         }
 
         // Top-right auth nav (Log in / Sign up / Log out)
+        // Top-right auth nav (Log in / Sign up / Log out)
         async function renderAuthNav() {
-          const { data } = await sb.auth.getSession();
-          const session = data?.session || null;
           const el = document.getElementById("authNavFixed");
           if (!el) return;
 
+          // get current session safely
+          let session = null;
+          try {
+            const { data } = await sb.auth.getSession();
+            session = data?.session ?? null;
+          } catch (_) {
+            session = null;
+          }
+
           if (!session) {
+            // paint login/signup UI
             el.innerHTML = `
-        <a id="lnkLogin"  class="auth-link" href="#">Log in</a>
-        <span class="auth-sep">•</span>
-        <a id="lnkSignup" class="auth-link" href="#">Sign up</a>
-      `;
-            const redirectTo = "https://www.themeqr.com/studio.html"; // after login
+      <a id="lnkLogin"  class="auth-link" href="#">Log in</a>
+      <span class="auth-sep">•</span>
+      <a id="lnkSignup" class="auth-link" href="#">Sign up</a>
+    `;
+
+            // ✅ only start OAuth when user clicks
+            const redirectTo = `${location.origin}${location.pathname}${location.search}`;
             const goGoogle = (e) => {
               e.preventDefault();
-              sb.auth.signInWithOAuth({
-                provider: "google",
-                options: { redirectTo },
-              });
+              sb.auth
+                .signInWithOAuth({
+                  provider: "google",
+                  options: { redirectTo },
+                })
+                .catch((err) => console.error("[auth] OAuth error", err));
             };
-            document.getElementById("lnkLogin").onclick = goGoogle;
-            document.getElementById("lnkSignup").onclick = goGoogle;
+
+            el.querySelector("#lnkLogin").onclick = goGoogle;
+            el.querySelector("#lnkSignup").onclick = goGoogle;
           } else {
+            // paint signed-in UI
             const email = session.user?.email || "Account";
             el.innerHTML = `
-        <span class="auth-link">Signed in as ${email}</span>
-        <span class="auth-sep">•</span>
-        <a id="lnkLogout" class="auth-link" href="#">Log out</a>
-      `;
-            document.getElementById("lnkLogout").onclick = async (e) => {
+      <span class="auth-link">Signed in as ${email}</span>
+      <span class="auth-sep">•</span>
+      <a id="lnkLogout" class="auth-link" href="#">Log out</a>
+    `;
+            el.querySelector("#lnkLogout").onclick = async (e) => {
               e.preventDefault();
               await sb.auth.signOut();
-              renderAuthNav();
+              renderAuthNav(); // repaint anon state
             };
           }
         }
@@ -1922,6 +1864,7 @@
           }
           renderAuthNav(); // initial paint
         });
+
         // initial + react to changes
         sb.auth.getSession().then(renderAuthNav);
         sb.auth.onAuthStateChange((_e, _s) => renderAuthNav());
@@ -2344,10 +2287,11 @@
           return { type: "img", el: img };
         }
 
-        function currentLandingUrl(linkId) {
-          const base = "https://www.themeqr.com/landing.html";
-          const url = new URL(base);
+        function currentLandingUrl(linkId, themeId) {
+          // build relative to the current page’s location (works on localhost, apex, www, subpaths)
+          const url = new URL("landing.html", location.href);
           url.searchParams.set("linkId", linkId);
+          if (themeId) url.searchParams.set("themeId", themeId);
           return url.toString();
         }
 
@@ -4359,32 +4303,52 @@
           };
 
           // ---------- override links list: source = Supabase only ----------
-          window.renderLinksList = async function renderLinksList() {
-            const list = document.getElementById("linksList");
-            if (!list) return;
+          window.renderLinksList = (async function renderLinksList() {
+            const list = $("#linksList");
             list.innerHTML = "";
 
-            const [links, themes] = await Promise.all([
-              listLinks(),
-              listThemes(),
-            ]);
-            for (const link of links) {
-              const displayId = link.link_id ?? link.id ?? "";
-              const themeIdVal = link.theme_id ?? link.themeId ?? "";
+            const session = await sbSession();
+            const user = session?.user || null;
+            if (!user) {
+              list.innerHTML = `<div class="muted small">Sign in to see your links.</div>`;
+              return;
+            }
 
-              const theme = themes.find(
-                (t) => String(t.id) === String(themeIdVal)
-              );
+            const { data, error } = await sb
+              .from("links")
+              .select("link_id, url, theme_id, updated")
+              .eq("user_id", user.id)
+              .order("updated", { ascending: false });
+
+            if (error) {
+              console.warn("[links] fetch error:", error);
+              list.innerHTML = `<div class="muted small">Couldn’t load from cloud.</div>`;
+              return;
+            }
+
+            const themesById = Object.fromEntries(
+              db.themes().map((t) => [String(t.id), t])
+            ); // optional local cache for names
+
+            (data || []).forEach((row) => {
+              const displayId = row.link_id;
+              const themeIdVal =
+                row.theme_id != null ? String(row.theme_id) : "";
+              const themeName = themesById[themeIdVal]?.name || "—";
+              const updatedIso = row.updated || new Date().toISOString();
+
               const div = document.createElement("div");
               div.className = "item small";
 
               const target = document.createElement("div");
               target.innerHTML = `
-        <div><b>${escapeHtml(displayId)}</b> → <span class="muted">${escapeHtml(
-                link.url || "(no destination set)"
+      <div><b>${escapeHtml(displayId)}</b> → <span class="muted">${escapeHtml(
+                row.url || "(no destination set)"
               )}</span></div>
-        <div class="muted">Theme: ${theme ? escapeHtml(theme.name) : "—"}</div>
-      `;
+      <div class="muted">Theme: ${escapeHtml(
+        themeName
+      )} · Last updated: ${new Date(updatedIso).toLocaleString()}</div>
+    `;
 
               const actions = document.createElement("div");
               actions.className = "stack";
@@ -4395,84 +4359,74 @@
               openBtn.href = currentLandingUrl(displayId, themeIdVal || "");
               openBtn.target = "_blank";
 
-              const loadBtn = document.createElement("button");
-              loadBtn.className = "btn";
-              loadBtn.textContent = "Load";
-              loadBtn.onclick = () => {
-                document.getElementById("linkId").value = displayId;
-                document.getElementById("linkUrl").value = link.url || "";
-                document.getElementById("linkTheme").value = themeIdVal || "";
+              const editBtn = document.createElement("button");
+              editBtn.className = "btn";
+              editBtn.textContent = "Load";
+              editBtn.onclick = () => {
+                $("#linkId").value = displayId;
+                $("#linkUrl").value = row.url || "";
+                $("#linkTheme").value = themeIdVal || "";
                 drawQR();
-                window.currentRow = link;
-                document.getElementById("saveBtn").textContent = "Update";
               };
 
-              const delBtn = document.createElement("button");
-              delBtn.className = "btn warn";
-              delBtn.textContent = "Delete";
-              delBtn.onclick = async () => {
-                if (!confirm("Delete this link?")) return;
-                await sb.from("links").delete().eq("id", link.id);
-                await renderLinksList();
-              };
-
-              actions.append(openBtn, loadBtn, delBtn);
+              actions.append(openBtn, editBtn);
               div.append(target, actions);
               list.appendChild(div);
-            }
-          };
-
-          // ---------- rewire "Save / Update Link" → cloud only ----------
-          (function rewireSaveLink() {
-            const btn = document.getElementById("saveBtn");
-            if (!btn) return;
-            const b = btn.cloneNode(true); // removes old listeners (local db)
-            btn.replaceWith(b);
-            b.id = "saveBtn";
-            b.addEventListener("click", async (e) => {
-              e.preventDefault();
-              const { data: { session } = {} } = await sb.auth.getSession();
-              const user = session?.user;
-              if (!user) return alert("Please sign in to save.");
-
-              const rawId = (
-                document.getElementById("linkId").value || ""
-              ).trim();
-              if (!rawId) return alert("Please enter a Link ID.");
-              const cleanedId = rawId
-                .toLowerCase()
-                .replace(/[^a-z0-9-_]/g, "-")
-                .replace(/-+/g, "-")
-                .replace(/^-|-$/g, "");
-              document.getElementById("linkId").value = cleanedId;
-
-              const url =
-                (document.getElementById("linkUrl").value || "").trim() || null;
-              const themeSel = (
-                document.getElementById("linkTheme").value || ""
-              ).trim();
-              const theme_id = themeSel ? Number(themeSel) : null;
-
-              const row = {
-                user_id: user.id,
-                link_id: cleanedId,
-                url,
-                theme_id,
-                updated: new Date().toISOString(),
-              };
-              const { error } = await sb
-                .from("links")
-                .upsert(row, { onConflict: "link_id" });
-              if (error)
-                return alert(
-                  "Cloud save failed: " + (error.message || "unknown")
-                );
-
-              await renderLinksList();
-              drawQR();
-              b.textContent = "Update";
             });
-          })();
+          })(
+            // ---------- rewire "Save / Update Link" → cloud only ----------
+            function rewireSaveLink() {
+              const btn = document.getElementById("saveBtn");
+              if (!btn) return;
+              const b = btn.cloneNode(true); // removes old listeners (local db)
+              btn.replaceWith(b);
+              b.id = "saveBtn";
+              b.addEventListener("click", async (e) => {
+                e.preventDefault();
+                const { data: { session } = {} } = await sb.auth.getSession();
+                const user = session?.user;
+                if (!user) return alert("Please sign in to save.");
+
+                const rawId = (
+                  document.getElementById("linkId").value || ""
+                ).trim();
+                if (!rawId) return alert("Please enter a Link ID.");
+                const cleanedId = rawId
+                  .toLowerCase()
+                  .replace(/[^a-z0-9-_]/g, "-")
+                  .replace(/-+/g, "-")
+                  .replace(/^-|-$/g, "");
+                document.getElementById("linkId").value = cleanedId;
+
+                const url =
+                  (document.getElementById("linkUrl").value || "").trim() ||
+                  null;
+                const themeSel = (
+                  document.getElementById("linkTheme").value || ""
+                ).trim();
+                const theme_id = themeSel ? Number(themeSel) : null;
+
+                const row = {
+                  user_id: user.id,
+                  link_id: cleanedId,
+                  url,
+                  theme_id,
+                  updated: new Date().toISOString(),
+                };
+                const { error } = await sb
+                  .from("links")
+                  .upsert(row, { onConflict: "link_id" });
+                if (error)
+                  return alert(
+                    "Cloud save failed: " + (error.message || "unknown")
+                  );
+
+                await renderLinksList();
+                drawQR();
+                b.textContent = "Update";
+              });
+            }
+          )();
 
           // ---------- rewire "Save / Update Theme" → cloud only ----------
           (function rewireSaveTheme() {
@@ -4555,14 +4509,15 @@
             if (!el) return;
             el.value = value ?? "";
           }
-
           function cloudOpenUrl(linkId) {
-            // uses your existing helper (1-arg version also exists in the file)
-            return typeof currentLandingUrl === "function"
-              ? currentLandingUrl(linkId)
-              : `https://www.themeqr.com/landing.html?linkId=${encodeURIComponent(
-                  linkId
-                )}`;
+            // Prefer your helper if it exists
+            if (typeof currentLandingUrl === "function") {
+              return currentLandingUrl(linkId); // (call without themeId to keep QR behavior stable)
+            }
+            // Fallback: build an env-agnostic URL (works on localhost + prod)
+            const u = new URL("landing.html", location.href);
+            u.searchParams.set("linkId", linkId);
+            return u.toString();
           }
 
           async function fetchCloudLinks() {
