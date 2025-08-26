@@ -2296,7 +2296,10 @@
           $("#encoded").textContent = payloadUrl;
           qrCanvasHost.dataset.qrType = result.type;
         }
-        $("#qrSize, #qrFg, #qrBg, #qrEcc, #linkId").addEventListener("input", drawQR);
+        $("#qrSize, #qrFg, #qrBg, #qrEcc, #linkId").addEventListener(
+          "input",
+          drawQR
+        );
 
         function resetFormToNew() {
           $("#linkId").value = "";
@@ -2317,8 +2320,8 @@
 
           for (const link of links) {
             // prefer cloud schema; fall back to older local schema
-            const displayId = link.link_id ?? link.id ?? ""; // 👈 show link_id if available
-            const themeIdVal = link.theme_id ?? link.themeId ?? ""; // 👈 support theme_id or themeId
+            const displayId = link.link_id ?? link.id ?? ""; //
+            const themeIdVal = link.theme_id ?? link.themeId ?? ""; //
             const updatedIso =
               link.updated || link.last_updated || new Date().toISOString();
 
@@ -2360,7 +2363,16 @@
               $("#linkId").value = displayId;
               $("#linkUrl").value = link.url || "";
               $("#linkTheme").value = themeIdVal || "";
-              drawQR();
+              // AFTER — prefer cloud id, fall back to local
+              const themeIdVal = link.theme_id ?? link.themeId ?? "";
+              const t = db
+                .themes()
+                .find(
+                  (tt) => String(tt.remoteId ?? tt.id) === String(themeIdVal)
+                );
+              $("#linkTheme").value = t
+                ? String(t.remoteId ?? t.id)
+                : String(themeIdVal);
             };
 
             // Delete (local only) — keep as-is
@@ -2436,6 +2448,19 @@
           const themeSel = $("#linkTheme").value || ""; // could be "", "123", "theme_x"
           const themeIdNum = /^\d+$/.test(themeSel) ? Number(themeSel) : null;
 
+          // Fallback: if select still has a local string id, map it to remoteId
+          if (themeIdNum == null && themeSel) {
+            const t = db
+              .themes()
+              .find(
+                (tt) =>
+                  String(tt.id) === String(themeSel) ||
+                  String(tt.remoteId) === String(themeSel)
+              );
+            if (t && Number.isFinite(t.remoteId)) {
+              themeIdNum = t.remoteId;
+            }
+          }
           if (!cleanedId) {
             alert("Please provide a Link ID");
             return;
@@ -2867,7 +2892,10 @@
           }
           refreshThemeDropdown();
           bindThemesRail();
-          if (currentId) $("#linkTheme").value = currentId;
+          if (currentId) {
+            const t = db.themes().find((tt) => tt.id === currentId);
+            setLinkThemeSelectFromThemeObj(t);
+          }
           initThemesRailControls();
         }
         function initThemesRailControls() {
@@ -4038,11 +4066,7 @@
               .single();
           } else {
             // INSERT new row
-            resp = await sb
-              .from("links")
-              .insert(payload)
-              .select()
-              .single();
+            resp = await sb.from("links").insert(payload).select().single();
           }
 
           const { data, error } = resp;
@@ -4061,10 +4085,7 @@
 
         // Delete a row from Supabase
         async function deleteLink(rowId) {
-          const { error } = await sb
-            .from("links")
-            .delete()
-            .eq("id", rowId);
+          const { error } = await sb.from("links").delete().eq("id", rowId);
           if (error) {
             console.error("deleteLink error:", error);
             alert("Could not delete link.");
@@ -4083,6 +4104,19 @@
 
           renderLinksList();
         });
+
+        function setLinkThemeSelectFromThemeObj(theme) {
+          if (!theme) return;
+          const selectVal = Number.isFinite(theme.remoteId)
+            ? String(theme.remoteId)
+            : String(theme.id || "");
+          const sel = document.getElementById("linkTheme");
+          if (sel) {
+            sel.value = selectVal;
+            // keep QR preview behavior the same as you have it:
+            sel.dispatchEvent(new Event("input"));
+          }
+        }
       </script>
     </div>
   </body>
