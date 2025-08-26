@@ -2334,16 +2334,16 @@
 
             const target = document.createElement("div");
             target.innerHTML = `
-      <div>
-        <b>${escapeHtml(displayId)}</b> → 
-        <span class="muted">${escapeHtml(
-          link.url || "(no destination set)"
-        )}</span>
-      </div>
-      <div class="muted">
-        Theme: ${theme ? escapeHtml(theme.name) : "—"} · 
-        Last updated: ${new Date(updatedIso).toLocaleString()}
-      </div>`;
+            <div>
+              <b>${escapeHtml(displayId)}</b> → 
+              <span class="muted">${escapeHtml(
+                link.url || "(no destination set)"
+              )}</span>
+            </div>
+            <div class="muted">
+              Theme: ${theme ? escapeHtml(theme.name) : "—"} · 
+              Last updated: ${new Date(updatedIso).toLocaleString()}
+            </div>`;
 
             const actions = document.createElement("div");
             actions.className = "stack";
@@ -4117,6 +4117,344 @@
             sel.dispatchEvent(new Event("input"));
           }
         }
+
+        /* === CLOUD-ONLY MODE: Links & Themes (Supabase) === */
+        (async function cloudOnly() {
+          if (!window.sb) return; // uses your existing Supabase client
+          async function currentUserId() {
+            try {
+              return (await sb.auth.getUser())?.data?.user?.id || null;
+            } catch {
+              return null;
+            }
+          }
+
+          async function listThemes() {
+            const uid = await currentUserId();
+            if (!uid) return [];
+            const { data, error } = await sb
+              .from("themes")
+              .select("*")
+              .eq("user_id", uid)
+              .order("updated", { ascending: false });
+            if (error) {
+              console.error("[cloud-only] themes error", error);
+              return [];
+            }
+            return data || [];
+          }
+
+          async function listLinks() {
+            const uid = await currentUserId();
+            if (!uid) return [];
+            const { data, error } = await sb
+              .from("links")
+              .select("*")
+              .eq("user_id", uid)
+              .order("updated", { ascending: false });
+            if (error) {
+              console.error("[cloud-only] links error", error);
+              return [];
+            }
+            return data || [];
+          }
+
+          // ---------- override dropdown: source = Supabase only ----------
+          window.refreshThemeDropdown = async function refreshThemeDropdown() {
+            const sel = document.getElementById("linkTheme");
+            if (!sel) return;
+            sel.innerHTML = `<option value="">— None —</option>`;
+            const themes = await listThemes();
+            for (const t of themes) {
+              const opt = document.createElement("option");
+              opt.value = String(t.id);
+              opt.textContent = t.name || `(untitled #${t.id})`;
+              sel.appendChild(opt);
+            }
+          };
+
+          // ---------- override themes rail: source = Supabase only ----------
+          window.renderThemesList = async function renderThemesList(
+            currentId = ""
+          ) {
+            const list = document.getElementById("themesList");
+            if (!list) return;
+            list.innerHTML = "";
+
+            const themes = await listThemes();
+            for (const t of themes) {
+              const row = document.createElement("div");
+              row.className = "theme-row";
+
+              const left = document.createElement("div");
+              left.className = "row-left";
+              left.innerHTML = `
+        <div><b>${escapeHtml(t.name || "(untitled)")}</b></div>
+        <div class="muted">#${t.id}</div>
+      `;
+
+              const actions = document.createElement("div");
+              actions.className = "stack";
+
+              const useBtn = document.createElement("button");
+              useBtn.className = "btn";
+              useBtn.textContent = "Use";
+              useBtn.onclick = () => {
+                // hydrate editor from cloud row
+                workingTheme = {
+                  ...workingTheme,
+                  remoteId: t.id,
+                  id: String(t.id),
+                  name: t.name || "",
+                  title: t.title || "",
+                  subtitle: t.subtitle || "",
+                  font: t.font || "Inter,system-ui",
+                  colors: t.colors || {},
+                  cta: t.cta || {},
+                  media: t.media || {},
+                  settings: t.settings || {
+                    redirectDelay: 2,
+                    showSkip: true,
+                    skipText: "Skip",
+                  },
+                };
+
+                // fill inputs + preview (same fields you already have)
+                document.getElementById("themeName").value = workingTheme.name;
+                document.getElementById("themeTitle").value =
+                  workingTheme.title || "";
+                document.getElementById("themeSubtitle").value =
+                  workingTheme.subtitle || "";
+                document.getElementById("themeCtaText").value =
+                  workingTheme.cta?.text || "";
+                document.getElementById("themeCtaUrl").value =
+                  workingTheme.cta?.url || "";
+                document.getElementById("themeFont").value =
+                  workingTheme.font || "Inter,system-ui";
+                document.getElementById("themeBg1").value =
+                  workingTheme.colors?.bg1 || "#101635";
+                document.getElementById("themeBg2").value =
+                  workingTheme.colors?.bg2 || "#0b0f23";
+                document.getElementById("themeFg").value =
+                  workingTheme.colors?.fg || "#f3f6ff";
+                document.getElementById("themeCtaBg").value =
+                  workingTheme.colors?.ctaBg || "#6c7dff";
+                document.getElementById("themeCtaFg").value =
+                  workingTheme.colors?.ctaFg || "#09122a";
+                document.getElementById("themeAlt").value =
+                  workingTheme.media?.alt || "";
+                document.getElementById("themeDelay").value =
+                  workingTheme.settings?.redirectDelay ?? 2;
+                document.getElementById("themeShowSkip").checked = !!(
+                  workingTheme.settings?.showSkip ?? true
+                );
+                document.getElementById("themeSkipText").value =
+                  workingTheme.settings?.skipText ?? "Skip";
+                const chk = document.getElementById("themeOverrideUrl");
+                if (chk)
+                  chk.checked = !!workingTheme.settings?.overrideWithThemeUrl;
+
+                applySim();
+                // Also select it for links
+                document.getElementById("linkTheme").value = String(t.id);
+              };
+
+              const copyId = document.createElement("button");
+              copyId.className = "btn ghost";
+              copyId.textContent = "Copy ID";
+              copyId.onclick = () =>
+                navigator.clipboard.writeText(String(t.id));
+
+              actions.append(useBtn, copyId);
+              row.append(left, actions);
+              list.appendChild(row);
+            }
+
+            await window.refreshThemeDropdown();
+            if (currentId)
+              document.getElementById("linkTheme").value = String(currentId);
+            // keep your existing scroller affordances
+            window.bindThemesRail?.();
+            window.initThemesRailControls?.();
+          };
+
+          // ---------- override links list: source = Supabase only ----------
+          window.renderLinksList = async function renderLinksList() {
+            const list = document.getElementById("linksList");
+            if (!list) return;
+            list.innerHTML = "";
+
+            const [links, themes] = await Promise.all([
+              listLinks(),
+              listThemes(),
+            ]);
+            for (const link of links) {
+              const displayId = link.link_id ?? link.id ?? "";
+              const themeIdVal = link.theme_id ?? link.themeId ?? "";
+
+              const theme = themes.find(
+                (t) => String(t.id) === String(themeIdVal)
+              );
+              const div = document.createElement("div");
+              div.className = "item small";
+
+              const target = document.createElement("div");
+              target.innerHTML = `
+        <div><b>${escapeHtml(displayId)}</b> → <span class="muted">${escapeHtml(
+                link.url || "(no destination set)"
+              )}</span></div>
+        <div class="muted">Theme: ${theme ? escapeHtml(theme.name) : "—"}</div>
+      `;
+
+              const actions = document.createElement("div");
+              actions.className = "stack";
+
+              const openBtn = document.createElement("a");
+              openBtn.className = "btn";
+              openBtn.textContent = "Open";
+              openBtn.href = currentLandingUrl(displayId, themeIdVal || "");
+              openBtn.target = "_blank";
+
+              const loadBtn = document.createElement("button");
+              loadBtn.className = "btn";
+              loadBtn.textContent = "Load";
+              loadBtn.onclick = () => {
+                document.getElementById("linkId").value = displayId;
+                document.getElementById("linkUrl").value = link.url || "";
+                document.getElementById("linkTheme").value = themeIdVal || "";
+                drawQR();
+                window.currentRow = link;
+                document.getElementById("saveBtn").textContent = "Update";
+              };
+
+              const delBtn = document.createElement("button");
+              delBtn.className = "btn warn";
+              delBtn.textContent = "Delete";
+              delBtn.onclick = async () => {
+                if (!confirm("Delete this link?")) return;
+                await sb.from("links").delete().eq("id", link.id);
+                await renderLinksList();
+              };
+
+              actions.append(openBtn, loadBtn, delBtn);
+              div.append(target, actions);
+              list.appendChild(div);
+            }
+          };
+
+          // ---------- rewire "Save / Update Link" → cloud only ----------
+          (function rewireSaveLink() {
+            const btn = document.getElementById("saveBtn");
+            if (!btn) return;
+            const b = btn.cloneNode(true); // removes old listeners (local db)
+            btn.replaceWith(b);
+            b.id = "saveBtn";
+            b.addEventListener("click", async (e) => {
+              e.preventDefault();
+              const { data: { session } = {} } = await sb.auth.getSession();
+              const user = session?.user;
+              if (!user) return alert("Please sign in to save.");
+
+              const rawId = (
+                document.getElementById("linkId").value || ""
+              ).trim();
+              if (!rawId) return alert("Please enter a Link ID.");
+              const cleanedId = rawId
+                .toLowerCase()
+                .replace(/[^a-z0-9-_]/g, "-")
+                .replace(/-+/g, "-")
+                .replace(/^-|-$/g, "");
+              document.getElementById("linkId").value = cleanedId;
+
+              const url =
+                (document.getElementById("linkUrl").value || "").trim() || null;
+              const themeSel = (
+                document.getElementById("linkTheme").value || ""
+              ).trim();
+              const theme_id = themeSel ? Number(themeSel) : null;
+
+              const row = {
+                user_id: user.id,
+                link_id: cleanedId,
+                url,
+                theme_id,
+                updated: new Date().toISOString(),
+              };
+              const { error } = await sb
+                .from("links")
+                .upsert(row, { onConflict: "link_id" });
+              if (error)
+                return alert(
+                  "Cloud save failed: " + (error.message || "unknown")
+                );
+
+              await renderLinksList();
+              drawQR();
+              b.textContent = "Update";
+            });
+          })();
+
+          // ---------- rewire "Save / Update Theme" → cloud only ----------
+          (function rewireSaveTheme() {
+            const btn = document.getElementById("saveTheme");
+            if (!btn) return;
+            const b = btn.cloneNode(true);
+            btn.replaceWith(b);
+            b.id = "saveTheme";
+            b.addEventListener("click", async (e) => {
+              e.preventDefault();
+              if (!workingTheme.name?.trim())
+                return alert("Please give your theme a name.");
+              const uid = await currentUserId();
+              if (!uid) return alert("Please sign in.");
+
+              const row = {
+                id: Number.isFinite(workingTheme.remoteId)
+                  ? workingTheme.remoteId
+                  : undefined,
+                user_id: uid,
+                name: workingTheme.name || "",
+                title: workingTheme.title || "",
+                subtitle: workingTheme.subtitle || "",
+                font: workingTheme.font || "Inter,system-ui",
+                colors: workingTheme.colors || {},
+                cta: workingTheme.cta || {},
+                media: workingTheme.media || {},
+                settings: workingTheme.settings || {
+                  redirectDelay: 2,
+                  showSkip: true,
+                  skipText: "Skip",
+                },
+                updated: new Date().toISOString(),
+              };
+              const { data, error } = await sb
+                .from("themes")
+                .upsert(row)
+                .select("id")
+                .single();
+              if (error)
+                return alert(
+                  "Cloud save failed: " + (error.message || "unknown")
+                );
+              workingTheme.remoteId = data.id;
+              workingTheme.id = String(data.id);
+
+              await renderThemesList(data.id);
+              await refreshThemeDropdown();
+              applySim();
+            });
+          })();
+
+          // initial render (also refresh on auth change)
+          await renderThemesList();
+          await renderLinksList();
+          await refreshThemeDropdown();
+          sb.auth.onAuthStateChange(() => {
+            renderThemesList();
+            renderLinksList();
+            refreshThemeDropdown();
+          });
+        })();
       </script>
     </div>
   </body>
