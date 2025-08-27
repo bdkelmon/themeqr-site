@@ -1092,8 +1092,8 @@
         <span>ThemeQR</span><span class="muted small"></span>
         <!-- Top-right auth nav -->
       </div>
-
-      <!-- LEFT NAV -->
+      <div id="authNav" class="auth-fixed"></div>
+      <!-- NAV -->
       <aside id="sidebar">
         <div class="nav-group" id="navWork">
           <button class="nav-btn active" data-tab="qr">QR Studio</button>
@@ -1783,27 +1783,33 @@
 
         const authNav = document.getElementById("authNav");
 
+        // This function renders the authentication links
+        // This function renders the authentication links
         const renderAuthNav = async () => {
           const {
             data: { session },
           } = await sb.auth.getSession();
-          authNav.innerHTML = ""; // Clear the content
+          const authNav = document.getElementById("authNav");
+          if (!authNav) return;
+
+          authNav.innerHTML = "";
 
           if (session) {
-            // User is logged in
             authNav.innerHTML = `<span class="auth-sep">/</span>
       <a href="#" id="authLink" class="auth-link">
         Log Out
       </a>`;
 
-            document.getElementById("authLink").onclick = async () => {
-              const { error } = await sb.auth.signOut();
-              if (error) {
-                alert(error.message);
-              }
-            };
+            const authLink = document.getElementById("authLink");
+            if (authLink) {
+              authLink.onclick = async () => {
+                const { error } = await sb.auth.signOut();
+                if (error) {
+                  alert(error.message);
+                }
+              };
+            }
           } else {
-            // User is not logged in
             authNav.innerHTML = `<a href="login.html" class="auth-link">
         Log In
       </a>
@@ -1833,8 +1839,6 @@
           const { data } = await sb.auth.getSession();
           return data?.session || null;
         }
-
-        // Top-right auth nav (Log in / Sign up / Log out)
         // Top-right auth nav (Log in / Sign up / Log out)
         async function renderAuthNav() {
           const el = document.getElementById("authNavFixed");
@@ -1900,7 +1904,10 @@
 
         // initial + react to changes
         sb.auth.getSession().then(renderAuthNav);
-        sb.auth.onAuthStateChange((_e, _s) => {renderAuthNav(); renderAuthNav()});
+        sb.auth.onAuthStateChange((_e, _s) => {
+          renderAuthNav();
+          renderAuthNav();
+        });
 
         /***********************
          * App utilities
@@ -4159,7 +4166,7 @@
           const newEl = $("#newBtn"); // we’ll add this button next
           if (newEl) newEl.onclick = resetFormToNew;
           renderLinksList();
-          renderAuthNav(); 
+          renderAuthNav();
         });
 
         function setLinkThemeSelectFromThemeObj(theme) {
