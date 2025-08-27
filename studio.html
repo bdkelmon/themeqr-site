@@ -4052,7 +4052,7 @@
           const { data, error } = await sb
             .from("links")
             .select("*")
-            .order("updated_at", { ascending: false });
+            .order("updated", { ascending: false });
 
           if (error) {
             console.error("fetchLinks error:", error);
@@ -4181,7 +4181,7 @@
             setTimeout(() => {
               console.log("[listLinks] Post-render links recheck:", data);
             }, 2000);
-            
+
             return data || [];
           }
 
@@ -4569,9 +4569,9 @@
           if (!uid) return [];
           const { data, error } = await sb
             .from("links")
-            .select("id, link_id, url, theme_id, updated_at")
+            .select("id, link_id, url, theme_id, updated")
             .eq("user_id", uid)
-            .order("updated_at", { ascending: false });
+            .order("updated", { ascending: false });
           if (error) {
             console.error("[links] fetch error", error);
             return [];
