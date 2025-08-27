@@ -1125,7 +1125,11 @@
                 <div class="row">
                   <div>
                     <label>Link ID (letters, digits, “-”)</label>
-                    <input id="linkId" type="text" placeholder="e.g. spring-campaign"/>
+                    <input
+                      id="linkId"
+                      type="text"
+                      placeholder="e.g. spring-campaign"
+                    />
                   </div>
                   <div>
                     <label>Destination URL</label>
@@ -1748,8 +1752,13 @@
             <div class="stack" style="margin-top: 10px">
               <button class="btn" data-goto="themes">Go to Theme Studio</button>
               <button class="btn" data-goto="overlay">Go to QR Overlay</button>
-              <a class="btn ghost" href="./landing.html" 
-                 target="_blank" rel="noopener">Open QR Demo ↗</a>
+              <a
+                class="btn ghost"
+                href="./landing.html"
+                target="_blank"
+                rel="noopener"
+                >Open QR Demo ↗</a
+              >
             </div>
             <div class="small muted" style="margin-top: 12px">
               The encoded URL looks like
@@ -4135,11 +4144,7 @@
 
         /* === CLOUD-ONLY MODE: Links & Themes (Supabase) === */
         (async function cloudOnly() {
-          if (!window.sb){
-          console.error("Supabase client (sb) not initialized");
-          return; // uses your existing Supabase client
-          }
-          console.log("Running cloudOnly...");
+          if (!window.sb) return; // uses your existing Supabase client
           async function currentUserId() {
             try {
               return (await sb.auth.getUser())?.data?.user?.id || null;
@@ -4298,16 +4303,16 @@
           };
 
           // ---------- override links list: source = Supabase only ----------
-          window.renderLinksList = async function renderLinksList() {
-  // ... render links (same code as before) ...
-  const list = $("#linksList");
-  list.innerHTML = "";
-  const session = await sbSession();
-  const user = session?.user || null;
-  if (!user) {
-    list.innerHTML = `<div class="muted small">Sign in to see your links.</div>`;
-    return;
-  }
+          window.renderLinksList = (async function renderLinksList() {
+            const list = $("#linksList");
+            list.innerHTML = "";
+
+            const session = await sbSession();
+            const user = session?.user || null;
+            if (!user) {
+              list.innerHTML = `<div class="muted small">Sign in to see your links.</div>`;
+              return;
+            }
 
             const { data, error } = await sb
               .from("links")
@@ -4371,16 +4376,16 @@
           })(
             // ---------- rewire "Save / Update Link" → cloud only ----------
             function rewireSaveLink() {
-  const btn = document.getElementById("saveBtn");
-  if (!btn) return;
-  const b = btn.cloneNode(true);
-  btn.replaceWith(b);
-  b.id = "saveBtn";
-  b.addEventListener("click", async (e) => {
-    e.preventDefault();
-    const { data: { session } = {} } = await sb.auth.getSession();
-    const user = session?.user;
-    if (!user) return alert("Please sign in to save.");
+              const btn = document.getElementById("saveBtn");
+              if (!btn) return;
+              const b = btn.cloneNode(true); // removes old listeners (local db)
+              btn.replaceWith(b);
+              b.id = "saveBtn";
+              b.addEventListener("click", async (e) => {
+                e.preventDefault();
+                const { data: { session } = {} } = await sb.auth.getSession();
+                const user = session?.user;
+                if (!user) return alert("Please sign in to save.");
 
                 const rawId = (
                   document.getElementById("linkId").value || ""
@@ -4420,7 +4425,8 @@
                 drawQR();
                 b.textContent = "Update";
               });
-            })();
+            }
+          )();
 
           // ---------- rewire "Save / Update Theme" → cloud only ----------
           (function rewireSaveTheme() {
