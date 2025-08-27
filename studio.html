@@ -884,7 +884,7 @@
       #sidebar > div > div {
         background: rgba(0, 255, 0, 0.1); /* light green */
       }
-  
+
       /* === Unified app layout (desktop == mobile) === */
       :root {
         --header-h: 56px; /* tune if you tweak .logo padding */
@@ -4174,8 +4174,24 @@
               console.error("[cloud-only] links error", error);
               return [];
             }
+            
+            console.log("[listLinks] Initial fetched links:", data); // 🔍 STEP 2
+            
+            // Optional: detect if links are overwritten later
+            setTimeout(() => {
+              console.log("[listLinks] Post-render links recheck:", data);
+            }, 2000);
+            
             return data || [];
           }
+
+          // ✅ Call listLinks once after DOM is loaded
+          window.addEventListener("load", () => {
+            if (!window._linkListLoaded) {
+              window._linkListLoaded = true;
+              listLinks();
+            }
+          });
 
           // ---------- override dropdown: source = Supabase only ----------
           window.refreshThemeDropdown = async function refreshThemeDropdown() {
