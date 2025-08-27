@@ -4303,7 +4303,7 @@
           };
 
           // ---------- override links list: source = Supabase only ----------
-          window.renderLinksList = (async function renderLinksList() {
+          window.renderLinksList = async function renderLinksList() {
             const list = $("#linksList");
             list.innerHTML = "";
 
@@ -4373,7 +4373,7 @@
               div.append(target, actions);
               list.appendChild(div);
             });
-          })(
+          };
             // ---------- rewire "Save / Update Link" → cloud only ----------
             function rewireSaveLink() {
               const btn = document.getElementById("saveBtn");
@@ -4425,8 +4425,8 @@
                 drawQR();
                 b.textContent = "Update";
               });
-            }
-          )();
+            };
+            rewireSaveLink();
 
           // ---------- rewire "Save / Update Theme" → cloud only ----------
           (function rewireSaveTheme() {
