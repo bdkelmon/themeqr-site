@@ -1781,6 +1781,39 @@
         const SUPABASE_ANON_KEY =
           "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9zOUjFu7fi-4oRVY-D61NCJU";
 
+        const authNav = document.getElementById("authNav");
+
+        const renderAuthNav = async () => {
+          const {
+            data: { session },
+          } = await sb.auth.getSession();
+          authNav.innerHTML = ""; // Clear the content
+
+          if (session) {
+            // User is logged in
+            authNav.innerHTML = `<span class="auth-sep">/</span>
+      <a href="#" id="authLink" class="auth-link">
+        Log Out
+      </a>`;
+
+            document.getElementById("authLink").onclick = async () => {
+              const { error } = await sb.auth.signOut();
+              if (error) {
+                alert(error.message);
+              }
+            };
+          } else {
+            // User is not logged in
+            authNav.innerHTML = `<a href="login.html" class="auth-link">
+        Log In
+      </a>
+      <span class="auth-sep">/</span>
+      <a href="signup.html" class="auth-link">
+        Sign Up
+      </a>`;
+          }
+        };
+
         // Reuse if already present (avoid multiple GoTrueClient instances)
         if (!window.sb) {
           window.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -1867,7 +1900,7 @@
 
         // initial + react to changes
         sb.auth.getSession().then(renderAuthNav);
-        sb.auth.onAuthStateChange((_e, _s) => renderAuthNav());
+        sb.auth.onAuthStateChange((_e, _s) => {renderAuthNav(); renderAuthNav()});
 
         /***********************
          * App utilities
@@ -4125,8 +4158,8 @@
 
           const newEl = $("#newBtn"); // we’ll add this button next
           if (newEl) newEl.onclick = resetFormToNew;
-
           renderLinksList();
+          renderAuthNav(); 
         });
 
         function setLinkThemeSelectFromThemeObj(theme) {
@@ -4374,59 +4407,58 @@
               list.appendChild(div);
             });
           };
-            // ---------- rewire "Save / Update Link" → cloud only ----------
-            function rewireSaveLink() {
-              const btn = document.getElementById("saveBtn");
-              if (!btn) return;
-              const b = btn.cloneNode(true); // removes old listeners (local db)
-              btn.replaceWith(b);
-              b.id = "saveBtn";
-              b.addEventListener("click", async (e) => {
-                e.preventDefault();
-                const { data: { session } = {} } = await sb.auth.getSession();
-                const user = session?.user;
-                if (!user) return alert("Please sign in to save.");
+          // ---------- rewire "Save / Update Link" → cloud only ----------
+          function rewireSaveLink() {
+            const btn = document.getElementById("saveBtn");
+            if (!btn) return;
+            const b = btn.cloneNode(true); // removes old listeners (local db)
+            btn.replaceWith(b);
+            b.id = "saveBtn";
+            b.addEventListener("click", async (e) => {
+              e.preventDefault();
+              const { data: { session } = {} } = await sb.auth.getSession();
+              const user = session?.user;
+              if (!user) return alert("Please sign in to save.");
 
-                const rawId = (
-                  document.getElementById("linkId").value || ""
-                ).trim();
-                if (!rawId) return alert("Please enter a Link ID.");
-                const cleanedId = rawId
-                  .toLowerCase()
-                  .replace(/[^a-z0-9-_]/g, "-")
-                  .replace(/-+/g, "-")
-                  .replace(/^-|-$/g, "");
-                document.getElementById("linkId").value = cleanedId;
+              const rawId = (
+                document.getElementById("linkId").value || ""
+              ).trim();
+              if (!rawId) return alert("Please enter a Link ID.");
+              const cleanedId = rawId
+                .toLowerCase()
+                .replace(/[^a-z0-9-_]/g, "-")
+                .replace(/-+/g, "-")
+                .replace(/^-|-$/g, "");
+              document.getElementById("linkId").value = cleanedId;
 
-                const url =
-                  (document.getElementById("linkUrl").value || "").trim() ||
-                  null;
-                const themeSel = (
-                  document.getElementById("linkTheme").value || ""
-                ).trim();
-                const theme_id = themeSel ? Number(themeSel) : null;
+              const url =
+                (document.getElementById("linkUrl").value || "").trim() || null;
+              const themeSel = (
+                document.getElementById("linkTheme").value || ""
+              ).trim();
+              const theme_id = themeSel ? Number(themeSel) : null;
 
-                const row = {
-                  user_id: user.id,
-                  link_id: cleanedId,
-                  url,
-                  theme_id,
-                  updated: new Date().toISOString(),
-                };
-                const { error } = await sb
-                  .from("links")
-                  .upsert(row, { onConflict: "link_id" });
-                if (error)
-                  return alert(
-                    "Cloud save failed: " + (error.message || "unknown")
-                  );
+              const row = {
+                user_id: user.id,
+                link_id: cleanedId,
+                url,
+                theme_id,
+                updated: new Date().toISOString(),
+              };
+              const { error } = await sb
+                .from("links")
+                .upsert(row, { onConflict: "link_id" });
+              if (error)
+                return alert(
+                  "Cloud save failed: " + (error.message || "unknown")
+                );
 
-                await renderLinksList();
-                drawQR();
-                b.textContent = "Update";
-              });
-            };
-            rewireSaveLink();
+              await renderLinksList();
+              drawQR();
+              b.textContent = "Update";
+            });
+          }
+          rewireSaveLink();
 
           // ---------- rewire "Save / Update Theme" → cloud only ----------
           (function rewireSaveTheme() {
