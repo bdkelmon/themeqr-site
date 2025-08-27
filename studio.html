@@ -1783,43 +1783,6 @@
 
         const authNav = document.getElementById("authNav");
 
-        // This function renders the authentication links
-        // This function renders the authentication links
-        const renderAuthNav = async () => {
-          const {
-            data: { session },
-          } = await sb.auth.getSession();
-          const authNav = document.getElementById("authNav");
-          if (!authNav) return;
-
-          authNav.innerHTML = "";
-
-          if (session) {
-            authNav.innerHTML = `<span class="auth-sep">/</span>
-      <a href="#" id="authLink" class="auth-link">
-        Log Out
-      </a>`;
-
-            const authLink = document.getElementById("authLink");
-            if (authLink) {
-              authLink.onclick = async () => {
-                const { error } = await sb.auth.signOut();
-                if (error) {
-                  alert(error.message);
-                }
-              };
-            }
-          } else {
-            authNav.innerHTML = `<a href="login.html" class="auth-link">
-        Log In
-      </a>
-      <span class="auth-sep">/</span>
-      <a href="signup.html" class="auth-link">
-        Sign Up
-      </a>`;
-          }
-        };
-
         // Reuse if already present (avoid multiple GoTrueClient instances)
         if (!window.sb) {
           window.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -1856,10 +1819,10 @@
           if (!session) {
             // paint login/signup UI
             el.innerHTML = `
-      <a id="lnkLogin"  class="auth-link" href="#">Log in</a>
-      <span class="auth-sep">•</span>
-      <a id="lnkSignup" class="auth-link" href="#">Sign up</a>
-    `;
+            <a id="lnkLogin"  class="auth-link" href="#">Log in</a>
+            <span class="auth-sep">•</span>
+            <a id="lnkSignup" class="auth-link" href="#">Sign up</a>
+          `;
 
             // ✅ only start OAuth when user clicks
             const redirectTo = `${location.origin}${location.pathname}${location.search}`;
@@ -1879,10 +1842,10 @@
             // paint signed-in UI
             const email = session.user?.email || "Account";
             el.innerHTML = `
-      <span class="auth-link">Signed in as ${email}</span>
-      <span class="auth-sep">•</span>
-      <a id="lnkLogout" class="auth-link" href="#">Log out</a>
-    `;
+            <span class="auth-link">Signed in as ${email}</span>
+            <span class="auth-sep">•</span>
+            <a id="lnkLogout" class="auth-link" href="#">Log out</a>
+          `;
             el.querySelector("#lnkLogout").onclick = async (e) => {
               e.preventDefault();
               await sb.auth.signOut();
@@ -2398,16 +2361,16 @@
 
             const target = document.createElement("div");
             target.innerHTML = `
-            <div>
-              <b>${escapeHtml(displayId)}</b> → 
-              <span class="muted">${escapeHtml(
-                link.url || "(no destination set)"
-              )}</span>
-            </div>
-            <div class="muted">
-              Theme: ${theme ? escapeHtml(theme.name) : "—"} · 
-              Last updated: ${new Date(updatedIso).toLocaleString()}
-            </div>`;
+                  <div>
+                    <b>${escapeHtml(displayId)}</b> →
+                    <span class="muted">${escapeHtml(
+                      link.url || "(no destination set)"
+                    )}</span>
+                  </div>
+                  <div class="muted">
+                    Theme: ${theme ? escapeHtml(theme.name) : "—"} ·
+                    Last updated: ${new Date(updatedIso).toLocaleString()}
+                  </div>`;
 
             const actions = document.createElement("div");
             actions.className = "stack";
@@ -2439,7 +2402,7 @@
                 : String(themeIdVal);
             };
 
-            // Delete (local only) — keep as-is
+            // Delete (local only)
             const delBtn = document.createElement("button");
             delBtn.className = "btn warn";
             delBtn.textContent = "Delete";
@@ -3946,12 +3909,12 @@
             bar.style.alignItems = "center";
             bar.style.marginTop = "6px";
             bar.innerHTML = `
-            <label class="pill small" style="display:flex;gap:6px;align-items:center">
-              Size <input id="simMediaRange" type="range" min="120" step="1" style="width:200px">
-            </label>
-            <button id="simFit" class="btn">Fit</button>
-            <button id="simReset" class="btn ghost">320px</button>
-          `;
+                  <label class="pill small" style="display:flex;gap:6px;align-items:center">
+                    Size <input id="simMediaRange" type="range" min="120" step="1" style="width:200px">
+                  </label>
+                  <button id="simFit" class="btn">Fit</button>
+                  <button id="simReset" class="btn ghost">320px</button>
+                `;
             mwrap.parentElement.appendChild(bar);
           }
           const box = document.getElementById("simMediaBox");
@@ -4183,7 +4146,7 @@
         }
 
         /* === CLOUD-ONLY MODE: Links & Themes (Supabase) === */
-        (async function cloudOnly() {
+        async function cloudOnly() {
           if (!window.sb) return; // uses your existing Supabase client
           async function currentUserId() {
             try {
@@ -4236,6 +4199,40 @@
               sel.appendChild(opt);
             }
           };
+          window.renderAuthNav = async function renderAuthNav() {
+            const {
+              data: { session },
+            } = await sb.auth.getSession();
+            const authNav = document.getElementById("authNav");
+            if (!authNav) return;
+
+            authNav.innerHTML = "";
+
+            if (session) {
+              authNav.innerHTML = `<span class="auth-sep">/</span>
+            <a href="#" id="authLink" class="auth-link">
+              Log Out
+            </a>`;
+
+              const authLink = document.getElementById("authLink");
+              if (authLink) {
+                authLink.onclick = async () => {
+                  const { error } = await sb.auth.signOut();
+                  if (error) {
+                    alert(error.message);
+                  }
+                };
+              }
+            } else {
+              authNav.innerHTML = `<a href="login.html" class="auth-link">
+              Log In
+            </a>
+            <span class="auth-sep">/</span>
+            <a href="signup.html" class="auth-link">
+              Sign Up
+            </a>`;
+            }
+          };
 
           // ---------- override themes rail: source = Supabase only ----------
           window.renderThemesList = async function renderThemesList(
@@ -4253,9 +4250,9 @@
               const left = document.createElement("div");
               left.className = "row-left";
               left.innerHTML = `
-        <div><b>${escapeHtml(t.name || "(untitled)")}</b></div>
-        <div class="muted">#${t.id}</div>
-      `;
+              <div><b>${escapeHtml(t.name || "(untitled)")}</b></div>
+              <div class="muted">#${t.id}</div>
+            `;
 
               const actions = document.createElement("div");
               actions.className = "stack";
@@ -4382,13 +4379,15 @@
 
               const target = document.createElement("div");
               target.innerHTML = `
-      <div><b>${escapeHtml(displayId)}</b> → <span class="muted">${escapeHtml(
+            <div><b>${escapeHtml(
+              displayId
+            )}</b> → <span class="muted">${escapeHtml(
                 row.url || "(no destination set)"
               )}</span></div>
-      <div class="muted">Theme: ${escapeHtml(
-        themeName
-      )} · Last updated: ${new Date(updatedIso).toLocaleString()}</div>
-    `;
+            <div class="muted">Theme: ${escapeHtml(
+              themeName
+            )} · Last updated: ${new Date(updatedIso).toLocaleString()}</div>
+          `;
 
               const actions = document.createElement("div");
               actions.className = "stack";
@@ -4527,130 +4526,135 @@
             renderLinksList();
             refreshThemeDropdown();
           });
-        })();
 
-        (() => {
           if (!window.sb) {
             console.warn("[links] Supabase client (sb) not ready");
             return;
           }
+        }
 
-          async function getUserId() {
-            try {
-              return (await sb.auth.getUser()).data?.user?.id ?? null;
-            } catch {
-              return null;
-            }
+        async function getUserId() {
+          try {
+            return (await sb.auth.getUser()).data?.user?.id ?? null;
+          } catch {
+            return null;
+          }
+        }
+
+        function setSelectIfExists(selId, value) {
+          const el = document.getElementById(selId);
+          if (!el) return;
+          el.value = value ?? "";
+        }
+        function cloudOpenUrl(linkId) {
+          // Prefer your helper if it exists
+          if (typeof currentLandingUrl === "function") {
+            return currentLandingUrl(linkId); // (call without themeId to keep QR behavior stable)
+          }
+          // Fallback: build an env-agnostic URL (works on localhost + prod)
+          const u = new URL("landing.html", location.href);
+          u.searchParams.set("linkId", linkId);
+          return u.toString();
+        }
+
+        async function fetchCloudLinks() {
+          const uid = await getUserId();
+          if (!uid) return [];
+          const { data, error } = await sb
+            .from("links")
+            .select("id, link_id, url, theme_id, updated_at")
+            .eq("user_id", uid)
+            .order("updated_at", { ascending: false });
+          if (error) {
+            console.error("[links] fetch error", error);
+            return [];
+          }
+          return data ?? [];
+        }
+
+        window.renderLinksList = async function renderLinksList() {
+          const list = document.getElementById("linksList");
+          if (!list) return;
+
+          list.innerHTML = `<div class="muted small">Loading…</div>`;
+          const rows = await fetchCloudLinks();
+          if (!rows.length) {
+            list.innerHTML = `<div class="muted small">No links yet. Create one above.</div>`;
+            return;
           }
 
-          function setSelectIfExists(selId, value) {
-            const el = document.getElementById(selId);
-            if (!el) return;
-            el.value = value ?? "";
+          list.innerHTML = "";
+          for (const row of rows) {
+            const displayId = String(row.link_id ?? row.id ?? "");
+            const themeIdVal = row.theme_id ?? "";
+
+            const item = document.createElement("div");
+            item.className = "item small";
+
+            const left = document.createElement("div");
+            left.innerHTML = `<div><b>${displayId}</b> → <span class="muted">${
+              row.url || "(no destination set)"
+            }</span></div>
+               <div class="muted">Theme: ${
+                 themeIdVal ? "#" + themeIdVal : "—"
+               }</div>`;
+
+            const stack = document.createElement("div");
+            stack.className = "stack";
+
+            const openBtn = document.createElement("a");
+            openBtn.className = "btn";
+            openBtn.textContent = "Open";
+            openBtn.href = cloudOpenUrl(displayId); // QR behavior = linkId-only
+            openBtn.target = "_blank";
+
+            const loadBtn = document.createElement("button");
+            loadBtn.className = "btn";
+            loadBtn.textContent = "Load";
+            loadBtn.onclick = () => {
+              document.getElementById("linkId").value = displayId;
+              document.getElementById("linkUrl").value = row.url || "";
+              setSelectIfExists(
+                "linkTheme",
+                themeIdVal ? String(themeIdVal) : ""
+              );
+              window.currentRow = row; // keep “Update” mode
+              document.getElementById("saveBtn").textContent = "Update";
+              if (typeof drawQR === "function") drawQR(); // QR stays stable
+            };
+
+            const delBtn = document.createElement("button");
+            delBtn.className = "btn warn";
+            delBtn.textContent = "Delete";
+            delBtn.onclick = async () => {
+              if (!confirm("Delete this link?")) return;
+              const { error } = await sb
+                .from("links")
+                .delete()
+                .eq("id", row.id);
+              if (error) {
+                alert("Delete failed");
+                return;
+              }
+              renderLinksList();
+            };
+
+            stack.append(openBtn, loadBtn, delBtn);
+            item.append(left, stack);
+            list.appendChild(item);
           }
-          function cloudOpenUrl(linkId) {
-            // Prefer your helper if it exists
-            if (typeof currentLandingUrl === "function") {
-              return currentLandingUrl(linkId); // (call without themeId to keep QR behavior stable)
-            }
-            // Fallback: build an env-agnostic URL (works on localhost + prod)
-            const u = new URL("landing.html", location.href);
-            u.searchParams.set("linkId", linkId);
-            return u.toString();
-          }
+        };
 
-          async function fetchCloudLinks() {
-            const uid = await getUserId();
-            if (!uid) return [];
-            const { data, error } = await sb
-              .from("links")
-              .select("id, link_id, url, theme_id, updated_at")
-              .eq("user_id", uid)
-              .order("updated_at", { ascending: false });
-            if (error) {
-              console.error("[links] fetch error", error);
-              return [];
-            }
-            return data ?? [];
-          }
+        // initial + keep fresh on auth changes
+        document.addEventListener("DOMContentLoaded", () => {
+          renderAuthNav();
+          renderLinksList();
+        });
 
-          window.renderLinksList = async function renderLinksList() {
-            const list = document.getElementById("linksList");
-            if (!list) return;
-
-            list.innerHTML = `<div class="muted small">Loading…</div>`;
-            const rows = await fetchCloudLinks();
-            if (!rows.length) {
-              list.innerHTML = `<div class="muted small">No links yet. Create one above.</div>`;
-              return;
-            }
-
-            list.innerHTML = "";
-            for (const row of rows) {
-              const displayId = String(row.link_id ?? row.id ?? "");
-              const themeIdVal = row.theme_id ?? "";
-
-              const item = document.createElement("div");
-              item.className = "item small";
-
-              const left = document.createElement("div");
-              left.innerHTML = `<div><b>${displayId}</b> → <span class="muted">${
-                row.url || "(no destination set)"
-              }</span></div>
-         <div class="muted">Theme: ${
-           themeIdVal ? "#" + themeIdVal : "—"
-         }</div>`;
-
-              const stack = document.createElement("div");
-              stack.className = "stack";
-
-              const openBtn = document.createElement("a");
-              openBtn.className = "btn";
-              openBtn.textContent = "Open";
-              openBtn.href = cloudOpenUrl(displayId); // QR behavior = linkId-only
-              openBtn.target = "_blank";
-
-              const loadBtn = document.createElement("button");
-              loadBtn.className = "btn";
-              loadBtn.textContent = "Load";
-              loadBtn.onclick = () => {
-                document.getElementById("linkId").value = displayId;
-                document.getElementById("linkUrl").value = row.url || "";
-                setSelectIfExists(
-                  "linkTheme",
-                  themeIdVal ? String(themeIdVal) : ""
-                );
-                window.currentRow = row; // keep “Update” mode
-                document.getElementById("saveBtn").textContent = "Update";
-                if (typeof drawQR === "function") drawQR(); // QR stays stable
-              };
-
-              const delBtn = document.createElement("button");
-              delBtn.className = "btn warn";
-              delBtn.textContent = "Delete";
-              delBtn.onclick = async () => {
-                if (!confirm("Delete this link?")) return;
-                const { error } = await sb
-                  .from("links")
-                  .delete()
-                  .eq("id", row.id);
-                if (error) {
-                  alert("Delete failed");
-                  return;
-                }
-                renderLinksList();
-              };
-
-              stack.append(openBtn, loadBtn, delBtn);
-              item.append(left, stack);
-              list.appendChild(item);
-            }
-          };
-
-          // initial + keep fresh on auth changes
-          document.addEventListener("DOMContentLoaded", renderLinksList);
-          sb.auth.onAuthStateChange(renderLinksList);
-        })();
+        sb.auth.onAuthStateChange(() => {
+          renderAuthNav();
+          renderLinksList();
+        });
       </script>
     </div>
   </body>
