@@ -2522,7 +2522,7 @@
             }
             const { data, error } = await sb
               .from("links")
-              .upsert(row, { onConflict: "link_id,user_id" })
+              .upsert(row, { onConflict: "link_id" })
               .select();
             if (error) {
               console.error("[links] Supabase upsert error:", error);
