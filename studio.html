@@ -2522,7 +2522,7 @@
             }
             const { data, error } = await sb
               .from("links")
-              .upsert(row, { onConflict: "link_id" })
+              .upsert(row, { onConflict: "link_id,user_id" })
               .select();
             if (error) {
               console.error("[links] Supabase upsert error:", error);
@@ -4088,7 +4088,8 @@
           }
 
           const { data, error } = resp;
-          if (error) {
+          if (error || !data) {
+            console.warn("saveOrUpdateLink conflict for row:", row);
             console.error("saveOrUpdateLink error:", error);
             alert("Could not save link. See console for details.");
             return;
@@ -4460,7 +4461,7 @@
               };
               const { error } = await sb
                 .from("links")
-                .upsert(row, { onConflict: "link_id" });
+                .upsert(row, { onConflict: "link_id,user_id" });
               if (error)
                 return alert(
                   "Cloud save failed: " + (error.message || "unknown")
