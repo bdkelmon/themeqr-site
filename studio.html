@@ -299,6 +299,32 @@
       .theme-card .body {
         padding: 12px;
       }
+
+      /* Saved Theme thumbnail preview */
+      .theme-rail-card {
+        display: grid;
+        gap: 8px;
+      }
+      .theme-rail-card .thumb {
+        height: 120px; /* same visual weight as Modes cards */
+        border-radius: 8px;
+        background: #070a18;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+      }
+      .theme-rail-card .thumb img,
+      .theme-rail-card .thumb video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* feel like a card */
+        display: block;
+      }
+      .theme-rail-card .meta {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
       .landing-preview {
         background: #0e1127;
         border: 1px solid #232741;
@@ -2111,7 +2137,7 @@
           const btn = e.target.closest(".nav-btn");
           if (!btn || !btn.dataset.tab) return;
 
-           // save the selection for next load
+          // save the selection for next load
           localStorage.setItem("activeTab", btn.dataset.tab);
 
           $$("#sidebar .nav-btn").forEach((b) => b.classList.remove("active"));
@@ -2849,23 +2875,60 @@
         });
 
         function renderThemesList(selectedId = "") {
-          const list = $("#themesList");
+          const list = document.getElementById("themesList");
+          if (!list) return;
+
           list.innerHTML = "";
-          const currentId = selectedId || workingTheme?.id || "";
+          const currentId = selectedId || window.workingTheme?.id || "";
 
           for (const t of db.themes()) {
-            const row = document.createElement("div");
-            row.className = "item";
-            row.dataset.id = t.id;
-            if (t.id === currentId) row.classList.add("selected");
+            // Card shell (keeps your rail sizing)
+            const card = document.createElement("div");
+            card.className = "item";
+            card.dataset.id = t.id;
+            if (t.id === currentId) card.classList.add("selected");
 
-            const left = document.createElement("div");
-            left.innerHTML = `<div><b>${escapeHtml(
-              t.name || ""
-            )}</b></div><div class="muted small">${escapeHtml(
-              t.title || "—"
-            )}</div>`;
+            // Inner layout similar to your Modes cards: preview + body
+            const inner = document.createElement("div");
+            inner.className = "theme-rail-card";
 
+            // --- Preview (image or video if present) ---
+            const thumb = document.createElement("div");
+            thumb.className = "thumb";
+            const kind = t?.media?.kind || "";
+            const data = t?.media?.data || "";
+
+            if (kind === "image" && data) {
+              const img = document.createElement("img");
+              img.src = data;
+              img.alt = t?.media?.alt || t?.title || t?.name || "Theme image";
+              thumb.appendChild(img);
+            } else if (kind === "video" && data) {
+              const vid = document.createElement("video");
+              vid.src = data;
+              vid.muted = true;
+              vid.loop = true;
+              vid.playsInline = true;
+              vid.autoplay = true;
+              thumb.appendChild(vid);
+            } else {
+              const empty = document.createElement("div");
+              empty.className = "meta";
+              empty.textContent = "No media";
+              thumb.appendChild(empty);
+            }
+
+            // --- Text content (title/name + tiny meta) ---
+            const body = document.createElement("div");
+            const title = document.createElement("div");
+            title.style.fontWeight = "700";
+            title.textContent = t.name || "(untitled)";
+
+            const meta = document.createElement("div");
+            meta.className = "meta";
+            meta.textContent = t.title || "—";
+
+            // --- Actions (Load + Copy ID) ---
             const actions = document.createElement("div");
             actions.className = "stack";
 
@@ -2873,24 +2936,34 @@
             useBtn.className = "btn";
             useBtn.textContent = "Load";
             useBtn.onclick = () => {
-              workingTheme = JSON.parse(JSON.stringify(t));
-              $("#themeName").value = t.name || "";
-              $("#themeTitle").value = t.title || "";
-              $("#themeSubtitle").value = t.subtitle || "";
-              $("#themeCtaText").value = t.cta?.text || "";
-              $("#themeCtaUrl").value = t.cta?.url || "";
-              $("#themeFont").value = t.font || "Inter,system-ui";
-              $("#themeBg1").value = t.colors?.bg1 || "#101635";
-              $("#themeBg2").value = t.colors?.bg2 || "#0b0f23";
-              $("#themeFg").value = t.colors?.fg || "#f3f6ff";
-              $("#themeCtaBg").value = t.colors?.ctaBg || "#6c7dff";
-              $("#themeCtaFg").value = t.colors?.ctaFg || "#09122a";
-              $("#themeAlt").value = t.media?.alt || "";
-              $("#themeDelay").value = t.settings?.redirectDelay ?? 2;
-              $("#themeShowSkip").checked = t.settings?.showSkip ?? true;
-              $("#themeSkipText").value = t.settings?.skipText ?? "Skip";
-              $("#saveBtn").onclick = saveOrUpdateLink;
-              $("#newBtn").onclick = resetFormToNew;
+              // hydrate editor from the selected card
+              window.workingTheme = JSON.parse(JSON.stringify(t));
+              document.getElementById("themeName").value = t.name || "";
+              document.getElementById("themeTitle").value = t.title || "";
+              document.getElementById("themeSubtitle").value = t.subtitle || "";
+              document.getElementById("themeCtaText").value = t.cta?.text || "";
+              document.getElementById("themeCtaUrl").value = t.cta?.url || "";
+              document.getElementById("themeFont").value =
+                t.font || "Inter,system-ui";
+              document.getElementById("themeBg1").value =
+                t.colors?.bg1 || "#101635";
+              document.getElementById("themeBg2").value =
+                t.colors?.bg2 || "#0b0f23";
+              document.getElementById("themeFg").value =
+                t.colors?.fg || "#f3f6ff";
+              document.getElementById("themeCtaBg").value =
+                t.colors?.ctaBg || "#6c7dff";
+              document.getElementById("themeCtaFg").value =
+                t.colors?.ctaFg || "#09122a";
+              document.getElementById("themeAlt").value = t.media?.alt || "";
+              document.getElementById("themeDelay").value =
+                t.settings?.redirectDelay ?? 2;
+              document.getElementById("themeShowSkip").checked =
+                t.settings?.showSkip ?? true;
+              document.getElementById("themeSkipText").value =
+                t.settings?.skipText ?? "Skip";
+              document.getElementById("saveBtn").onclick = saveOrUpdateLink;
+              document.getElementById("newBtn").onclick = resetFormToNew;
               const chk = document.getElementById("themeOverrideUrl");
               if (chk) chk.checked = !!t.settings?.overrideWithThemeUrl;
 
@@ -2908,16 +2981,22 @@
             };
 
             actions.append(useBtn, copyId);
-            row.append(left, actions);
-            list.appendChild(row);
+
+            body.appendChild(title);
+            body.appendChild(meta);
+
+            inner.appendChild(thumb);
+            inner.appendChild(body);
+            inner.appendChild(actions);
+
+            card.appendChild(inner);
+            list.appendChild(card);
           }
+
+          // Keep your existing behaviors (dropdown + rail arrows)
           refreshThemeDropdown();
           bindThemesRail();
-          if (currentId) {
-            const t = db.themes().find((tt) => tt.id === currentId);
-            setLinkThemeSelectFromThemeObj(t);
-          }
-          initThemesRailControls();
+          initThemesRailControls?.(); // safe if defined
         }
         function initThemesRailControls() {
           const rail = document.getElementById("themesList");
@@ -4021,13 +4100,15 @@
          ************************/
         function init() {
           const DEFAULT_TAB = localStorage.getItem("activeTab") || "qr";
-          Object.entries(pages).forEach(([k, v]) => (v.hidden = k !== DEFAULT_TAB));
+          Object.entries(pages).forEach(
+            ([k, v]) => (v.hidden = k !== DEFAULT_TAB)
+          );
 
-           const activeBtn = document.querySelector('#sidebar .nav-btn.active');
-           activeBtn?.classList.remove('active');
-           document
-             .querySelector(`#sidebar .nav-btn[data-tab="${DEFAULT_TAB}"]`)
-             ?.classList.add('active');
+          const activeBtn = document.querySelector("#sidebar .nav-btn.active");
+          activeBtn?.classList.remove("active");
+          document
+            .querySelector(`#sidebar .nav-btn[data-tab="${DEFAULT_TAB}"]`)
+            ?.classList.add("active");
 
           refreshThemeDropdown();
           renderThemesList();
