@@ -1087,7 +1087,7 @@
       <!-- NAV -->
       <aside id="sidebar">
         <div class="nav-group" id="navWork">
-          <button class="nav-btn active" data-tab="qr">QR Studio</button>
+          <button class="nav-btn" data-tab="qr">QR Studio</button>
           <button class="nav-btn" data-tab="themes">Theme Studio</button>
           <button class="nav-btn" data-tab="overlay">QR Overlay</button>
           <button class="nav-btn" data-tab="modes">Modes (Event/Social)</button>
@@ -2110,6 +2110,9 @@
         $("#sidebar").addEventListener("click", (e) => {
           const btn = e.target.closest(".nav-btn");
           if (!btn || !btn.dataset.tab) return;
+
+           // save the selection for next load
+          localStorage.setItem("activeTab", btn.dataset.tab);
 
           $$("#sidebar .nav-btn").forEach((b) => b.classList.remove("active"));
           btn.classList.add("active");
@@ -4017,6 +4020,15 @@
          * Init
          ************************/
         function init() {
+          const DEFAULT_TAB = localStorage.getItem("activeTab") || "qr";
+          Object.entries(pages).forEach(([k, v]) => (v.hidden = k !== DEFAULT_TAB));
+
+           const activeBtn = document.querySelector('#sidebar .nav-btn.active');
+           activeBtn?.classList.remove('active');
+           document
+             .querySelector(`#sidebar .nav-btn[data-tab="${DEFAULT_TAB}"]`)
+             ?.classList.add('active');
+
           refreshThemeDropdown();
           renderThemesList();
           renderLinksList();
@@ -4026,8 +4038,6 @@
           refreshAnalyticsSelectors();
           seedPresetsIfEmpty();
           syncLinksFromCloud(); // safe now (sb + sbSession exist)
-          // Start at QR tab
-          Object.entries(pages).forEach(([k, v]) => (v.hidden = k !== "qr"));
         }
         init();
 
