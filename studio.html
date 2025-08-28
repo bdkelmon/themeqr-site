@@ -4070,8 +4070,8 @@
             return;
           }
 
-          // Always refresh updated_at
-          payload.updated_at = new Date().toISOString();
+          // Always refresh changed from payload.updated_at to payload.updated
+          payload.updated = new Date().toISOString();
 
           let resp;
           if (currentRow && currentRow.id) {
