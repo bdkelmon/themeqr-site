@@ -4175,9 +4175,9 @@
               console.error("[cloud-only] links error", error);
               return [];
             }
-            
+
             console.log("[listLinks] Initial fetched links:", data); // 🔍 STEP 2
-            
+
             // Optional: detect if links are overwritten later
             setTimeout(() => {
               console.log("[listLinks] Post-render links recheck:", data);
@@ -4657,6 +4657,23 @@
         document.addEventListener("DOMContentLoaded", () => {
           renderAuthNav();
           renderLinksList();
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+          const savedTab = localStorage.getItem("activeTab") || "qr"; // fallback to "qr" tab
+          const savedButton = document.querySelector(
+            `.nav-btn[data-tab="${savedTab}"]`
+          );
+          if (savedButton) {
+            savedButton.click(); // Simulate click on saved tab
+          }
+
+          document.querySelectorAll(".nav-btn[data-tab]").forEach((button) => {
+            button.addEventListener("click", () => {
+              const tabKey = button.getAttribute("data-tab");
+              localStorage.setItem("activeTab", tabKey);
+            });
+          });
         });
 
         sb.auth.onAuthStateChange(() => {
