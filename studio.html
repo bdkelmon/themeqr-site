@@ -2937,7 +2937,7 @@
             useBtn.textContent = "Load";
             useBtn.onclick = () => {
               // hydrate editor from the selected card
-              window.workingTheme = JSON.parse(JSON.stringify(t));
+              workingTheme = JSON.parse(JSON.stringify(t));
               document.getElementById("themeName").value = t.name || "";
               document.getElementById("themeTitle").value = t.title || "";
               document.getElementById("themeSubtitle").value = t.subtitle || "";
