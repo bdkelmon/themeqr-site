@@ -4119,6 +4119,18 @@
           refreshAnalyticsSelectors();
           seedPresetsIfEmpty();
           syncLinksFromCloud(); // safe now (sb + sbSession exist)
+
+          // Enable Enter-to-search for GIFs
+          const sbx = document.getElementById("searchBox");
+          if (sbx) {
+            sbx.addEventListener("keydown", (e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                const q = sbx.value.trim();
+                if (q) searchGifs(q);
+              }
+            });
+          }
         }
         init();
 
