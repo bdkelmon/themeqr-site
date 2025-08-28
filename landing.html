@@ -175,7 +175,7 @@
       const qs = new URLSearchParams(location.search);
       const linkId = qs.get("linkId") || "";
       const themeId = qs.get("themeId") || "";
-
+      console.log("Detected linkId:", new URLSearchParams(window.location.search).get("linkId")); 
       /* ===================== Helpers ===================== */
       const isNumericId = (v) => /^\d+$/.test(String(v || ""));
       function normalizeHttpUrl(input) {
@@ -575,6 +575,7 @@
         // - If link.url exists and no override, you may show countdown/redirect
         // - If chosenTheme.settings?.overrideWithThemeUrl is true and theme CTA URL exists,
         //   honor the theme CTA URL instead of link.url
+        console.log("Calling resolveLink with:", link, chosenTheme);
         if (typeof resolveLink === "function") {
           if (link) resolveLink(link, chosenTheme);
         }
