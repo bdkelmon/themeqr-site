@@ -3770,13 +3770,14 @@
             );
             const bg1 = t.colors?.bg1 || "#101635";
             const bg2 = t.colors?.bg2 || "#0b0f23";
-            const img = t.image ? `, url('${t.image}')` : "";
-            const gradient = `linear-gradient(140deg, ${bg1}, ${bg2})`;
-            const background = t.image ? `${gradient}, url('${t.image}')` : gradient;
-
-            preview.style.background = background;
-            preview.style.backgroundSize = "cover";
-            preview.style.backgroundPosition = "center";
+            
+            if (t.image) {
+              preview.style.background = `url('${t.image}') center/cover no-repeat, linear-gradient(140deg, ${bg1}, ${bg2})`;
+              preview.style.backgroundBlendMode = "overlay";
+            } else {
+              preview.style.background = `linear-gradient(140deg, ${bg1}, ${bg2})`;
+            }
+            
             preview.style.borderRadius = "12px";
             preview.style.color = t.colors?.fg || "#fff";
             preview.style.textShadow = "0 1px 3px rgba(0,0,0,0.6)";
