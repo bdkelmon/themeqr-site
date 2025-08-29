@@ -1213,7 +1213,10 @@
                   <button class="btn warn" id="deleteBtn">Delete</button>
                   <button class="btn" id="downloadQR">Download PNG</button>
                   <div class="stack" style="margin-top: 8px">
-                    <span class="muted small">Encoded URL: <span id="encoded" class="code">—</span></span>
+                    <span class="muted small"
+                      >Encoded URL:
+                      <span id="encoded" class="code">—</span></span
+                    >
                   </div>
                 </div>
               </div>
@@ -4087,24 +4090,23 @@
           linkSelect.innerHTML = `<option value="">— Select a Link —</option>`;
           for (const link of links) {
             const opt = document.createElement("option");
-            opt.value = link.id;
-            opt.textContent = link.link_id;
+            opt.value = link.id; // actual unique ID
+            opt.textContent = link.link_id || `Link ${link.id}`; // readable name
             linkSelect.appendChild(opt);
           }
         }
-
         linkSelect.addEventListener("change", () => {
-          const id = linkSelect.value;
-          const link = db.links().find((l) => l.id === id);
+          const selectedId = parseInt(linkSelect.value, 10);
+          const link = db.links().find((l) => l.id === selectedId);
           if (!link) return;
 
-          document.getElementById("linkId").value = link.id;
+          document.getElementById("linkId").value = link.link_id;
           document.getElementById("linkUrl").value = link.url;
           document.getElementById("qrSize").value = link.size || 512;
           document.getElementById("qrFg").value = link.fg || "#000000";
           document.getElementById("qrBg").value = link.bg || "#ffffff";
           document.getElementById("qrEcc").value = link.ecc || "M";
-          document.getElementById("linkTheme").value = link.theme || "";
+          document.getElementById("linkTheme").value = link.theme_id || "";
         });
 
         document.getElementById("deleteBtn").addEventListener("click", () => {
