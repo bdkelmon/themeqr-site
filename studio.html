@@ -1204,7 +1204,9 @@
                   </button>
                   <button id="newBtn" class="btn secondary">New</button>
                   <button class="btn" id="downloadQR">Download PNG</button>
-                  <span class="muted small">Encoded URL: <span id="encoded" class="code">—</span></span>
+                  <span class="muted small"
+                    >Encoded URL: <span id="encoded" class="code">—</span></span
+                  >
                 </div>
                 <div style="margin-top: 14px">
                   <label>Saved Dynamic Links</label>
@@ -2164,7 +2166,7 @@
           if (links) db.saveLinks(links);
 
           if (typeof renderThemesList === "function") renderThemesList();
-          if (typeof renderLinksDropdown === "function") renderLinksDropdown()
+          if (typeof renderLinksDropdown === "function") renderLinksDropdown();
           if (typeof refreshThemeDropdown === "function")
             refreshThemeDropdown();
           if (typeof drawQR === "function") drawQR();
@@ -2466,7 +2468,7 @@
               (a, b) => b.updated - a.updated
             );
             db.saveLinks(merged);
-            renderLinksDropdown()
+            renderLinksDropdown();
           } catch (e) {
             console.warn("[links] cloud sync skipped:", e);
           }
@@ -2515,7 +2517,7 @@
           if (idx >= 0) links[idx] = rec;
           else links.unshift(rec);
           db.saveLinks(links);
-          renderLinksDropdown()
+          renderLinksDropdown();
           drawQR();
 
           // 3) Cloud upsert (Supabase)
@@ -3608,7 +3610,7 @@
             db.saveLinks(Object.values(byId));
           }
           renderThemesList();
-          renderLinksDropdown()
+          renderLinksDropdown();
           refreshThemeDropdown();
           drawQR();
         }
@@ -3727,7 +3729,7 @@
           if (idx === -1) return;
           links[idx] = { ...links[idx], themeId, updated: Date.now() };
           db.saveLinks(links);
-          renderLinksDropdown()
+          renderLinksDropdown();
         }
         function el(tag, attrs = {}, html = "") {
           const n = document.createElement(tag);
@@ -4085,6 +4087,56 @@
           }
         }
 
+        const linkSelect = document.getElementById("linkSelect");
+
+        function renderLinksDropdown() {
+          const links = db.links();
+          linkSelect.innerHTML = `<option value="">— Select a Link —</option>`;
+          for (const link of links) {
+            const opt = document.createElement("option");
+            opt.value = link.id;
+            opt.textContent = link.id;
+            linkSelect.appendChild(opt);
+          }
+        }
+
+        linkSelect.addEventListener("change", () => {
+          const id = linkSelect.value;
+          const link = db.links().find((l) => l.id === id);
+          if (!link) return;
+
+          document.getElementById("linkId").value = link.id;
+          document.getElementById("linkUrl").value = link.url;
+          document.getElementById("qrSize").value = link.size || 512;
+          document.getElementById("qrFg").value = link.fg || "#000000";
+          document.getElementById("qrBg").value = link.bg || "#ffffff";
+          document.getElementById("qrEcc").value = link.ecc || "M";
+          document.getElementById("linkTheme").value = link.theme || "";
+        });
+
+        document.getElementById("deleteBtn").addEventListener("click", () => {
+          const id = linkSelect.value;
+          if (!id || !confirm(`Delete link "${id}"?`)) return;
+          const newLinks = db.links().filter((l) => l.id !== id);
+          db.saveLinks(newLinks);
+          renderLinksDropdown();
+          linkSelect.value = "";
+          alert("Link deleted.");
+        });
+
+        document.getElementById("openBtn").addEventListener("click", () => {
+          const id = linkSelect.value;
+          if (!id) return;
+          const theme = getSelectedThemeId();
+          const url = new URL("landing.html", location.href);
+          url.searchParams.set("linkId", id);
+          if (theme) url.searchParams.set("themeId", theme);
+          window.open(url.toString(), "_blank", "noopener");
+        });
+
+        renderLinksDropdown();
+        refreshAnalyticsSelectors();
+
         /***********************
          * Init
          ************************/
@@ -4102,7 +4154,7 @@
 
           refreshThemeDropdown();
           renderThemesList();
-          renderLinksDropdown()
+          renderLinksDropdown();
           drawQR();
           ensureDraggableQR();
           setOverlayOpacity($("#overlayOpacity").value);
@@ -4191,7 +4243,7 @@
           // Keep the form “loaded” with the up-to-date row (so subsequent Save = update)
           currentRow = data;
           $("#saveBtn").textContent = "Update";
-          await renderLinksDropdown() // refresh the list
+          await renderLinksDropdown(); // refresh the list
           alert("Saved!");
         }
 
@@ -4205,7 +4257,7 @@
           }
           // If we just deleted the one that was loaded, reset the form
           if (currentRow && currentRow.id === rowId) resetFormToNew();
-          await renderLinksDropdown()
+          await renderLinksDropdown();
         }
         document.addEventListener("DOMContentLoaded", () => {
           const saveEl = $("#saveBtn"); // matches your existing button id
@@ -4213,7 +4265,7 @@
 
           const newEl = $("#newBtn"); // we’ll add this button next
           if (newEl) newEl.onclick = resetFormToNew;
-          renderLinksDropdown()
+          renderLinksDropdown();
           renderAuthNav();
         });
 
@@ -4560,7 +4612,7 @@
                   "Cloud save failed: " + (error.message || "unknown")
                 );
 
-              await renderLinksDropdown()
+              await renderLinksDropdown();
               drawQR();
               b.textContent = "Update";
             });
@@ -4620,11 +4672,11 @@
 
           // initial render (also refresh on auth change)
           await renderThemesList();
-          await renderLinksDropdown()
+          await renderLinksDropdown();
           await refreshThemeDropdown();
           sb.auth.onAuthStateChange(() => {
             renderThemesList();
-            renderLinksDropdown()
+            renderLinksDropdown();
             refreshThemeDropdown();
           });
 
@@ -4737,7 +4789,7 @@
                 alert("Delete failed");
                 return;
               }
-              renderLinksDropdown()
+              renderLinksDropdown();
             };
 
             stack.append(openBtn, loadBtn, delBtn);
@@ -4749,7 +4801,7 @@
         // initial + keep fresh on auth changes
         document.addEventListener("DOMContentLoaded", () => {
           renderAuthNav();
-          renderLinksDropdown()
+          renderLinksDropdown();
         });
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -4771,57 +4823,8 @@
 
         sb.auth.onAuthStateChange(() => {
           renderAuthNav();
-          renderLinksDropdown()
-        });
-        const linkSelect = document.getElementById("linkSelect");
-
-        function renderLinksDropdown() {
-          const links = db.links();
-          linkSelect.innerHTML = `<option value="">— Select a Link —</option>`;
-          for (const link of links) {
-            const opt = document.createElement("option");
-            opt.value = link.id;
-            opt.textContent = link.id;
-            linkSelect.appendChild(opt);
-          }
-        }
-
-        linkSelect.addEventListener("change", () => {
-          const id = linkSelect.value;
-          const link = db.links().find((l) => l.id === id);
-          if (!link) return;
-
-          document.getElementById("linkId").value = link.id;
-          document.getElementById("linkUrl").value = link.url;
-          document.getElementById("qrSize").value = link.size || 512;
-          document.getElementById("qrFg").value = link.fg || "#000000";
-          document.getElementById("qrBg").value = link.bg || "#ffffff";
-          document.getElementById("qrEcc").value = link.ecc || "M";
-          document.getElementById("linkTheme").value = link.theme || "";
-        });
-
-        document.getElementById("deleteBtn").addEventListener("click", () => {
-          const id = linkSelect.value;
-          if (!id || !confirm(`Delete link "${id}"?`)) return;
-          const newLinks = db.links().filter((l) => l.id !== id);
-          db.saveLinks(newLinks);
           renderLinksDropdown();
-          linkSelect.value = "";
-          alert("Link deleted.");
         });
-
-        document.getElementById("openBtn").addEventListener("click", () => {
-          const id = linkSelect.value;
-          if (!id) return;
-          const theme = getSelectedThemeId();
-          const url = new URL("landing.html", location.href);
-          url.searchParams.set("linkId", id);
-          if (theme) url.searchParams.set("themeId", theme);
-          window.open(url.toString(), "_blank", "noopener");
-        });
-
-        renderLinksDropdown();
-        refreshAnalyticsSelectors(); 
       </script>
     </div>
   </body>
