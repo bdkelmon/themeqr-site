@@ -3772,7 +3772,10 @@
             const bg2 = t.colors?.bg2 || "#0b0f23";
             
             if (t.image) {
-              preview.style.background = `url('${t.image}') center/cover no-repeat, linear-gradient(140deg, ${bg1}, ${bg2})`;
+              preview.style.backgroundImage = `linear-gradient(140deg, ${bg1}, ${bg2}), url('${t.image}')`;
+              preview.style.backgroundSize = "cover";
+              preview.style.backgroundPosition = "center";
+              preview.style.backgroundRepeat = "no-repeat";
               preview.style.backgroundBlendMode = "overlay";
             } else {
               preview.style.background = `linear-gradient(140deg, ${bg1}, ${bg2})`;
