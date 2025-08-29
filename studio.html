@@ -1211,7 +1211,24 @@
 
                 <div style="margin-top: 14px">
                   <label>Saved Dynamic Links</label>
-                  <div id="linksList" class="list"></div>
+                  <div style="margin-top: 14px">
+                    <label>Saved Dynamic Links</label>
+                    <select
+                      id="linkSelect"
+                      style="margin-top: 6px; width: 100%"
+                    >
+                      <option value="">— Select a Link —</option>
+                    </select>
+                  </div>
+                  <div class="stack" style="margin-top: 8px">
+                    <button class="btn primary" id="saveBtn">
+                      Save / Update Link
+                    </button>
+                    <button id="newBtn" class="btn">New</button>
+                    <button class="btn" id="openBtn">Open</button>
+                    <button class="btn warn" id="deleteBtn">Delete</button>
+                    <button class="btn" id="downloadQR">Download PNG</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -4850,6 +4867,54 @@
           renderAuthNav();
           renderLinksList();
         });
+        const linkSelect = document.getElementById("linkSelect");
+
+        function renderLinksDropdown() {
+          const links = db.links();
+          linkSelect.innerHTML = `<option value="">— Select a Link —</option>`;
+          for (const link of links) {
+            const opt = document.createElement("option");
+            opt.value = link.id;
+            opt.textContent = link.id;
+            linkSelect.appendChild(opt);
+          }
+        }
+
+        linkSelect.addEventListener("change", () => {
+          const id = linkSelect.value;
+          const link = db.links().find((l) => l.id === id);
+          if (!link) return;
+
+          document.getElementById("linkId").value = link.id;
+          document.getElementById("linkUrl").value = link.url;
+          document.getElementById("qrSize").value = link.size || 512;
+          document.getElementById("qrFg").value = link.fg || "#000000";
+          document.getElementById("qrBg").value = link.bg || "#ffffff";
+          document.getElementById("qrEcc").value = link.ecc || "M";
+          document.getElementById("linkTheme").value = link.theme || "";
+        });
+
+        document.getElementById("deleteBtn").addEventListener("click", () => {
+          const id = linkSelect.value;
+          if (!id || !confirm(`Delete link "${id}"?`)) return;
+          const newLinks = db.links().filter((l) => l.id !== id);
+          db.saveLinks(newLinks);
+          renderLinksDropdown();
+          linkSelect.value = "";
+          alert("Link deleted.");
+        });
+
+        document.getElementById("openBtn").addEventListener("click", () => {
+          const id = linkSelect.value;
+          if (!id) return;
+          const theme = getSelectedThemeId();
+          const url = new URL("landing.html", location.href);
+          url.searchParams.set("linkId", id);
+          if (theme) url.searchParams.set("themeId", theme);
+          window.open(url.toString(), "_blank", "noopener");
+        });
+
+        renderLinksDropdown();
       </script>
     </div>
   </body>
