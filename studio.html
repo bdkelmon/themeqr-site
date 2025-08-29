@@ -3020,6 +3020,28 @@
         }
 
         $("#saveTheme").addEventListener("click", async () => {
+          const mediaFile = $("#themeMedia").files?.[0];
+          if (mediaFile && mediaFile.type.startsWith("image/")) {
+            const formData = new FormData();
+            formData.append("file", mediaFile);
+            formData.append("upload_preset", "theme_preset"); // 🔁 Replace
+            try {
+              const res = await fetch("https://api.cloudinary.com/v1_1/theme-test/image/upload", {
+                method: "POST",
+                body: formData
+              });
+              if (res.ok) {
+                const data = await res.json();
+                workingTheme.meta = workingTheme.meta || {};
+                workingTheme.meta.image = data.secure_url; // ✅ Save to theme
+              } else {
+                console.warn("Cloudinary upload failed");
+              }
+            } catch (err) {
+              console.warn("Cloudinary upload error:", err);
+            }
+          }
+
           if (!workingTheme.name?.trim()) {
             alert("Please give your theme a name.");
             return;
@@ -3780,7 +3802,7 @@
             } else {
               preview.style.background = `linear-gradient(140deg, ${bg1}, ${bg2})`;
             }
-            
+
             preview.style.borderRadius = "12px";
             preview.style.color = t.colors?.fg || "#fff";
             preview.style.textShadow = "0 1px 3px rgba(0,0,0,0.6)";
