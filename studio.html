@@ -3714,7 +3714,12 @@
           const sel = $("#modeLinkSelect");
           sel.innerHTML = links.length
             ? links
-                .map((l) => `<option value="${l.id}">${l.id}</option>`)
+                .map(
+                  (l) =>
+                    `<option value="${l.id}">${
+                      l.link_id || `Link ${l.id}`
+                    }</option>`
+                )
                 .join("")
             : `<option value="">No links yet</option>`;
         }
