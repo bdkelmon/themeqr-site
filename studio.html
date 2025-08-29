@@ -4095,7 +4095,7 @@
           for (const link of links) {
             const opt = document.createElement("option");
             opt.value = link.id;
-            opt.textContent = link.link_id || link.id;
+            opt.textContent = link.link_id;
             linkSelect.appendChild(opt);
           }
         }
