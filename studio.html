@@ -2164,7 +2164,7 @@
           if (links) db.saveLinks(links);
 
           if (typeof renderThemesList === "function") renderThemesList();
-          if (typeof renderLinksList === "function") renderLinksList();
+          if (typeof renderLinksDropdown === "function") renderLinksDropdown()
           if (typeof refreshThemeDropdown === "function")
             refreshThemeDropdown();
           if (typeof drawQR === "function") drawQR();
@@ -2433,91 +2433,6 @@
           drawQR();
         }
 
-        function renderLinksList() {
-          const list = $("#linksList");
-          list.innerHTML = "";
-
-          // pull whatever is in local cache (which includes cloud-synced rows)
-          const links = db.links();
-
-          for (const link of links) {
-            // prefer cloud schema; fall back to older local schema
-            const displayId = link.link_id ?? link.id ?? ""; //
-            const themeIdVal = link.theme_id ?? link.themeId ?? ""; //
-            const updatedIso =
-              link.updated || link.last_updated || new Date().toISOString();
-
-            const theme = db
-              .themes()
-              .find((t) => String(t.id) === String(themeIdVal));
-
-            const div = document.createElement("div");
-            div.className = "item small";
-
-            const target = document.createElement("div");
-            target.innerHTML = `
-                  <div>
-                    <b>${escapeHtml(displayId)}</b> →
-                    <span class="muted">${escapeHtml(
-                      link.url || "(no destination set)"
-                    )}</span>
-                  </div>
-                  <div class="muted">
-                    Theme: ${theme ? escapeHtml(theme.name) : "—"} ·
-                    Last updated: ${new Date(updatedIso).toLocaleString()}
-                  </div>`;
-
-            const actions = document.createElement("div");
-            actions.className = "stack";
-
-            // Open button → the public landing URL
-            const openBtn = document.createElement("a");
-            openBtn.className = "btn";
-            openBtn.textContent = "Open";
-            openBtn.href = currentLandingUrl(displayId);
-            openBtn.target = "_blank";
-
-            // Load button → populate the form from this row
-            const editBtn = document.createElement("button");
-            editBtn.className = "btn";
-            editBtn.textContent = "Load";
-            editBtn.onclick = () => {
-              $("#linkId").value = displayId;
-              $("#linkUrl").value = link.url || "";
-              $("#linkTheme").value = themeIdVal || "";
-              // AFTER — prefer cloud id, fall back to local
-              const themeIdVal = link.theme_id ?? link.themeId ?? "";
-              const t = db
-                .themes()
-                .find(
-                  (tt) => String(tt.remoteId ?? tt.id) === String(themeIdVal)
-                );
-              $("#linkTheme").value = t
-                ? String(t.remoteId ?? t.id)
-                : String(themeIdVal);
-            };
-
-            // Delete (local only)
-            const delBtn = document.createElement("button");
-            delBtn.className = "btn warn";
-            delBtn.textContent = "Delete";
-            delBtn.onclick = () => {
-              const rest = db
-                .links()
-                .filter((l) => (l.link_id ?? l.id) !== displayId);
-              db.saveLinks(rest);
-              renderLinksList();
-              refreshAnalyticsSelectors();
-            };
-
-            actions.append(openBtn, editBtn, delBtn);
-            div.append(target, actions);
-            list.appendChild(div);
-          }
-
-          refreshAnalyticsSelectors();
-        }
-
         async function syncLinksFromCloud() {
           try {
             const session = await sbSession();
@@ -2551,7 +2466,7 @@
               (a, b) => b.updated - a.updated
             );
             db.saveLinks(merged);
-            renderLinksList();
+            renderLinksDropdown()
           } catch (e) {
             console.warn("[links] cloud sync skipped:", e);
           }
@@ -2600,7 +2515,7 @@
           if (idx >= 0) links[idx] = rec;
           else links.unshift(rec);
           db.saveLinks(links);
-          renderLinksList();
+          renderLinksDropdown()
           drawQR();
 
           // 3) Cloud upsert (Supabase)
@@ -3693,7 +3608,7 @@
             db.saveLinks(Object.values(byId));
           }
           renderThemesList();
-          renderLinksList();
+          renderLinksDropdown()
           refreshThemeDropdown();
           drawQR();
         }
@@ -3812,7 +3727,7 @@
           if (idx === -1) return;
           links[idx] = { ...links[idx], themeId, updated: Date.now() };
           db.saveLinks(links);
-          renderLinksList();
+          renderLinksDropdown()
         }
         function el(tag, attrs = {}, html = "") {
           const n = document.createElement(tag);
@@ -4187,7 +4102,7 @@
 
           refreshThemeDropdown();
           renderThemesList();
-          renderLinksList();
+          renderLinksDropdown()
           drawQR();
           ensureDraggableQR();
           setOverlayOpacity($("#overlayOpacity").value);
@@ -4276,7 +4191,7 @@
           // Keep the form “loaded” with the up-to-date row (so subsequent Save = update)
           currentRow = data;
           $("#saveBtn").textContent = "Update";
-          await renderLinksList(); // refresh the list
+          await renderLinksDropdown() // refresh the list
           alert("Saved!");
         }
 
@@ -4290,7 +4205,7 @@
           }
           // If we just deleted the one that was loaded, reset the form
           if (currentRow && currentRow.id === rowId) resetFormToNew();
-          await renderLinksList();
+          await renderLinksDropdown()
         }
         document.addEventListener("DOMContentLoaded", () => {
           const saveEl = $("#saveBtn"); // matches your existing button id
@@ -4298,7 +4213,7 @@
 
           const newEl = $("#newBtn"); // we’ll add this button next
           if (newEl) newEl.onclick = resetFormToNew;
-          renderLinksList();
+          renderLinksDropdown()
           renderAuthNav();
         });
 
@@ -4527,7 +4442,7 @@
 
           // ---------- override links list: source = Supabase only ----------
           window.renderLinksList = async function renderLinksList() {
-            const list = $("#linksList");
+            const list = $("#linkSelect");
             list.innerHTML = "";
 
             const session = await sbSession();
@@ -4645,7 +4560,7 @@
                   "Cloud save failed: " + (error.message || "unknown")
                 );
 
-              await renderLinksList();
+              await renderLinksDropdown()
               drawQR();
               b.textContent = "Update";
             });
@@ -4705,11 +4620,11 @@
 
           // initial render (also refresh on auth change)
           await renderThemesList();
-          await renderLinksList();
+          await renderLinksDropdown()
           await refreshThemeDropdown();
           sb.auth.onAuthStateChange(() => {
             renderThemesList();
-            renderLinksList();
+            renderLinksDropdown()
             refreshThemeDropdown();
           });
 
@@ -4822,7 +4737,7 @@
                 alert("Delete failed");
                 return;
               }
-              renderLinksList();
+              renderLinksDropdown()
             };
 
             stack.append(openBtn, loadBtn, delBtn);
@@ -4834,7 +4749,7 @@
         // initial + keep fresh on auth changes
         document.addEventListener("DOMContentLoaded", () => {
           renderAuthNav();
-          renderLinksList();
+          renderLinksDropdown()
         });
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -4856,7 +4771,7 @@
 
         sb.auth.onAuthStateChange(() => {
           renderAuthNav();
-          renderLinksList();
+          renderLinksDropdown()
         });
         const linkSelect = document.getElementById("linkSelect");
 
@@ -4906,6 +4821,7 @@
         });
 
         renderLinksDropdown();
+        refreshAnalyticsSelectors(); 
       </script>
     </div>
   </body>
