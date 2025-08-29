@@ -1,61 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Your Studio</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --sans: 'DM Sans', Inter, system-ui, sans-serif;
-      --transition: 0.25s ease-in-out;
-    }
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Your Studio</title>
+      <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap"
+        rel="stylesheet"
+      />
+      <style>
+        :root {
+          --sans: "DM Sans", Inter, system-ui, sans-serif;
+          --transition: 0.25s ease-in-out;
+        }
 
-    body, input, select, textarea, button {
-      font-family: var(--sans);
-      transition: background var(--transition), border-color var(--transition), box-shadow var(--transition), color var(--transition);
-    }
+        body,
+        input,
+        select,
+        textarea,
+        button {
+          font-family: var(--sans);
+          transition: background var(--transition),
+            border-color var(--transition), box-shadow var(--transition),
+            color var(--transition);
+        }
 
-    .btn, .nav-btn {
-      transition: all var(--transition);
-      border-radius: 12px;
-    }
+        .btn,
+        .nav-btn {
+          transition: all var(--transition);
+          border-radius: 12px;
+        }
 
-    .btn:hover, .nav-btn:hover {
-      transform: scale(1.02);
-      box-shadow: 0 0 0 1px var(--accent);
-    }
+        .btn:hover,
+        .nav-btn:hover {
+          transform: scale(1.02);
+          box-shadow: 0 0 0 1px var(--accent);
+        }
 
-    input:focus, select:focus, textarea:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(108, 125, 255, 0.3);
-      outline: none;
-    }
+        input:focus,
+        select:focus,
+        textarea:focus {
+          border-color: var(--accent);
+          box-shadow: 0 0 0 2px rgba(108, 125, 255, 0.3);
+          outline: none;
+        }
 
-    header {
-      backdrop-filter: blur(8px);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-    }
+        header {
+          backdrop-filter: blur(8px);
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
 
-    .theme-card, .pad {
-      border-radius: 16px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-      transition: box-shadow var(--transition), transform var(--transition);
-    }
+        .theme-card,
+        .pad {
+          border-radius: 16px;
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+          transition: box-shadow var(--transition), transform var(--transition);
+        }
 
-    .theme-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 24px rgba(0,0,0,0.3);
-    }
+        .theme-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+        }
 
-    label {
-      font-weight: 500;
-      margin-bottom: 4px;
-      display: block;
-    }
-  </style>
-</head>
+        label {
+          font-weight: 500;
+          margin-bottom: 4px;
+          display: block;
+        }
+      </style>
+    </head>
   </head>
   <body>
     <div id="layout">
@@ -168,7 +182,18 @@
 
                 <div style="margin-top: 14px">
                   <label>Saved Dynamic Links</label>
-                  <div id="linksList" class="list"></div>
+                  <select id="linkSelect" style="margin-top: 6px; width: 100%">
+                    <option value="">— Select a Link —</option>
+                  </select>
+                  <div class="stack" style="margin-top: 8px">
+                    <button class="btn primary" id="saveBtn">
+                      Save / Update Link
+                    </button>
+                    <button id="newBtn" class="btn">New</button>
+                    <button class="btn" id="openBtn">Open</button>
+                    <button class="btn warn" id="deleteBtn">Delete</button>
+                    <button class="btn" id="downloadQR">Download PNG</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -3807,6 +3832,55 @@
           renderAuthNav();
           renderLinksList();
         });
+
+        const linkSelect = document.getElementById("linkSelect");
+
+        function renderLinksDropdown() {
+          const links = db.links();
+          linkSelect.innerHTML = `<option value="">— Select a Link —</option>`;
+          for (const link of links) {
+            const opt = document.createElement("option");
+            opt.value = link.id;
+            opt.textContent = link.id;
+            linkSelect.appendChild(opt);
+          }
+        }
+
+        linkSelect.addEventListener("change", () => {
+          const id = linkSelect.value;
+          const link = db.links().find((l) => l.id === id);
+          if (!link) return;
+
+          document.getElementById("linkId").value = link.id;
+          document.getElementById("linkUrl").value = link.url;
+          document.getElementById("qrSize").value = link.size || 512;
+          document.getElementById("qrFg").value = link.fg || "#000000";
+          document.getElementById("qrBg").value = link.bg || "#ffffff";
+          document.getElementById("qrEcc").value = link.ecc || "M";
+          document.getElementById("linkTheme").value = link.theme || "";
+        });
+
+        document.getElementById("deleteBtn").addEventListener("click", () => {
+          const id = linkSelect.value;
+          if (!id || !confirm(`Delete link "${id}"?`)) return;
+          const newLinks = db.links().filter((l) => l.id !== id);
+          db.saveLinks(newLinks);
+          renderLinksDropdown();
+          linkSelect.value = "";
+          alert("Link deleted.");
+        });
+
+        document.getElementById("openBtn").addEventListener("click", () => {
+          const id = linkSelect.value;
+          if (!id) return;
+          const theme = getSelectedThemeId();
+          const url = new URL("landing.html", location.href);
+          url.searchParams.set("linkId", id);
+          if (theme) url.searchParams.set("themeId", theme);
+          window.open(url.toString(), "_blank", "noopener");
+        });
+
+        renderLinksDropdown();
       </script>
     </div>
   </body>
