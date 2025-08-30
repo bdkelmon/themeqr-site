@@ -181,7 +181,7 @@
       }
       .btn:disabled {
         opacity: 0.6;
-        cursor: not-allowed;
+        cursor: auto;
       }
       .stack {
         display: flex;
@@ -1869,7 +1869,7 @@
             // paint signed-in UI
             const email = session.user?.email || "Account";
             el.innerHTML = `
-            <span class="auth-link">Signed in as ${email}</span>
+            <span class="auth-link">${email}</span>
             <span class="auth-sep">•</span>
             <a id="lnkLogout" class="auth-link" href="#">Log out</a>
           `;
