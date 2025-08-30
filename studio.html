@@ -1117,15 +1117,15 @@
       <!-- NAV -->
       <aside id="sidebar">
         <div class="nav-group" id="navWork">
+          <button class="nav-btn" data-tab="modes">Modes (Event/Social)</button>
           <button class="nav-btn" data-tab="qr">QR Studio</button>
           <button class="nav-btn" data-tab="themes">Theme Studio</button>
           <button class="nav-btn" data-tab="overlay">QR Overlay</button>
-          <button class="nav-btn" data-tab="modes">Modes (Event/Social)</button>
-          <button class="nav-btn" data-tab="analytics">Analytics</button>
-          <button class="nav-btn" data-tab="io">Export / Import</button>
-          <button class="nav-btn" data-tab="help">Help</button>
-          <button class="btn nav-btn" id="btnQrDemo">QR Demo</button>
           <button class="btn nav-btn" id="btnMerch">ThemeQR Merch</button>
+          <button class="btn nav-btn" id="btnQrDemo">QR Demo</button>
+          <button class="nav-btn" data-tab="io">Export / Import</button>
+          <button class="nav-btn" data-tab="analytics">Analytics</button>
+          <button class="nav-btn" data-tab="help">Help</button>
         </div>
       </aside>
       <main>
@@ -1831,7 +1831,7 @@
         }
         // Top-right auth nav (Log in / Sign up / Log out)
         async function renderAuthNav() {
-          const el = document.getElementById("authNavFixed");
+          const el = document.getElementById("authNav");
           if (!el) return;
 
           // get current session safely
