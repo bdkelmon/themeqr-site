@@ -129,74 +129,82 @@
     };
 
     /* ===== Apply theme visuals and media ===== */
-    function applyTheme(theme){
-      if(!theme) return;
+   function applyTheme(theme){
+  const media = $("#media");
+  const content = $("#content");
 
-      // colors/typography
-      root.setProperty("--bg1", theme.colors?.bg1 || "#101635");
-      root.setProperty("--bg2", theme.colors?.bg2 || "#0b0f23");
-      root.setProperty("--fg",  theme.colors?.fg  || "#f3f6ff");
-      root.setProperty("--cta-bg", theme.colors?.ctaBg || "#6c7dff");
-      root.setProperty("--cta-fg", theme.colors?.ctaFg || "#09122a");
-      root.setProperty("--font", theme.font || "Inter, system-ui");
+  // no theme at all → fallback immediately
+  if (!theme) {
+    document.body.classList.remove("hydrating");
+    content.style.display = "block";
+    media.innerHTML = '<div class="muted" style="padding:40px 12px;text-align:center;">No theme found.</div>';
+    return;
+  }
 
-      // text + CTA
-      $("#title").textContent    = theme.title    || "Hello 👋";
-      $("#subtitle").textContent = theme.subtitle || "Welcome!";
-      $("#cta").textContent      = theme.cta?.text || "Learn more";
-      $("#cta").href             = normalizeUrl(theme.cta?.url || "#");
+  // set theme colors + text
+  root.setProperty("--bg1", theme.colors?.bg1 || "#101635");
+  root.setProperty("--bg2", theme.colors?.bg2 || "#0b0f23");
+  root.setProperty("--fg",  theme.colors?.fg  || "#f3f6ff");
+  root.setProperty("--cta-bg", theme.colors?.ctaBg || "#6c7dff");
+  root.setProperty("--cta-fg", theme.colors?.ctaFg || "#09122a");
+  root.setProperty("--font", theme.font || "Inter, system-ui");
 
-      const media = $("#media");
-      media.innerHTML = ""; // start empty (no placeholder)
-      const box = document.createElement("div");
-      box.className = "box";
+  $("#title").textContent    = theme.title    || "Hello 👋";
+  $("#subtitle").textContent = theme.subtitle || "Welcome!";
+  $("#cta").textContent      = theme.cta?.text || "Learn more";
+  $("#cta").href             = normalizeUrl(theme.cta?.url || "#");
 
-      const savedW = Number(theme?.settings?.mediaBox?.w);
-      if (Number.isFinite(savedW) && savedW > 0) {
-        media.style.setProperty("--media-w", savedW + "px");
-        box.style.setProperty("--media-w", savedW + "px");
-      }
+  media.innerHTML = ""; // clear
+  const box = document.createElement("div");
+  box.className = "box";
 
-      // Fit media to viewport so the whole card stays on screen
-      function fitToViewport(){
-        const headerH = document.querySelector("header")?.offsetHeight ?? 0;
-        const footerH = document.querySelector("footer")?.offsetHeight ?? 0;
-        const textH   = $("#content")?.offsetHeight ?? 0;
-        const pad = 24;
-        const available = Math.max(160, window.innerHeight - headerH - footerH - textH - pad);
-        media.style.setProperty("--media-maxh", Math.round(available) + "px");
-      }
+  const savedW = Number(theme?.settings?.mediaBox?.w);
+  if (Number.isFinite(savedW) && savedW > 0) {
+    media.style.setProperty("--media-w", savedW + "px");
+    box.style.setProperty("--media-w", savedW + "px");
+  }
 
-      const onReady = () => {
-        fitToViewport();
-        // Reveal page (remove spinner)
-        document.body.classList.remove("hydrating");
-        $("#content").style.display = "block";
-        media.dispatchEvent(new Event("media-ready"));
-      };
+  function fitToViewport(){
+    const headerH = document.querySelector("header")?.offsetHeight ?? 0;
+    const footerH = document.querySelector("footer")?.offsetHeight ?? 0;
+    const textH   = content?.offsetHeight ?? 0;
+    const pad = 24;
+    const available = Math.max(160, window.innerHeight - headerH - footerH - textH - pad);
+    media.style.setProperty("--media-maxh", Math.round(available) + "px");
+  }
 
-      // Render image/video if present; otherwise show text fallback
-      if (theme.media?.kind === "image" && theme.media.data){
-        const img = new Image();
-        img.src = theme.media.data;
-        img.alt = theme.media.alt || "";
-        img.addEventListener("load", onReady, { once:true });
-        box.appendChild(img); media.appendChild(box);
-      } else if (theme.media?.kind === "video" && theme.media.data){
-        const v = document.createElement("video");
-        v.src = theme.media.data; v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true; v.controls = false;
-        v.addEventListener("loadedmetadata", onReady, { once:true });
-        box.appendChild(v); media.appendChild(box);
-      } else {
-        // No media → show text immediately (no spinner)
-        document.body.classList.remove("hydrating");
-        $("#content").style.display = "block";
-        media.innerHTML = '<div class="muted" style="padding:40px 12px; text-align:center;">No media in theme.</div>';
-      }
+  const onReady = () => {
+    fitToViewport();
+    document.body.classList.remove("hydrating"); // remove spinner
+    content.style.display = "block";             // show text section
+    media.dispatchEvent(new Event("media-ready"));
+  };
 
-      window.addEventListener("resize", fitToViewport);
-      window.addEventListener("orientationchange", () => setTimeout(fitToViewport, 60));
-    }
+  if (theme.media?.kind === "image" && theme.media.data){
+    const img = new Image();
+    img.src = theme.media.data;
+    img.alt = theme.media.alt || "";
+    img.addEventListener("load", onReady, { once:true });
+    box.appendChild(img); media.appendChild(box);
+  }
+  else if (theme.media?.kind === "video" && theme.media.data){
+    const v = document.createElement("video");
+    v.src = theme.media.data;
+    v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true; v.controls = false;
+    v.addEventListener("loadedmetadata", onReady, { once:true });
+    box.appendChild(v); media.appendChild(box);
+  }
+  else {
+    // Theme exists but no media → fallback immediately
+    document.body.classList.remove("hydrating");
+    content.style.display = "block";
+    media.innerHTML = '<div class="muted" style="padding:40px 12px;text-align:center;">No media in theme.</div>';
+  }
+
+  window.addEventListener("resize", fitToViewport);
+  window.addEventListener("orientationchange", () => setTimeout(fitToViewport, 60));
+}
+
 
     /* ===== Minimal data loading ===== */
     async function loadViaSupabase(linkId, themeId){
