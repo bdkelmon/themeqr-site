@@ -1490,24 +1490,31 @@
           </div>
 
           <!-- ===== MODES (Event / Social) ===== -->
-        
+          <div id="modes" class="pad" hidden>
             <h2>Modes</h2>
 
-            <div class="stack" style="align-items: flex-end">
-              <label class="" style="margin: 0"
-                ><input type="radio" name="uimode" value="event" checked/>
-                Event Mode</label>
-              <label class="" style="margin: 0">
-                <input type="radio" name="uimode" value="social" />Social Mode
-              </label>
-            </div>
             <div class="theme-card">
-              <header><strong>Choose Link</strong></header>
+              <header><strong>Pick a Link & Mode</strong></header>
               <div class="body">
                 <div class="row">
                   <div>
                     <label>Active Link</label>
                     <select id="modeLinkSelect"></select>
+                  </div>
+                  <div class="stack" style="align-items: flex-end">
+                    <label class="" style="margin: 0"
+                      ><input
+                        type="radio"
+                        name="uimode"
+                        value="event"
+                        checked
+                      />
+                      Event Mode</label
+                    >
+                    <label class="" style="margin: 0"
+                      ><input type="radio" name="uimode" value="social" />
+                      Social Mode</label
+                    >
                   </div>
                 </div>
               </div>
@@ -1523,6 +1530,7 @@
                   <button class="btn" id="nextPreset">Next</button>
                   <button class="btn ghost" id="shufflePreset">Random</button>
                   <label
+                    
                     title="Auto-apply next preset on a timer"
                     style="margin-left: 6px"
                   >
@@ -1548,7 +1556,7 @@
                 </div>
               </div>
             </div>
-        
+          </div>
 
           <!-- ===== ANALYTICS ===== -->
           <div id="analytics" class="pad" hidden>
