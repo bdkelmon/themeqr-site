@@ -1098,6 +1098,32 @@
       #sidebar .nav-btn {
         scroll-margin-inline: var(--nav-edge-pad);
       }
+
+      .theme-dropdown {
+       border: 1px solid #262a45;
+       border-radius: 8px;
+       background: #0b0f23;
+       padding: 12px; 
+      }
+      .theme-dropdown-header {
+        font-size: 14px;
+        color: #aab1d6;
+        margin-bottom: 8px;
+      }
+      .draggable-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .draggable-list li {
+        padding: 8px 10px;
+        background: #1b1f35;
+        border: 1px solid #2a2e4d;
+        border-radius: 6px;
+        margin-bottom: 6px;
+        cursor: grab;
+      }
+      
     </style>
   </head>
   <body>
@@ -1490,31 +1516,24 @@
           </div>
 
           <!-- ===== MODES (Event / Social) ===== -->
-          <div id="modes" class="pad" hidden>
+        
             <h2>Modes</h2>
 
+            <div class="stack" style="align-items: flex-end">
+              <label class="" style="margin: 0"
+                ><input type="radio" name="uimode" value="event" checked/>
+                Event Mode</label>
+              <label class="" style="margin: 0">
+                <input type="radio" name="uimode" value="social" />Social Mode
+              </label>
+            </div>
             <div class="theme-card">
-              <header><strong>Pick a Link & Mode</strong></header>
+              <header><strong>Choose Link</strong></header>
               <div class="body">
                 <div class="row">
                   <div>
                     <label>Active Link</label>
                     <select id="modeLinkSelect"></select>
-                  </div>
-                  <div class="stack" style="align-items: flex-end">
-                    <label class="" style="margin: 0"
-                      ><input
-                        type="radio"
-                        name="uimode"
-                        value="event"
-                        checked
-                      />
-                      Event Mode</label
-                    >
-                    <label class="" style="margin: 0"
-                      ><input type="radio" name="uimode" value="social" />
-                      Social Mode</label
-                    >
                   </div>
                 </div>
               </div>
@@ -1525,7 +1544,10 @@
                 <div class="small muted">
                   Add themes to rotate when in Social Mode.
                 </div>
-                <div id="playlist" class="list" style="margin: 8px 0"></div>
+                <div id="themePlaylistContainer" class="theme-dropdown">
+                <div class="theme-dropdown-header">Reorder Themes (Drag & Drop)</div>
+                   <ul id="themePlaylist" class="draggable-list"></ul>
+                </div>
                 <div class="stack">
                   <button class="btn" id="nextPreset">Next</button>
                   <button class="btn ghost" id="shufflePreset">Random</button>
@@ -1555,7 +1577,7 @@
                 </div>
               </div>
             </div>
-          </div>
+        
 
           <!-- ===== ANALYTICS ===== -->
           <div id="analytics" class="pad" hidden>
@@ -1797,7 +1819,10 @@
 
       <!-- QRCode library (CDN) -->
       <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
-
+      
+      <!-- Include SortableJS Library -->
+      <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+      
       <!-- APP SCRIPT: includes single Supabase client + helpers at the top -->
       <script>
         /***********************
@@ -1808,6 +1833,7 @@
           "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9zOUjFu7fi-4oRVY-D61NCJU";
 
         const authNav = document.getElementById("authNav");
+
 
         // Reuse if already present (avoid multiple GoTrueClient instances)
         if (!window.sb) {
@@ -1887,6 +1913,33 @@
           renderAuthNav();
           renderAuthNav();
         });
+
+
+        function renderThemePlaylist(themes) {
+          const list = document.getElementById("themePlaylist");
+          if (!list || !Array.isArray(themes)) return;
+        
+          list.innerHTML = "";
+        
+          themes.forEach((theme) => {
+            const li = document.createElement("li");
+            li.textContent = theme.name || theme.title || theme.id;
+            li.dataset.id = theme.id;
+            list.appendChild(li);
+          });
+        
+          // Make list sortable
+          Sortable.create(list, {
+            animation: 150,
+            ghostClass: 'dragging',
+            onEnd: () => {
+              // You can save the new order if needed here
+              const newOrder = Array.from(list.children).map((li) => li.dataset.id);
+              console.log("New Theme Order:", newOrder);
+            },
+          });
+        }
+
 
         /***********************
          * App utilities
@@ -2152,8 +2205,7 @@
 
           if (typeof renderThemesList === "function") renderThemesList();
           if (typeof renderLinksDropdown === "function") renderLinksDropdown();
-          if (typeof refreshThemeDropdown === "function")
-            refreshThemeDropdown();
+          if (typeof refreshThemeDropdown === "function") refreshThemeDropdown();
           if (typeof drawQR === "function") drawQR();
         }
         async function cloudSaveTheme(theme) {
