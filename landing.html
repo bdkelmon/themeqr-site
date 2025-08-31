@@ -3,7 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>QR Landing</title>
+    <title>ThemeQR</title>
+    <link rel="icon" href="https://themeqr.com/images/TQR_Dude_Sm.png" />
     <style>
       :root {
         --bg1: #101635;
@@ -37,11 +38,11 @@
         align-items: center;
         gap: 10px;
       }
-      .dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: conic-gradient(from 200deg, #6c7dff, #2de6c5);
+         .logo {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        font-weight: 700;
       }
       main {
         display: grid;
@@ -138,7 +139,13 @@
   </head>
   <body>
     <header>
-      <div class="dot"></div>
+      <div class="logo">
+        <img class="icon"
+          src="https://www.themeqr.com/images/favicon-32x32.png"
+          alt="ThemeQR"
+          width="16"
+          height="16"
+        />
       <div class="muted small">QR Landing</div>
     </header>
     <main>
