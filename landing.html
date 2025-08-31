@@ -13,13 +13,9 @@
     *,*::before,*::after{ box-sizing:border-box }
 
     html,body{
-      margin:0;
-      min-height:100vh;
-      color:var(--fg);
-      font-family:var(--font);
+      margin:0; min-height:100vh; color:var(--fg); font-family:var(--font);
       background:linear-gradient(140deg,var(--bg1),var(--bg2));
-      display:grid;
-      grid-template-rows:auto 1fr auto;
+      display:grid; grid-template-rows:auto 1fr auto;
     }
 
     header,footer{ padding:14px 18px; opacity:.9 }
@@ -27,18 +23,14 @@
     .dot{ width:10px; height:10px; border-radius:50%; background:conic-gradient(from 200deg,#6c7dff,#2de6c5) }
 
     main{
-      display:grid;
-      grid-template-columns:minmax(280px,860px);
-      justify-content:center;
-      padding:14px;
+      display:grid; grid-template-columns:minmax(280px,860px);
+      justify-content:center; padding:14px;
     }
     .card{
-      max-width:min(95vw,860px);
-      margin:0 auto;
+      max-width:min(95vw,860px); margin:0 auto;
       background:rgba(6,9,24,.5);
       border:1px solid rgba(255,255,255,.08);
-      border-radius:14px;
-      overflow:hidden;
+      border-radius:14px; overflow:hidden;
       backdrop-filter:saturate(110%) blur(8px);
     }
 
@@ -48,9 +40,8 @@
       display:block; width:100%; height:auto; object-fit:contain; max-height:var(--media-maxh,70vh);
     }
 
-    .content{ padding:16px; display:none } /* will be shown when theme is applied */
-    h1{ margin:0 0 6px }
-    .muted{ color:#bac2ffb3 }
+    .content{ padding:16px; display:none }
+    h1{ margin:0 0 6px } .muted{ color:#bac2ffb3 }
     .cta{
       display:inline-block; margin-top:10px; padding:11px 16px;
       border-radius:12px; background:var(--cta-bg); color:var(--cta-fg);
@@ -58,23 +49,21 @@
     }
     .small{ font-size:12px }
 
-    /* ===== Loading state ===== */
-    .loading{
-      position:fixed; inset:0; display:none; place-items:center; z-index:999; pointer-events:none;
-    }
+    /* Loading spinner */
+    .loading{ position:fixed; inset:0; display:none; place-items:center; z-index:999; pointer-events:none; }
     .hydrating .loading{ display:grid }
     .ring{ width:54px; height:54px; border-radius:50%; border:3px solid transparent;
       border-top-color:var(--cta-bg); border-right-color:var(--cta-bg);
       animation:spin 1s linear infinite; filter:drop-shadow(0 0 12px rgba(108,125,255,.45)) }
     @keyframes spin{ to{ transform:rotate(360deg) } }
 
-    /* Hide page chrome while loading -> prevents any lines/borders flashing */
+    /* Prevent any chrome/border flashes while loading */
     .hydrating header, .hydrating footer, .hydrating .card{ display:none }
   </style>
 </head>
 
 <body class="hydrating">
-  <!-- Spinner only while loading -->
+  <!-- Spinner -->
   <div class="loading" aria-live="polite" aria-busy="true">
     <div class="ring" role="status" aria-label="Loading"></div>
   </div>
@@ -85,10 +74,7 @@
 
   <main>
     <div class="card">
-      <!-- No default placeholder here -->
       <div id="media" class="media" aria-live="polite"></div>
-
-      <!-- Fallback text (shown only when there is truly no media) -->
       <div id="content" class="content">
         <h1 id="title">Hello 👋</h1>
         <div id="subtitle" class="muted">Welcome!</div>
@@ -103,7 +89,7 @@
   <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-    /* ===== Minimal config ===== */
+    /* ===== Config ===== */
     const SUPABASE_URL = "https://hvfqdrfdefgfqbfdikpn.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnFkcmZkZWZnZnFiZmRpa3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTA4MjgsImV4cCI6MjA2Nzc2NjgyOH0.nG8rzVCQR6J8XxbTaiC9zOUjFu7fi-4oRVY-D61NCJU";
     const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -112,14 +98,13 @@
     const linkId  = qs.get("linkId")  || "";
     const themeId = qs.get("themeId") || "";
 
-    const $ = (sel)=>document.querySelector(sel);
+    const $ = (s)=>document.querySelector(s);
     const root = document.documentElement.style;
 
     const store = {
       get(key, fallback=null){ try{ return JSON.parse(localStorage.getItem(key)) ?? fallback; }catch{ return fallback; } }
     };
-
-    const isNumericId = v => /^\d+$/.test(String(v||""));
+    const isNum = v => /^\d+$/.test(String(v||""));
     const normalizeUrl = u => {
       if(!u) return "";
       const s = String(u).trim();
@@ -128,101 +113,151 @@
       return "https://" + s.replace(/^\/+/, "");
     };
 
-    /* ===== Apply theme visuals and media ===== */
-   function applyTheme(theme){
-  const media = $("#media");
-  const content = $("#content");
+    /* ===== ALWAYS end loading safely ===== */
+    const endHydration = (() => {
+      let called = false;
+      return (showContent=true) => {
+        if (called) return; called = true;
+        document.body.classList.remove("hydrating");
+        if (showContent) $("#content").style.display = "block";
+      };
+    })();
 
-  // no theme at all → fallback immediately
-  if (!theme) {
-    document.body.classList.remove("hydrating");
-    content.style.display = "block";
-    media.innerHTML = '<div class="muted" style="padding:40px 12px;text-align:center;">No theme found.</div>';
-    return;
-  }
+    /* ===== Apply theme & media ===== */
+    function applyTheme(theme){
+      const media = $("#media");
+      const content = $("#content");
 
-  // set theme colors + text
-  root.setProperty("--bg1", theme.colors?.bg1 || "#101635");
-  root.setProperty("--bg2", theme.colors?.bg2 || "#0b0f23");
-  root.setProperty("--fg",  theme.colors?.fg  || "#f3f6ff");
-  root.setProperty("--cta-bg", theme.colors?.ctaBg || "#6c7dff");
-  root.setProperty("--cta-fg", theme.colors?.ctaFg || "#09122a");
-  root.setProperty("--font", theme.font || "Inter, system-ui");
-
-  $("#title").textContent    = theme.title    || "Hello 👋";
-  $("#subtitle").textContent = theme.subtitle || "Welcome!";
-  $("#cta").textContent      = theme.cta?.text || "Learn more";
-  $("#cta").href             = normalizeUrl(theme.cta?.url || "#");
-
-  media.innerHTML = ""; // clear
-  const box = document.createElement("div");
-  box.className = "box";
-
-  const savedW = Number(theme?.settings?.mediaBox?.w);
-  if (Number.isFinite(savedW) && savedW > 0) {
-    media.style.setProperty("--media-w", savedW + "px");
-    box.style.setProperty("--media-w", savedW + "px");
-  }
-
-  function fitToViewport(){
-    const headerH = document.querySelector("header")?.offsetHeight ?? 0;
-    const footerH = document.querySelector("footer")?.offsetHeight ?? 0;
-    const textH   = content?.offsetHeight ?? 0;
-    const pad = 24;
-    const available = Math.max(160, window.innerHeight - headerH - footerH - textH - pad);
-    media.style.setProperty("--media-maxh", Math.round(available) + "px");
-  }
-
-  const onReady = () => {
-    fitToViewport();
-    document.body.classList.remove("hydrating"); // remove spinner
-    content.style.display = "block";             // show text section
-    media.dispatchEvent(new Event("media-ready"));
-  };
-
-  if (theme.media?.kind === "image" && theme.media.data){
-    const img = new Image();
-    img.src = theme.media.data;
-    img.alt = theme.media.alt || "";
-    img.addEventListener("load", onReady, { once:true });
-    box.appendChild(img); media.appendChild(box);
-  }
-  else if (theme.media?.kind === "video" && theme.media.data){
-    const v = document.createElement("video");
-    v.src = theme.media.data;
-    v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true; v.controls = false;
-    v.addEventListener("loadedmetadata", onReady, { once:true });
-    box.appendChild(v); media.appendChild(box);
-  }
-  else {
-    // Theme exists but no media → fallback immediately
-    document.body.classList.remove("hydrating");
-    content.style.display = "block";
-    media.innerHTML = '<div class="muted" style="padding:40px 12px;text-align:center;">No media in theme.</div>';
-  }
-
-  window.addEventListener("resize", fitToViewport);
-  window.addEventListener("orientationchange", () => setTimeout(fitToViewport, 60));
-}
-
-
-    /* ===== Minimal data loading ===== */
-    async function loadViaSupabase(linkId, themeId){
-      let link = null, theme = null;
-
-      if (linkId){
-        const { data } = await sb.from("links").select("*").eq("link_id", linkId).maybeSingle();
-        if (data) link = data;
+      if (!theme) {
+        // No theme at all → show simple fallback
+        media.innerHTML = '<div class="muted" style="padding:40px 12px; text-align:center;">No theme found.</div>';
+        endHydration(true);
+        return;
       }
-      const resolvedThemeId = themeId || link?.theme_id || link?.themeId;
-      if (resolvedThemeId){
-        const wanted = isNumericId(resolvedThemeId) ? Number(resolvedThemeId) : resolvedThemeId;
-        const { data } = await sb.from("themes").select("*").eq("id", wanted).maybeSingle();
-        if (data) {
-          theme = {
-            id: data.id, name: data.name, title: data.title, subtitle: data.subtitle,
-            font: data.font, colors: data.colors || {}, cta: data.cta || {},
-            media: data.media || {}, settings: data.settings || {}
-          };
+
+      // Colors/typography
+      root.setProperty("--bg1", theme.colors?.bg1 || "#101635");
+      root.setProperty("--bg2", theme.colors?.bg2 || "#0b0f23");
+      root.setProperty("--fg",  theme.colors?.fg  || "#f3f6ff");
+      root.setProperty("--cta-bg", theme.colors?.ctaBg || "#6c7dff");
+      root.setProperty("--cta-fg", theme.colors?.ctaFg || "#09122a");
+      root.setProperty("--font", theme.font || "Inter, system-ui");
+
+      // Text/CTA
+      $("#title").textContent    = theme.title    || "Hello 👋";
+      $("#subtitle").textContent = theme.subtitle || "Welcome!";
+      $("#cta").textContent      = theme.cta?.text || "Learn more";
+      $("#cta").href             = normalizeUrl(theme.cta?.url || "#");
+
+      media.innerHTML = "";
+      const box = document.createElement("div");
+      box.className = "box";
+
+      const savedW = Number(theme?.settings?.mediaBox?.w);
+      if (Number.isFinite(savedW) && savedW > 0) {
+        media.style.setProperty("--media-w", savedW + "px");
+        box.style.setProperty("--media-w", savedW + "px");
+      }
+
+      // Keep the whole card on screen
+      function fitToViewport(){
+        const headerH = document.querySelector("header")?.offsetHeight ?? 0;
+        const footerH = document.querySelector("footer")?.offsetHeight ?? 0;
+        const textH   = content?.offsetHeight ?? 0;
+        const pad = 24;
+        const available = Math.max(160, window.innerHeight - headerH - footerH - textH - pad);
+        media.style.setProperty("--media-maxh", Math.round(available) + "px");
+      }
+
+      const onReady = () => { fitToViewport(); endHydration(true); media.dispatchEvent(new Event("media-ready")); };
+      const onError = () => {
+        media.innerHTML = '<div class="muted" style="padding:40px 12px; text-align:center;">Failed to load media.</div>';
+        endHydration(true);
+      };
+
+      // Render media if present; otherwise fallback immediately
+      if (theme.media?.kind === "image" && theme.media.data){
+        const img = new Image();
+        img.src = theme.media.data;
+        img.alt = theme.media.alt || "";
+        img.addEventListener("load", onReady,  { once:true });
+        img.addEventListener("error", onError, { once:true });
+        box.appendChild(img); media.appendChild(box);
+      }
+      else if (theme.media?.kind === "video" && theme.media.data){
+        const v = document.createElement("video");
+        v.src = theme.media.data;
+        v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true; v.controls = false;
+        v.addEventListener("loadedmetadata", onReady, { once:true });
+        v.addEventListener("error", onError,         { once:true });
+        box.appendChild(v); media.appendChild(box);
+      }
+      else {
+        media.innerHTML = '<div class="muted" style="padding:40px 12px; text-align:center;">No media in theme.</div>';
+        endHydration(true);
+      }
+
+      window.addEventListener("resize", fitToViewport);
+      window.addEventListener("orientationchange", () => setTimeout(fitToViewport, 60));
+
+      // Safety: never hang on spinner > 3500ms
+      setTimeout(() => endHydration(true), 3500);
+    }
+
+    /* ===== Load theme/link ===== */
+    async function loadViaSupabase(linkId, themeId){
+      try{
+        let link = null, theme = null;
+
+        if (linkId){
+          const { data } = await sb.from("links").select("*").eq("link_id", linkId).maybeSingle();
+          if (data) link = data;
         }
+        const resolvedThemeId = themeId || link?.theme_id || link?.themeId;
+        if (resolvedThemeId){
+          const wanted = isNum(resolvedThemeId) ? Number(resolvedThemeId) : resolvedThemeId;
+          const { data } = await sb.from("themes").select("*").eq("id", wanted).maybeSingle();
+          if (data) {
+            theme = {
+              id: data.id, name: data.name, title: data.title, subtitle: data.subtitle,
+              font: data.font, colors: data.colors || {}, cta: data.cta || {},
+              media: data.media || {}, settings: data.settings || {}
+            };
+          }
+        }
+        return { link, theme };
+      }catch{
+        // Network/CORS/etc → fall back to local
+        return { link:null, theme:null };
+      }
+    }
+
+    function loadFromLocal(linkId, themeId){
+      const themes = store.get("qrstudio.themes", []);
+      const links  = store.get("qrstudio.links",  []);
+      const link = linkId ? links.find(l => String(l.id) === String(linkId)) : null;
+      const theme =
+        themeId ? themes.find(t => String(t.id ?? t.remoteId) === String(themeId)) :
+        link?.themeId ? themes.find(t => String(t.id ?? t.remoteId) === String(link.themeId)) :
+        null;
+      return { link, theme };
+    }
+
+    (async function start(){
+      // Try Supabase first when IDs are present
+      let { link, theme } = await loadViaSupabase(linkId, themeId);
+
+      // Fallback to local storage if nothing came back
+      if (!theme) {
+        const local = loadFromLocal(linkId, themeId);
+        link = link || local.link;
+        theme = local.theme || theme;
+      }
+
+      applyTheme(theme);
+      // Spinner will end via applyTheme logic (including safety timeout)
+    })();
+  </script>
+</body>
+</html>
 
