@@ -134,12 +134,21 @@
         -webkit-user-select: none;
         pointer-events: auto;
       }
+      .logo {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        font-weight: 700;
+      }
     </style>
   </head>
   <body>
     <header>
-      <div class="dot"></div>
-      <div class="muted small">QR Landing</div>
+      <div class="logo">
+        <img class="icon" src="https://www.themeqr.com/images/favicon-32x32.png"
+          alt="ThemeQR" width="16" height="16"/>
+        <span>ThemeQR</span><span class="muted small"></span>
+       </div>
     </header>
     <main>
       <div class="card">
