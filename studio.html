@@ -6,6 +6,8 @@
     <title>ThemeQR — Studio</title>
     <link rel="icon" href="https://themeqr.com/images/TQR_Dude_Sm.png" />
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
     <!-- Supabase SDK FIRST so the app script can use it -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -4850,6 +4852,34 @@
           renderAuthNav();
           renderLinksDropdown();
         });
+        // Load saved links from localStorage or initialize empty array
+let savedLinks = JSON.parse(localStorage.getItem('qrstudio.links')) || [];
+
+// Function to save links back to localStorage
+function saveLinks() {
+  localStorage.setItem('qrstudio.links', JSON.stringify(savedLinks));
+}
+
+// Function to populate the Saved Dynamic Links dropdown
+function populateLinksDropdown() {
+  // Target the <select> in the QR Studio section (it's after <h2>QR Studio</h2> and labeled "Saved Dynamic Links")
+  const select = document.querySelector('div > h2:nth-of-type(1) ~ div select');
+  if (!select) {
+    console.error('Could not find Saved Dynamic Links select element. Check HTML structure.');
+    return;
+  }
+  select.innerHTML = '<option>— Select a Link —</option>';
+  savedLinks.forEach(link => {
+    const option = document.createElement('option');
+    option.value = link.id;
+    option.textContent = link.id;
+    select.appendChild(option);
+  });
+}
+
+// Call this on page load to populate dropdown
+populateLinksDropdown();
+
       </script>
     </div>
   </body>
