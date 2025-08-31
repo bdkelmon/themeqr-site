@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QR Landing</title>
+<link rel="icon" href="https://themeqr.com/images/TQR_Dude_Sm.png">
+<style>
+  :root{
+    --bg1:#101635; --bg2:#0b0f23; --fg:#f3f6ff; --cta-bg:#6c7dff; --cta-fg:#09122a;
+    --font: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
+  }
+  *{box-sizing:border-box} html,body{height:100%}
+  body{
+    margin:0; color:var(--fg); font-family:var(--font);
+    background:linear-gradient(140deg,var(--bg1),var(--bg2));
+    display:grid; min-height:100vh; grid-template-rows:auto 1fr auto;
+  }
+  header, footer{padding:14px 18px; opacity:.9}
+  header{display:flex;align-items:center;gap:10px}
+  .dot{width:10px;height:10px;border-radius:50%;background:conic-gradient(from 200deg, #6c7dff, #2de6c5)}
+  main{display:grid; grid-template-columns:minmax(280px, 860px); justify-content:center; padding:14px}
+  .card{
+    background:rgba(6,9,24,.5); border:1px solid rgba(255,255,255,.08); border-radius:14px; overflow:hidden;
+    backdrop-filter:saturate(110%) blur(8px);
+  }
+  .media{height:52vh; min-height:240px; display:grid; place-items:center; background:#070a18}
+  .media img,.media video{width:100%;height:100%;object-fit:cover}
+  .content{padding:16px}
+  h1{margin:0 0 6px 0}
+  .muted{color:#bac2ffb3}
+  .cta{display:inline-block;margin-top:10px;padding:11px 16px;border-radius:12px;background:var(--cta-bg);color:var(--cta-fg);
+       text-decoration:none;font-weight:700; box-shadow:0 6px 20px rgba(108,125,255,.3)}
+  .ghost{background:transparent; color:var(--fg); border:1px solid rgba(255,255,255,.2); box-shadow:none}
+  .small{font-size:12px}
+  .note{margin-top:10px}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+</style>
+</head>
+<body>
+  <header><div class="dot"></div><div class="muted small">QR Landing</div></header>
+  <main>
+    <div class="card">
+      <div class="media" id="media"><div class="muted">No media in theme.</div></div>
+      <div class="content">
+        <h1 id="title">Hello 👋</h1>
+        <div id="subtitle" class="muted">Welcome!</div>
+        <div class="actions">
+          <a id="cta" class="cta" href="#" target="_blank" rel="noopener">Open link</a>
+          <a id="skipBtn" class="cta ghost" href="#" style="display:none">Skip</a>
+        </div>
+        <div id="note" class="small muted note"></div>
+      </div>
+    </div>
+  </main>
+  <footer class="small muted" id="foot">Powered by ThemeQR</footer>
+
+<script>
+/* ===== URL Normalizer: ensures absolute URLs even if user entered "www.example.com" ===== */
+function normalizeTarget(u){
+  if(!u) return null;
+  u = u.trim();
+  if(/^https?:\/\//i.test(u)) return u;
+  if(/^\/\//.test(u)) return location.protocol + u;
+  return 'https://' + u.replace(/^\/*/, '');
+}
+
+/* ===== Data loaders: localStorage first, then optional JSON files when hosted ===== */
+const LS = { get(k){ try{ return JSON.parse(localStorage.getItem(k) || 'null') }catch{ return null } } };
+async function fetchJson(path){ try{ const r=await fetch(path,{cache:'no-store'}); return r.ok? await r.json(): null }catch{ return null } }
+async function loadAll(){
+  let themes = LS.get('qrstudio.themes');
+  let links  = LS.get('qrstudio.links');
+  if(!themes){ const j = await fetchJson('./qrstudio-themes.json'); themes = j?.themes ?? []; }
+  if(!links){  const j = await fetchJson('./qrstudio-links.json');  links  = j?.links  ?? []; }
+  return {themes, links};
+}
+
+/* ===== Apply Theme ===== */
+function applyTheme(theme){
+  if(!theme) return;
+  const root = document.documentElement.style;
+  root.setProperty('--bg1', theme.colors?.bg1 || '#101635');
+  root.setProperty('--bg2', theme.colors?.bg2 || '#0b0f23');
+  root.setProperty('--fg',  theme.colors?.fg  || '#f3f6ff');
+  root.setProperty('--cta-bg', theme.colors?.ctaBg || '#6c7dff');
+  root.setProperty('--cta-fg', theme.colors?.ctaFg || '#09122a');
+  root.setProperty('--font', theme.font || "Inter, system-ui");
+
+  document.getElementById('title').textContent = theme.title || 'Hello 👋';
+  document.getElementById('subtitle').textContent = theme.subtitle || 'Welcome!';
+  const cta = document.getElementById('cta');
+  cta.textContent = theme.cta?.text || 'Open link';
+  cta.href = theme.cta?.url || '#';
+
+  const media = document.getElementById('media'); media.innerHTML='';
+  if(theme.media?.kind === 'image' && theme.media.data){
+    const img=document.createElement('img'); img.src=theme.media.data; img.alt=theme.media.alt || '';
+    media.appendChild(img);
+  } else if(theme.media?.kind === 'video' && theme.media.data){
+    const v=document.createElement('video'); v.src=theme.media.data;
+    v.autoplay=true; v.loop=true; v.muted=true; v.playsInline=true; v.controls=false; v.preload='metadata';
+    media.appendChild(v);
+  } else {
+    media.innerHTML = '<div class="muted">No media in theme.</div>';
+  }
+}
+
+/* ===== Main: resolve link + handle redirect timing + skip ===== */
+(async function start(){
+  const qs = new URLSearchParams(location.search);
+  const linkId = qs.get('linkId') || '';
+  const explicitThemeId = qs.get('themeId') || '';
+  const {themes, links} = await loadAll();
+
+  const link = links.find(l => l.id === linkId);
+  const theme = explicitThemeId
+    ? themes.find(t => t.id === explicitThemeId)
+    : (link?.themeId ? themes.find(t => t.id === link.themeId) : null);
+
+  applyTheme(theme);
+
+  const note = document.getElementById('note');
+  const skipBtn = document.getElementById('skipBtn');
+
+  if(!linkId){ note.textContent = 'Missing linkId in URL.'; return; }
+  if(!link){   note.textContent = `No saved link found for “${linkId}”.`; return; }
+
+  const target = normalizeTarget(link.url);
+  if(!target){ note.textContent = `The link “${linkId}” has no destination URL set.`; return; }
+
+  // Read theme settings
+  const delaySec = Number(theme?.settings?.redirectDelay ?? 2);
+  const showSkip = (theme?.settings?.showSkip ?? true);
+  const skipText = theme?.settings?.skipText || 'Skip';
+
+  document.title = (theme?.name || 'QR') + ' • ' + linkId;
+
+  // Skip button (immediate go-to target)
+  skipBtn.textContent = skipText;
+  skipBtn.style.display = showSkip ? 'inline-block' : 'none';
+  skipBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    location.replace(target);
+  });
+
+  // Countdown + redirect (if delay > 0)
+  if (delaySec > 0) {
+    let s = delaySec;
+    note.innerHTML = `Redirecting to <span class="muted">${target}</span> in <b id="sec">${s}</b>… <a href="#" id="stay">stay here</a>`;
+    const tick = setInterval(() => {
+      s--; document.getElementById('sec').textContent = s;
+      if (s <= 0) { clearInterval(tick); location.replace(target); }
+    }, 1000);
+    document.getElementById('stay').addEventListener('click', e => {
+      e.preventDefault(); clearInterval(tick); note.textContent = 'Redirection cancelled.';
+    });
+  } else {
+    // No auto-redirect; show hint
+    note.innerHTML = `Auto-redirect is <b>off</b>. Use the buttons above to continue.`;
+  }
+})();
+</script>
+</body>
+</html>
+
