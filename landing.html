@@ -152,7 +152,7 @@
     </header>
     <main>
       <div class="card">
-          <div class="content" id="content" style="display:none">
+          <div class="content">
           <h1 id="title">Hello 👋</h1>
           <div id="subtitle" class="muted">Welcome!</div>
           <a id="cta" class="cta" href="#" target="_blank" rel="noopener"
@@ -164,7 +164,8 @@
     </main>
     <footer class="small muted" id="foot">Powered by ThemeQR</footer>
 
-
+    <!-- QRCode CDN for live overlay -->
+    <!-- QRCode CDN for live overlay (keep this) -->
     <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
 
     <script type="module">
@@ -181,7 +182,6 @@
       const linkId = qs.get("linkId") || "";
       const themeId = qs.get("themeId") || "";
       console.log("Detected linkId:", new URLSearchParams(window.location.search).get("linkId")); 
-      
       /* ===================== Helpers ===================== */
       const isNumericId = (v) => /^\d+$/.test(String(v || ""));
       function normalizeHttpUrl(input) {
@@ -213,8 +213,7 @@
       /* ===================== UI: apply theme, overlay, redirect ===================== */
       function applyTheme(theme) {
         if (!theme) return;
-        const content = document.getElementById("content");
-        if (content) content.style.display = "block";
+
         // colors/typography
         const root = document.documentElement.style;
         root.setProperty("--bg1", theme.colors?.bg1 || "#101635");
@@ -286,7 +285,7 @@
           box.appendChild(v);
           media.appendChild(box);
         } else {
-          media.innerHTML = '';
+          media.innerHTML = '<div class="muted">No media in theme.</div>';
         }
 
         window.addEventListener("resize", fitToViewport);
