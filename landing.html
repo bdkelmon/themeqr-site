@@ -146,12 +146,10 @@
         <div class="media" id="media">
           <div class="muted">No media in theme.</div>
         </div>
-        <div class="content">
+        <div class="content" id="content" style="display:none">
           <h1 id="title">Hello 👋</h1>
-          <div id="subtitle" class="muted">Welcome!</div>
-          <a id="cta" class="cta" href="#" target="_blank" rel="noopener"
-            >Learn more</a
-          >
+          <div id="subtitle" class="muted">We're sorry but there is no theme to load</div>
+          <a id="cta" class="cta" href="#" target="_blank" rel="noopener">Learn more</a>
           <div id="note" class="small muted" style="margin-top: 10px"></div>
         </div>
       </div>
@@ -207,7 +205,8 @@
       /* ===================== UI: apply theme, overlay, redirect ===================== */
       function applyTheme(theme) {
         if (!theme) return;
-
+        const content = document.getElementById("content");
+        if (content) content.style.display = "block"; 
         // colors/typography
         const root = document.documentElement.style;
         root.setProperty("--bg1", theme.colors?.bg1 || "#101635");
@@ -580,6 +579,23 @@
           if (link) resolveLink(link, chosenTheme);
         }
       })();
+
+      async function uploadToCloudinary(file) {
+       const formData = new FormData();
+       formData.append("file", file);
+       formData.append("upload_preset", "YOUR_UPLOAD_PRESET"); // from your Cloudinary config
+     
+       const res = await fetch("https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload", {
+         method: "POST",
+         body: formData
+       });
+     
+       if (!res.ok) throw new Error("Cloudinary upload failed");
+     
+       const data = await res.json();
+       return data.secure_url; // this is what you save as t.meta.image
+     }
+
     </script>
   </body>
 </html>
