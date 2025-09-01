@@ -1217,12 +1217,12 @@
                   <div class="stack" style="margin-top: 8px">
                     <span class="muted small"
                       >Encoded URL:
-                      <span id="encoded" class="code">—</span></span
-                    >
+                      <span id="encoded" class="code">—</span></span>
                   </div>
                 </div>
               </div>
             </div>
+            <canvas id="qrCanvas" width="200" height="200" style="border:1px solid #ccc; display:block; margin:20px auto;"></canvas>
           </div>
 
           <!-- ===== THEME STUDIO ===== -->
@@ -4863,28 +4863,50 @@
         }
 
         // Function to populate the Saved Dynamic Links dropdown
-        function populateLinksDropdown() {
-          // Target the <select> in the QR Studio section (it's after <h2>QR Studio</h2> and labeled "Saved Dynamic Links")
-          const select = document.querySelector(
-            "div > h2:nth-of-type(1) ~ div select"
-          );
-          if (!select) {
-            console.error(
-              "Could not find Saved Dynamic Links select element. Check HTML structure."
-            );
-            return;
-          }
-          select.innerHTML = "<option>— Select a Link —</option>";
-          savedLinks.forEach((link) => {
-            const option = document.createElement("option");
-            option.value = link.id;
-            option.textContent = link.id;
-            select.appendChild(option);
-          });
-        }
+// Function to populate the Saved Dynamic Links dropdown
+function populateLinksDropdown() {
+  const select = document.getElementById('linkSelect');
+  if (!select) {
+    console.error('Could not find linkSelect element. Check HTML structure.');
+    return;
+  }
+  select.innerHTML = '<option value="">— Select a Link —</option>';
+  savedLinks.forEach((link) => {
+    const option = document.createElement('option');
+    option.value = link.id;
+    option.textContent = link.id; // Use link.id for now; adjust to link.link_id if needed
+    select.appendChild(option);
+  });
+}
 
-        // Call this on page load to populate dropdown
-        populateLinksDropdown();
+// Handle dropdown selection to update form and draw QR
+const linkSelect = document.getElementById('linkSelect');
+linkSelect.addEventListener('change', () => {
+  const selectedId = linkSelect.value;
+  if (!selectedId) {
+    resetFormToNew();
+    return;
+  }
+
+  const link = savedLinks.find((l) => l.id === selectedId);
+  if (!link) return;
+
+  document.getElementById('linkId').value = link.link_id || link.id;
+  document.getElementById('linkUrl').value = link.url || '';
+  document.getElementById('linkTheme').value = link.theme_id || '';
+  document.getElementById('qrSize').value = link.size || 512;
+  document.getElementById('qrFg').value = link.fg || '#000000';
+  document.getElementById('qrBg').value = link.bg || '#ffffff';
+  document.getElementById('qrEcc').value = link.ecc || 'M';
+  drawQR();
+  document.getElementById('encoded').textContent = currentLandingUrl(link.link_id || link.id, link.theme_id || '');
+});
+
+// Call this on page load to populate dropdown
+populateLinksDropdown();
+
+// Ensure initial QR draw on load
+drawQR();
       </script>
     </div>
   </body>
