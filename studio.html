@@ -2541,38 +2541,7 @@
             console.error("[links] Unexpected error:", err);
           }
         });
-let qrNode = qrCanvasHost.querySelector("canvas");
-if (qrNode) {
-  let dataUrl = qrNode.toDataURL("image/png");
-  let formData = new FormData();
-  formData.append("file", dataURLtoBlob(dataUrl));
-  formData.append("upload_preset", "YOUR_UPLOAD_PRESET"); // Replace with your preset
 
-  try {
-    let res = await fetch("https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload", {
-      method: "POST",
-      body: formData
-    });
-    if (res.ok) {
-      let data = await res.json();
-      rec.qrImageUrl = data.secure_url;
-      // Update local and cloud record with qrImageUrl
-      links[idx >= 0 ? idx : 0] = rec;
-      db.saveLinks(links);
-      await cloudSaveLink(rec);
-    }
-  } catch (err) {
-    console.warn("Cloudinary QR upload error:", err);
-  }
-}
-
-// Helper to convert dataURL to Blob
-function dataURLtoBlob(dataurl) {
-  var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-    bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-  while(n--) u8arr[n] = bstr.charCodeAt(n);
-  return new Blob([u8arr], {type:mime});
-}
         document
           .getElementById("newBtn")
           .addEventListener("click", resetFormToNew);
