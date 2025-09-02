@@ -4152,8 +4152,11 @@
 
         document.getElementById("openBtn").addEventListener("click", () => {
           const id = linkSelect.value;
+          console.log("Button clicked. The value of linkSelect is:", id);
           if (!id) return;
+          console.log("The linkSelect value is empty, stopping execution.");
           const theme = getSelectedThemeId();
+          console.log("Found link object:", link);
           const url = new URL("landing.html", location.href);
           url.searchParams.set("linkId", id);
           if (theme) url.searchParams.set("themeId", theme);
