@@ -4119,12 +4119,18 @@
 
         function renderLinksDropdown() {
           const links = db.links();
+          const selectedId = linkSelect.value;
+
           linkSelect.innerHTML = `<option value="">— Select a Link —</option>`;
           for (const link of links) {
             const opt = document.createElement("option");
             opt.value = link.id; // actual unique ID
             opt.textContent = link.link_id || `Link ${link.id}`; // readable name
             linkSelect.appendChild(opt);
+          }
+            // Re-select the previously selected link
+          if (selectedId) {
+            linkSelect.value = selectedId;
           }
         }
         linkSelect.addEventListener("change", () => {
