@@ -4755,7 +4755,7 @@
              applySim();
            });
          })();
-
+        }
         async function getUserId() {
           try {
             return (await sb.auth.getUser()).data?.user?.id ?? null;
