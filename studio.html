@@ -2854,27 +2854,27 @@
         function renderThemesList(selectedId = "") {
           const list = document.getElementById("themesList");
           if (!list) return;
-        
+
           list.innerHTML = "";
           const currentId = selectedId || window.workingTheme?.id || "";
-        
+
           for (const t of db.themes()) {
             // Card shell (keeps your rail sizing)
             const card = document.createElement("div");
             card.className = "item";
             card.dataset.id = t.id;
             if (t.id === currentId) card.classList.add("selected");
-        
+
             // Inner layout similar to your Modes cards: preview + body
             const inner = document.createElement("div");
             inner.className = "theme-rail-card";
-        
+
             // --- Preview (image or video if present) ---
             const thumb = document.createElement("div");
             thumb.className = "thumb";
             const kind = t?.media?.kind || "";
             const data = t?.media?.data || "";
-        
+
             if (kind === "image" && data) {
               const img = document.createElement("img");
               img.src = data;
@@ -2894,21 +2894,44 @@
               empty.textContent = "No media";
               thumb.appendChild(empty);
             }
-        
+
             // --- Text content (title/name + tiny meta) ---
             const body = document.createElement("div");
             const title = document.createElement("div");
             title.style.fontWeight = "700";
             title.textContent = t.name || "(untitled)";
-        
+
             const meta = document.createElement("div");
             meta.className = "meta";
             meta.textContent = t.title || "—";
-        
-            // --- Actions (Load + Copy ID) ---
+
+            // --- Actions (Load + Copy ID + Add to Playlist) ---
             const actions = document.createElement("div");
             actions.className = "stack";
-        
+
+            // Add to Playlist Button
+            const addBtn = document.createElement("button");
+            addBtn.className = "btn primary";
+            addBtn.textContent = "Add to Playlist";
+            addBtn.onclick = async () => {
+              const linkId = document.getElementById("linkSelect").value;
+              if (!linkId) {
+                alert("Please select a link from the dropdown first.");
+                return;
+              }
+              const { error } = await db.linkThemes(linkId, t.id);
+              if (error) {
+                alert("Failed to add theme to playlist.");
+              } else {
+                addBtn.textContent = "Added!";
+                setTimeout(
+                  () => (addBtn.textContent = "Add to Playlist"),
+                  1500
+                );
+              }
+            };
+
+            // Load button
             const useBtn = document.createElement("button");
             useBtn.className = "btn";
             useBtn.textContent = "Load";
@@ -2920,31 +2943,32 @@
               document.getElementById("themeSubtitle").value = t.subtitle || "";
               document.getElementById("themeCtaText").value = t.cta?.text || "";
               document.getElementById("themeCtaUrl").value = t.cta?.url || "";
-              document.getElementById("themeFont").value = t.font || "Inter,system-ui";
-              document.getElementById("themeBg1").value = t.colors?.bg1 || "#101635";
-              document.getElementById("themeBg2").value = t.colors?.bg2 || "#0b0f23";
-              document.getElementById("themeFg").value = t.colors?.fg || "#f3f6ff";
-              document.getElementById("themeCtaBg").value = t.colors?.ctaBg || "#6c7dff";
-              document.getElementById("themeCtaFg").value = t.colors?.ctaFg || "#09122a";
-              
-              // Correctly set the alt text from the nested media object
+              document.getElementById("themeFont").value =
+                t.font || "Inter,system-ui";
+              document.getElementById("themeBg1").value =
+                t.colors?.bg1 || "#101635";
+              document.getElementById("themeBg2").value =
+                t.colors?.bg2 || "#0b0f23";
+              document.getElementById("themeFg").value =
+                t.colors?.fg || "#f3f6ff";
+              document.getElementById("themeCtaBg").value =
+                t.colors?.ctaBg || "#6c7dff";
+              document.getElementById("themeCtaFg").value =
+                t.colors?.ctaFg || "#09122a";
               document.getElementById("themeAlt").value = t.media?.alt || "";
-        
-              // Correctly set the nested settings properties
-              document.getElementById("themeDelay").value = t.settings?.redirectDelay ?? 2;
-              document.getElementById("themeShowSkip").checked = t.settings?.showSkip ?? true;
-              document.getElementById("themeSkipText").value = t.settings?.skipText ?? "Skip";
-        
-              // Correctly handle the override URL checkbox
+              document.getElementById("themeDelay").value =
+                t.settings?.redirectDelay ?? 2;
+              document.getElementById("themeShowSkip").checked =
+                t.settings?.showSkip ?? true;
+              document.getElementById("themeSkipText").value =
+                t.settings?.skipText ?? "Skip";
               const chk = document.getElementById("themeOverrideUrl");
               if (chk) chk.checked = !!t.settings?.overrideWithThemeUrl;
-        
-              // This line handles displaying the image/video in the preview section
+
               applySim();
-              
               renderThemesList(t.id);
             };
-        
+
             const copyId = document.createElement("button");
             copyId.className = "btn ghost";
             copyId.textContent = "Copy ID";
@@ -2953,26 +2977,25 @@
               copyId.textContent = "Copied!";
               setTimeout(() => (copyId.textContent = "Copy ID"), 1000);
             };
-        
-            actions.append(useBtn, copyId);
-        
+
+            actions.append(addBtn, useBtn, copyId);
+
             body.appendChild(title);
             body.appendChild(meta);
-        
+
             inner.appendChild(thumb);
             inner.appendChild(body);
             inner.appendChild(actions);
-        
+
             card.appendChild(inner);
             list.appendChild(card);
           }
-        
+
           // Keep your existing behaviors (dropdown + rail arrows)
           refreshThemeDropdown();
           bindThemesRail();
           initThemesRailControls?.(); // safe if defined
         }
-
 
         function initThemesRailControls() {
           const rail = document.getElementById("themesList");
@@ -3779,12 +3802,12 @@
 
             const mediaKind = theme.media?.kind;
             const mediaData = theme.media?.data;
-            const mediaAlt = theme.media?.alt || '';
+            const mediaAlt = theme.media?.alt || "";
 
-            let mediaHtml = '';
-            if (mediaKind === 'image' && mediaData) {
+            let mediaHtml = "";
+            if (mediaKind === "image" && mediaData) {
               mediaHtml = `<img src="${mediaData}" alt="${mediaAlt}" style="width:100%; height:100%; object-fit: cover;">`;
-            } else if (mediaKind === 'video' && mediaData) {
+            } else if (mediaKind === "video" && mediaData) {
               mediaHtml = `<video src="${mediaData}" muted loop playsinline autoplay style="width:100%; height:100%; object-fit: cover;"></video>`;
             } else {
               mediaHtml = '<div class="placard">No media</div>';
@@ -3803,21 +3826,22 @@
               // ... (code to populate inputs)
               // This part should also be updated to use the media object
               const simMedia = document.getElementById("simMedia");
-              let simMediaHtml = '';
-              if (mediaKind === 'image' && mediaData) {
-                  simMediaHtml = `<img src="${mediaData}" alt="${mediaAlt}" style="width:100%; height:100%; object-fit: cover;">`;
-              } else if (mediaKind === 'video' && mediaData) {
-                  simMediaHtml = `<video src="${mediaData}" muted loop playsinline autoplay style="width:100%; height:100%; object-fit: cover;"></video>`;
+              let simMediaHtml = "";
+              if (mediaKind === "image" && mediaData) {
+                simMediaHtml = `<img src="${mediaData}" alt="${mediaAlt}" style="width:100%; height:100%; object-fit: cover;">`;
+              } else if (mediaKind === "video" && mediaData) {
+                simMediaHtml = `<video src="${mediaData}" muted loop playsinline autoplay style="width:100%; height:100%; object-fit: cover;"></video>`;
               } else {
-                  simMediaHtml = '<div class="placard">Upload media to preview…</div>';
+                simMediaHtml =
+                  '<div class="placard">Upload media to preview…</div>';
               }
               simMedia.innerHTML = simMediaHtml;
             });
-            
+
             modesGrid.appendChild(card);
           });
         }
-        
+
         function renderPlaylist() {
           const box = $("#playlist");
           const pl = getPlaylist();
@@ -4114,7 +4138,7 @@
             opt.textContent = link.link_id || `Link ${link.id}`; // readable name
             linkSelect.appendChild(opt);
           }
-            // Re-select the previously selected link
+          // Re-select the previously selected link
           if (selectedId) {
             linkSelect.value = selectedId;
           }
@@ -4657,103 +4681,106 @@
           rewireSaveLink();
 
           // ---------- rewire "Save / Update Theme" → cloud only ----------
-         (function rewireSaveTheme() {
-           const btn = document.getElementById("saveTheme");
-           if (!btn) return;
-           const b = btn.cloneNode(true);
-           btn.replaceWith(b);
-           b.id = "saveTheme";
-         
-           b.addEventListener("click", async (e) => {
-             e.preventDefault();
-             if (!workingTheme.name?.trim())
-               return alert("Please give your theme a name.");
-             const uid = await currentUserId();
-             if (!uid) return alert("Please sign in.");
-         
-             // --- NEW MEDIA UPLOAD LOGIC STARTS HERE ---
-             const themeMediaInput = document.getElementById("themeMedia");
-             const mediaAlt = document.getElementById("themeAlt").value;
-         
-             if (themeMediaInput && themeMediaInput.files.length > 0) {
-               const file = themeMediaInput.files[0];
-               const filePath = `themes/${uuidv4()}-${file.name}`;
-               
-               let mediaKind = '';
-               if (file.type.startsWith('image/')) {
-                 mediaKind = 'image';
-               } else if (file.type.startsWith('video/')) {
-                 mediaKind = 'video';
-               } else {
-                 alert("Unsupported file type. Please upload an image or video.");
-                 return;
-               }
-               
-               // Upload the file to Supabase storage
-               const { error: uploadError } = await sb.storage
-                 .from('media')
-                 .upload(filePath, file);
-         
-               if (uploadError) {
-                 alert("Failed to upload media.");
-                 console.error(uploadError);
-                 return;
-               }
-               
-               // Get the public URL of the uploaded file
-               const { data: publicUrlData } = sb.storage.from('media').getPublicUrl(filePath);
-         
-               // Update the workingTheme.media object
-               workingTheme.media = {
-                 kind: mediaKind,
-                 data: publicUrlData.publicUrl,
-                 alt: mediaAlt,
-               };
-               
-             } else if (workingTheme.remoteId) {
-                 // If updating an existing theme without a new file, ensure the media alt text is updated
-                 if (workingTheme.media) {
-                     workingTheme.media.alt = mediaAlt;
-                 }
-             }
-             // --- NEW MEDIA UPLOAD LOGIC ENDS HERE ---
-         
-             const row = {
-               id: Number.isFinite(workingTheme.remoteId)
-                 ? workingTheme.remoteId
-                 : undefined,
-               user_id: uid,
-               name: workingTheme.name || "",
-               title: workingTheme.title || "",
-               subtitle: workingTheme.subtitle || "",
-               font: workingTheme.font || "Inter,system-ui",
-               colors: workingTheme.colors || {},
-               cta: workingTheme.cta || {},
-               media: workingTheme.media || {}, // This line now uses the updated media object
-               settings: workingTheme.settings || {
-                 redirectDelay: 2,
-                 showSkip: true,
-                 skipText: "Skip",
-               },
-               updated: new Date().toISOString(),
-             };
-             const { data, error } = await sb
-               .from("themes")
-               .upsert(row)
-               .select("id")
-               .single();
-             if (error)
-               return alert(
-                 "Cloud save failed: " + (error.message || "unknown")
-               );
-             workingTheme.remoteId = data.id;
-             workingTheme.id = String(data.id);
-         
-             await renderThemesList(data.id);
-             await refreshThemeDropdown();
-             applySim();
-           });
-         })();
+          (function rewireSaveTheme() {
+            const btn = document.getElementById("saveTheme");
+            if (!btn) return;
+            const b = btn.cloneNode(true);
+            btn.replaceWith(b);
+            b.id = "saveTheme";
+
+            b.addEventListener("click", async (e) => {
+              e.preventDefault();
+              if (!workingTheme.name?.trim())
+                return alert("Please give your theme a name.");
+              const uid = await currentUserId();
+              if (!uid) return alert("Please sign in.");
+
+              // --- NEW MEDIA UPLOAD LOGIC STARTS HERE ---
+              const themeMediaInput = document.getElementById("themeMedia");
+              const mediaAlt = document.getElementById("themeAlt").value;
+
+              if (themeMediaInput && themeMediaInput.files.length > 0) {
+                const file = themeMediaInput.files[0];
+                const filePath = `themes/${uuidv4()}-${file.name}`;
+
+                let mediaKind = "";
+                if (file.type.startsWith("image/")) {
+                  mediaKind = "image";
+                } else if (file.type.startsWith("video/")) {
+                  mediaKind = "video";
+                } else {
+                  alert(
+                    "Unsupported file type. Please upload an image or video."
+                  );
+                  return;
+                }
+
+                // Upload the file to Supabase storage
+                const { error: uploadError } = await sb.storage
+                  .from("media")
+                  .upload(filePath, file);
+
+                if (uploadError) {
+                  alert("Failed to upload media.");
+                  console.error(uploadError);
+                  return;
+                }
+
+                // Get the public URL of the uploaded file
+                const { data: publicUrlData } = sb.storage
+                  .from("media")
+                  .getPublicUrl(filePath);
+
+                // Update the workingTheme.media object
+                workingTheme.media = {
+                  kind: mediaKind,
+                  data: publicUrlData.publicUrl,
+                  alt: mediaAlt,
+                };
+              } else if (workingTheme.remoteId) {
+                // If updating an existing theme without a new file, ensure the media alt text is updated
+                if (workingTheme.media) {
+                  workingTheme.media.alt = mediaAlt;
+                }
+              }
+              // --- NEW MEDIA UPLOAD LOGIC ENDS HERE ---
+
+              const row = {
+                id: Number.isFinite(workingTheme.remoteId)
+                  ? workingTheme.remoteId
+                  : undefined,
+                user_id: uid,
+                name: workingTheme.name || "",
+                title: workingTheme.title || "",
+                subtitle: workingTheme.subtitle || "",
+                font: workingTheme.font || "Inter,system-ui",
+                colors: workingTheme.colors || {},
+                cta: workingTheme.cta || {},
+                media: workingTheme.media || {}, // This line now uses the updated media object
+                settings: workingTheme.settings || {
+                  redirectDelay: 2,
+                  showSkip: true,
+                  skipText: "Skip",
+                },
+                updated: new Date().toISOString(),
+              };
+              const { data, error } = await sb
+                .from("themes")
+                .upsert(row)
+                .select("id")
+                .single();
+              if (error)
+                return alert(
+                  "Cloud save failed: " + (error.message || "unknown")
+                );
+              workingTheme.remoteId = data.id;
+              workingTheme.id = String(data.id);
+
+              await renderThemesList(data.id);
+              await refreshThemeDropdown();
+              applySim();
+            });
+          })();
         }
         async function getUserId() {
           try {
