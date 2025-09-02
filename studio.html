@@ -3758,80 +3758,68 @@
           if (html) n.innerHTML = html;
           return n;
         }
-        function renderPresetsGrid() {
-          const mode = getMode();
-          const grid = $("#presetsGrid");
+function renderPresetsGrid() {
+          const modesGrid = document.getElementById("presetsGrid");
+          modesGrid.innerHTML = ""; // Clear existing grid
+
           const themes = db.themes();
-          const linkId = $("#modeLinkSelect").value;
-          const list =
-            mode === "event"
-              ? themes.filter(
-                  (t) =>
-                    t?.meta?.preset === true && t?.meta?.category === "event"
-                )
-              : themes;
-          grid.innerHTML = "";
-          if (!list.length) {
-            grid.innerHTML = `<div class="muted small">No presets yet. Create themes in Theme Studio.</div>`;
+          if (!themes || themes.length === 0) {
+            modesGrid.innerHTML = `
+              <div class="muted small" style="text-align: center; grid-column: 1/-1">
+                You haven't saved any themes yet.
+              </div>
+            `;
             return;
           }
-          list.forEach((t) => {
-            const card = el("div", { class: "mode-card" });
-            const preview = el(
-              "div",
-              { class: "preview" },
-              t.title ? escapeHtml(t.title) : "No media"
-            );
-            const bg1 = t.colors?.bg1 || "#101635";
-            const bg2 = t.colors?.bg2 || "#0b0f23";
-            const image = t.meta?.image;
-            if (image) {
-              preview.style.backgroundImage = `linear-gradient(140deg, ${bg1}, ${bg2}), url('${t.image}')`;
-              preview.style.backgroundSize = "cover";
-              preview.style.backgroundPosition = "center";
-              preview.style.backgroundRepeat = "no-repeat";
-              preview.style.backgroundBlendMode = "overlay";
-            } else {
-              preview.style.background = `linear-gradient(140deg, ${bg1}, ${bg2})`;
-            }
 
-            preview.style.borderRadius = "12px";
-            preview.style.color = t.colors?.fg || "#fff";
-            preview.style.textShadow = "0 1px 3px rgba(0,0,0,0.6)";
-            const title = el(
-              "div",
-              { class: "t" },
-              escapeHtml(t.name || "Theme")
-            );
-            const btn = el("button", { class: "btn" });
-            if (mode === "event") {
-              btn.textContent = "Apply to Link";
-              btn.addEventListener("click", () => {
-                if (!linkId) {
-                  alert("Pick an active link first.");
-                  return;
+          themes.forEach((theme) => {
+            const card = document.createElement("button");
+            card.className = "mode-card";
+            card.dataset.id = theme.id;
+            card.dataset.type = "theme";
+
+            card.innerHTML = `
+              <div class="preview">
+                ${
+                  theme.media_url
+                    ? `<img src="${theme.media_url}" alt="${theme.alt || ''}" style="width:100%; height:100%; object-fit: cover;">`
+                    : '<div class="placard">No media</div>'
                 }
-                applyThemeToLink(linkId, t.id);
-              });
-            } else {
-              btn.textContent = "Add to Playlist";
-              btn.addEventListener("click", () => {
-                const pl = getPlaylist();
-                if (!pl.includes(t.id)) {
-                  pl.push(t.id);
-                  savePlaylist(pl);
-                  renderPlaylist();
-                }
-              });
-            }
-            card.append(preview, title, btn);
-            grid.appendChild(card);
+              </div>
+              <div class="t" style="overflow-wrap: anywhere">${theme.name}</div>
+              <div class="muted small">${theme.link_count || 0} Links</div>
+            `;
+
+            card.addEventListener("click", () => {
+              const themeId = theme.id;
+              document.getElementById("linkTheme").value = themeId;
+              document.getElementById("themeName").value = theme.name;
+              document.getElementById("themeTitle").value = theme.title;
+              document.getElementById("themeSubtitle").value = theme.subtitle;
+              document.getElementById("themeCtaText").value = theme.cta_text;
+              document.getElementById("themeCtaUrl").value = theme.cta_url;
+              document.getElementById("themeFont").value = theme.font;
+              document.getElementById("themeDelay").value = theme.delay;
+              document.getElementById("themeShowSkip").checked = theme.show_skip;
+              document.getElementById("themeSkipText").value = theme.skip_text;
+              document.getElementById("themeOverrideUrl").checked = theme.override_url;
+              document.getElementById("themeBg1").value = theme.bg1;
+              document.getElementById("themeBg2").value = theme.bg2;
+              document.getElementById("themeFg").value = theme.fg;
+              document.getElementById("themeCtaBg").value = theme.cta_bg;
+              document.getElementById("themeCtaFg").value = theme.cta_fg;
+              document.getElementById("themeMedia").value = ''; // Clear file input
+              document.getElementById("themeAlt").value = theme.alt || '';
+              // Now update the live preview with the theme's image
+              const simMedia = document.getElementById("simMedia");
+              simMedia.innerHTML = theme.media_url ? `<img src="${theme.media_url}" alt="${theme.alt || ''}" style="width:100%; height:100%; object-fit: cover;">` : '<div class="placard">Upload media to preview…</div>';
+              
+            });
+
+            modesGrid.appendChild(card);
           });
-          $("#modesHeader").textContent =
-            mode === "event"
-              ? "Event Presets"
-              : "Pick Themes for Social Playlist";
         }
+
         function renderPlaylist() {
           const box = $("#playlist");
           const pl = getPlaylist();
