@@ -4144,8 +4144,8 @@
           if (!linkSelect) return;
 
           // Save the currently selected link's ID
-          const selectedId = linkSelect.value;
-
+          const selectedId = localStorage.getItem("selectedLink") || linkSelect.value;
+          
           const links = db.links();
           linkSelect.innerHTML = `<option value="">— Select a Link —</option>`;
           for (const link of links) {
@@ -4930,6 +4930,12 @@
             button.addEventListener("click", () => {
               const tabKey = button.getAttribute("data-tab");
               localStorage.setItem("activeTab", tabKey);
+
+              // Preserve the selected link ID before the tab switch
+              const linkSelect = document.getElementById("linkSelect");
+              if (linkSelect && linkSelect.value) {
+                localStorage.setItem("selectedLink", linkSelect.value);
+              }
             });
           });
         });
