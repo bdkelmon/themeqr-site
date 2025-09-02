@@ -3792,6 +3792,10 @@
             addBtn.textContent = "Add to Playlist";
             addBtn.onclick = async () => {
               const linkId = document.getElementById("linkSelect").value;
+              
+              // This is a new log to help you debug
+              console.log("Attempting to add to playlist. Current linkSelect value:", linkId);
+              
               if (!linkId) {
                 alert("Please select a link from the dropdown first.");
                 return;
