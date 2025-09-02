@@ -2854,27 +2854,27 @@
         function renderThemesList(selectedId = "") {
           const list = document.getElementById("themesList");
           if (!list) return;
-
+        
           list.innerHTML = "";
           const currentId = selectedId || window.workingTheme?.id || "";
-
+        
           for (const t of db.themes()) {
             // Card shell (keeps your rail sizing)
             const card = document.createElement("div");
             card.className = "item";
             card.dataset.id = t.id;
             if (t.id === currentId) card.classList.add("selected");
-
+        
             // Inner layout similar to your Modes cards: preview + body
             const inner = document.createElement("div");
             inner.className = "theme-rail-card";
-
+        
             // --- Preview (image or video if present) ---
             const thumb = document.createElement("div");
             thumb.className = "thumb";
             const kind = t?.media?.kind || "";
             const data = t?.media?.data || "";
-
+        
             if (kind === "image" && data) {
               const img = document.createElement("img");
               img.src = data;
@@ -2894,21 +2894,21 @@
               empty.textContent = "No media";
               thumb.appendChild(empty);
             }
-
+        
             // --- Text content (title/name + tiny meta) ---
             const body = document.createElement("div");
             const title = document.createElement("div");
             title.style.fontWeight = "700";
             title.textContent = t.name || "(untitled)";
-
+        
             const meta = document.createElement("div");
             meta.className = "meta";
             meta.textContent = t.title || "—";
-
+        
             // --- Actions (Load + Copy ID) ---
             const actions = document.createElement("div");
             actions.className = "stack";
-
+        
             const useBtn = document.createElement("button");
             useBtn.className = "btn";
             useBtn.textContent = "Load";
@@ -2920,34 +2920,31 @@
               document.getElementById("themeSubtitle").value = t.subtitle || "";
               document.getElementById("themeCtaText").value = t.cta?.text || "";
               document.getElementById("themeCtaUrl").value = t.cta?.url || "";
-              document.getElementById("themeFont").value =
-                t.font || "Inter,system-ui";
-              document.getElementById("themeBg1").value =
-                t.colors?.bg1 || "#101635";
-              document.getElementById("themeBg2").value =
-                t.colors?.bg2 || "#0b0f23";
-              document.getElementById("themeFg").value =
-                t.colors?.fg || "#f3f6ff";
-              document.getElementById("themeCtaBg").value =
-                t.colors?.ctaBg || "#6c7dff";
-              document.getElementById("themeCtaFg").value =
-                t.colors?.ctaFg || "#09122a";
+              document.getElementById("themeFont").value = t.font || "Inter,system-ui";
+              document.getElementById("themeBg1").value = t.colors?.bg1 || "#101635";
+              document.getElementById("themeBg2").value = t.colors?.bg2 || "#0b0f23";
+              document.getElementById("themeFg").value = t.colors?.fg || "#f3f6ff";
+              document.getElementById("themeCtaBg").value = t.colors?.ctaBg || "#6c7dff";
+              document.getElementById("themeCtaFg").value = t.colors?.ctaFg || "#09122a";
+              
+              // Correctly set the alt text from the nested media object
               document.getElementById("themeAlt").value = t.media?.alt || "";
-              document.getElementById("themeDelay").value =
-                t.settings?.redirectDelay ?? 2;
-              document.getElementById("themeShowSkip").checked =
-                t.settings?.showSkip ?? true;
-              document.getElementById("themeSkipText").value =
-                t.settings?.skipText ?? "Skip";
-              document.getElementById("saveBtn").onclick = saveOrUpdateLink;
-              document.getElementById("newBtn").onclick = resetFormToNew;
+        
+              // Correctly set the nested settings properties
+              document.getElementById("themeDelay").value = t.settings?.redirectDelay ?? 2;
+              document.getElementById("themeShowSkip").checked = t.settings?.showSkip ?? true;
+              document.getElementById("themeSkipText").value = t.settings?.skipText ?? "Skip";
+        
+              // Correctly handle the override URL checkbox
               const chk = document.getElementById("themeOverrideUrl");
               if (chk) chk.checked = !!t.settings?.overrideWithThemeUrl;
-
+        
+              // This line handles displaying the image/video in the preview section
               applySim();
+              
               renderThemesList(t.id);
             };
-
+        
             const copyId = document.createElement("button");
             copyId.className = "btn ghost";
             copyId.textContent = "Copy ID";
@@ -2956,25 +2953,27 @@
               copyId.textContent = "Copied!";
               setTimeout(() => (copyId.textContent = "Copy ID"), 1000);
             };
-
+        
             actions.append(useBtn, copyId);
-
+        
             body.appendChild(title);
             body.appendChild(meta);
-
+        
             inner.appendChild(thumb);
             inner.appendChild(body);
             inner.appendChild(actions);
-
+        
             card.appendChild(inner);
             list.appendChild(card);
           }
-
+        
           // Keep your existing behaviors (dropdown + rail arrows)
           refreshThemeDropdown();
           bindThemesRail();
           initThemesRailControls?.(); // safe if defined
         }
+
+
         function initThemesRailControls() {
           const rail = document.getElementById("themesList");
           const view = document.querySelector(".themes-rail .rail-view");
