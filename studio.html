@@ -632,25 +632,21 @@
         position: absolute;
         top: 50%;
         transform: translateY(-50%);
-        border: 0;
+        border: 1px solid #317322;
         width: 32px;
-        height: 56px;
+        height: 110px;
         border-radius: 10px;
         background: rgba(23, 26, 43, 0.9);
-        color: #e8ebff;
+        color: #fdffef;
         display: grid;
         place-items: center;
         cursor: pointer;
-        z-index: 3;
+        z-index: 2;
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+        font-size: xxx-large;
       }
 
-      .rail-btn.left {
-        left: -6px;
-      }
-      .rail-btn.right {
-        right: -6px;
-      }
+ 
 
       .rail-btn:disabled {
         opacity: 0.35;
@@ -733,24 +729,6 @@
           rgba(108, 125, 255, 0.08),
           transparent
         );
-      }
-
-      /* Arrow buttons */
-      .rail-btn {
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        width: var(--btn-size);
-        height: var(--btn-size);
-        border-radius: 999px;
-        border: 1px solid #2a2e4d;
-        background: #141834;
-        color: #e8ebff;
-        box-shadow: var(--shadow);
-        display: grid;
-        place-items: center;
-        cursor: pointer;
-        z-index: 2; /* above scroll area */
       }
 
       .rail-btn.left {

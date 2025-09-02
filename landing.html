@@ -496,7 +496,7 @@
           ? [
               {
                 id: link.link_id, // ← expose friendly id so start() can match
-                numericId: link.id, // (optional) keep the DB id if you need it later
+                numericId: link.id, // (optional) keep the DB id if needed it later
                 url: link.url,
                 themeId: link.theme_id ?? link.themeId,
               },
@@ -535,7 +535,7 @@
         const { themes, links, theme } = await loadData();
 
         // linkId/themeId come from the URL, e.g. landing.html?linkId=...&themeId=...
-        // (make sure you declared these once at the top from URLSearchParams)
+        // (Declared these once at the top from URLSearchParams)
         // const qs = new URLSearchParams(location.search);
         // const linkId = qs.get('linkId') || '';
         // const themeId = qs.get('themeId') || '';
