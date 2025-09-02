@@ -2905,98 +2905,69 @@
             meta.className = "meta";
             meta.textContent = t.title || "—";
 
-            // --- Actions (Load + Copy ID + Add to Playlist) ---
-            const actions = document.createElement("div");
-            actions.className = "stack";
+           // --- Actions (Load + Copy ID + Add to Playlist) ---
+const actions = document.createElement("div");
+actions.className = "stack";
 
-            // Add to Playlist Button
-            const addBtn = document.createElement("button");
-            addBtn.className = "btn primary";
-            addBtn.textContent = "Add to Playlist";
-            addBtn.onclick = async () => {
-              const linkId = document.getElementById("linkSelect").value;
-              if (!linkId) {
-                alert("Please select a link from the dropdown first.");
-                return;
-              }
-              const { error } = await db.linkThemes(linkId, t.id);
-              if (error) {
-                alert("Failed to add theme to playlist.");
-              } else {
-                addBtn.textContent = "Added!";
-                setTimeout(
-                  () => (addBtn.textContent = "Add to Playlist"),
-                  1500
-                );
-              }
-            };
+// Add to Playlist Button
+const addBtn = document.createElement("button");
+addBtn.className = "btn ghost";
+addBtn.textContent = "Add to Playlist";
+addBtn.onclick = async () => {
+  const linkId = document.getElementById("linkSelect").value;
+  if (!linkId) {
+    alert("Please select a link from the dropdown first.");
+    return;
+  }
+  const { error } = await db.linkThemes(linkId, t.id);
+  if (error) {
+    alert("Failed to add theme to playlist.");
+  } else {
+    addBtn.textContent = "Added!";
+    setTimeout(() => (addBtn.textContent = "Add to Playlist"), 1500);
+  }
+};
 
-            // Load button
-            const useBtn = document.createElement("button");
-            useBtn.className = "btn";
-            useBtn.textContent = "Load";
-            useBtn.onclick = () => {
-              // hydrate editor from the selected card
-              workingTheme = JSON.parse(JSON.stringify(t));
-              document.getElementById("themeName").value = t.name || "";
-              document.getElementById("themeTitle").value = t.title || "";
-              document.getElementById("themeSubtitle").value = t.subtitle || "";
-              document.getElementById("themeCtaText").value = t.cta?.text || "";
-              document.getElementById("themeCtaUrl").value = t.cta?.url || "";
-              document.getElementById("themeFont").value =
-                t.font || "Inter,system-ui";
-              document.getElementById("themeBg1").value =
-                t.colors?.bg1 || "#101635";
-              document.getElementById("themeBg2").value =
-                t.colors?.bg2 || "#0b0f23";
-              document.getElementById("themeFg").value =
-                t.colors?.fg || "#f3f6ff";
-              document.getElementById("themeCtaBg").value =
-                t.colors?.ctaBg || "#6c7dff";
-              document.getElementById("themeCtaFg").value =
-                t.colors?.ctaFg || "#09122a";
-              document.getElementById("themeAlt").value = t.media?.alt || "";
-              document.getElementById("themeDelay").value =
-                t.settings?.redirectDelay ?? 2;
-              document.getElementById("themeShowSkip").checked =
-                t.settings?.showSkip ?? true;
-              document.getElementById("themeSkipText").value =
-                t.settings?.skipText ?? "Skip";
-              const chk = document.getElementById("themeOverrideUrl");
-              if (chk) chk.checked = !!t.settings?.overrideWithThemeUrl;
+// Load button
+const useBtn = document.createElement("button");
+useBtn.className = "btn";
+useBtn.textContent = "Load";
+useBtn.onclick = () => {
+  // hydrate editor from the selected card
+  workingTheme = JSON.parse(JSON.stringify(t));
+  document.getElementById("themeName").value = t.name || "";
+  document.getElementById("themeTitle").value = t.title || "";
+  document.getElementById("themeSubtitle").value = t.subtitle || "";
+  document.getElementById("themeCtaText").value = t.cta?.text || "";
+  document.getElementById("themeCtaUrl").value = t.cta?.url || "";
+  document.getElementById("themeFont").value = t.font || "Inter,system-ui";
+  document.getElementById("themeBg1").value = t.colors?.bg1 || "#101635";
+  document.getElementById("themeBg2").value = t.colors?.bg2 || "#0b0f23";
+  document.getElementById("themeFg").value = t.colors?.fg || "#f3f6ff";
+  document.getElementById("themeCtaBg").value = t.colors?.ctaBg || "#6c7dff";
+  document.getElementById("themeCtaFg").value = t.colors?.ctaFg || "#09122a";
+  document.getElementById("themeAlt").value = t.media?.alt || "";
+  document.getElementById("themeDelay").value = t.settings?.redirectDelay ?? 2;
+  document.getElementById("themeShowSkip").checked = t.settings?.showSkip ?? true;
+  document.getElementById("themeSkipText").value = t.settings?.skipText ?? "Skip";
+  const chk = document.getElementById("themeOverrideUrl");
+  if (chk) chk.checked = !!t.settings?.overrideWithThemeUrl;
 
-              applySim();
-              renderThemesList(t.id);
-            };
+  applySim();
+  renderThemesList(t.id);
+};
 
-            const copyId = document.createElement("button");
-            copyId.className = "btn ghost";
-            copyId.textContent = "Copy ID";
-            copyId.onclick = () => {
-              navigator.clipboard.writeText(t.id || "");
-              copyId.textContent = "Copied!";
-              setTimeout(() => (copyId.textContent = "Copy ID"), 1000);
-            };
+const copyId = document.createElement("button");
+copyId.className = "btn ghost";
+copyId.textContent = "Copy ID";
+copyId.onclick = () => {
+  navigator.clipboard.writeText(t.id || "");
+  copyId.textContent = "Copied!";
+  setTimeout(() => (copyId.textContent = "Copy ID"), 1000);
+};
 
-            actions.append(addBtn, useBtn, copyId);
-
-            body.appendChild(title);
-            body.appendChild(meta);
-
-            inner.appendChild(thumb);
-            inner.appendChild(body);
-            inner.appendChild(actions);
-
-            card.appendChild(inner);
-            list.appendChild(card);
-          }
-
-          // Keep your existing behaviors (dropdown + rail arrows)
-          refreshThemeDropdown();
-          bindThemesRail();
-          initThemesRailControls?.(); // safe if defined
-        }
-
+// Append all three buttons to the actions container
+actions.append(useBtn, copyId, addBtn);
         function initThemesRailControls() {
           const rail = document.getElementById("themesList");
           const view = document.querySelector(".themes-rail .rail-view");
