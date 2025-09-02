@@ -4137,6 +4137,7 @@
           document.getElementById("qrBg").value = link.bg || "#ffffff";
           document.getElementById("qrEcc").value = link.ecc || "M";
           document.getElementById("linkTheme").value = link.theme_id || "";
+          drawQR();
         });
 
         document.getElementById("deleteBtn").addEventListener("click", () => {
