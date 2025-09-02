@@ -4143,8 +4143,8 @@
           const linkSelect = document.getElementById("linkSelect");
           if (!linkSelect) return;
 
-          // Save the currently selected link's ID
-          const selectedId = localStorage.getItem("selectedLink") || linkSelect.value;
+          // Save the currently selected link's ID before clearing the dropdown
+          const selectedId = linkSelect.value;
           
           const links = db.links();
           linkSelect.innerHTML = `<option value="">— Select a Link —</option>`;
