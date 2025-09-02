@@ -3782,9 +3782,9 @@
               mediaHtml = '<div class="placard">No media</div>';
             }
 
-            // Create a div for the actions and the link count
-            const actionsAndMeta = document.createElement("div");
-            actionsAndMeta.className = "stack";
+            // Create a div for the button with a centering style
+            const buttonWrapper = document.createElement("div");
+            buttonWrapper.style.textAlign = "center";
             
             // Add to Playlist Button
             const addBtn = document.createElement("button");
@@ -3804,17 +3804,17 @@
                 setTimeout(() => (addBtn.textContent = "Add to Playlist"), 1500);
               }
             };
-            actionsAndMeta.appendChild(addBtn);
+            buttonWrapper.appendChild(addBtn);
 
             card.innerHTML = `
               <div class="preview">
                 ${mediaHtml}
               </div>
               <div class="t" style="overflow-wrap: anywhere">${theme.name}</div>
-             `;
+            `;
             
-            // Append the actions to the card
-            card.appendChild(actionsAndMeta);
+            // Append the centered button wrapper to the card
+            card.appendChild(buttonWrapper);
 
             card.addEventListener("click", () => {
               // ... (code to populate inputs)
