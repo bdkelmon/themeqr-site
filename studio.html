@@ -1881,7 +1881,6 @@
           }
         }
 
- 
         // initial + react to changes
         sb.auth.getSession().then(renderAuthNav);
         sb.auth.onAuthStateChange((_e, _s) => {
@@ -3016,10 +3015,13 @@
             formData.append("file", mediaFile);
             formData.append("upload_preset", "theme_preset"); // 🔁 Replace
             try {
-              const res = await fetch("https://api.cloudinary.com/v1_1/theme-test/image/upload", {
-                method: "POST",
-                body: formData
-              });
+              const res = await fetch(
+                "https://api.cloudinary.com/v1_1/theme-test/image/upload",
+                {
+                  method: "POST",
+                  body: formData,
+                }
+              );
               if (res.ok) {
                 const data = await res.json();
                 workingTheme.meta = workingTheme.meta || {};
@@ -4152,13 +4154,27 @@
 
         document.getElementById("openBtn").addEventListener("click", () => {
           const id = linkSelect.value;
-          console.log("Button clicked. The value of linkSelect is:", id);
-          if (!id) return;
-          console.log("The linkSelect value is empty, stopping execution.");
+          console.log("Button clicked. The value of linkSelect is:", id); // Check the value
+
+          if (!id) {
+            console.log("The linkSelect value is empty, stopping execution.");
+            return;
+          }
+
+          const link = db.links().find((l) => l.id === parseInt(id, 10));
+          console.log("Found link object:", link); // Check if the link object is found
+
+          if (!link) {
+            console.log("No link object found, stopping execution.");
+            return;
+          }
+
           const theme = getSelectedThemeId();
-          console.log("Found link object:", link);
           const url = new URL("landing.html", location.href);
+
+          // This line is likely the source of the problem, as discussed previously
           url.searchParams.set("linkId", id);
+
           if (theme) url.searchParams.set("themeId", theme);
           window.open(url.toString(), "_blank", "noopener");
         });
@@ -4858,4 +4874,3 @@
     </div>
   </body>
 </html>
-
