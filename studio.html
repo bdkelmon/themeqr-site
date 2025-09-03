@@ -2631,11 +2631,28 @@
 
           const mwrap = $("#simMedia");
           mwrap.innerHTML = "";
-
+          
           const errBox = (msg) => {
             mwrap.innerHTML = `<div class="placard" style="color:#ffb4b4">${msg}</div>`;
           };
-
+          
+          const media = workingTheme.media;
+          if (media && media.data) {
+            if (media.kind === "image") {
+              const img = document.createElement("img");
+              img.src = media.data;
+              img.alt = media.alt || "";
+              mwrap.appendChild(img);
+            } else if (media.kind === "video") {
+              const video = document.createElement("video");
+              video.src = media.data;
+              video.controls = true;
+              video.alt = media.alt || "";
+              mwrap.appendChild(video);
+            } else {
+              errBox("Unsupported media type");
+            }
+          }
           const createWrapper = () => {
             const wrap = document.createElement("div");
             wrap.className = "resizable";
