@@ -4879,6 +4879,36 @@
                 "linkTheme",
                 themeIdVal ? String(themeIdVal) : ""
               );
+
+              if (themeIdVal) {
+              const t = (db.themes() || []).find(
+                (x) => String(x.id) === String(themeIdVal) || String(x.remoteId || "") === String(themeIdVal)
+              );
+              if (t) {
+                // mirror the exact field assignments used by the Themes rail "Load" button
+                workingTheme = JSON.parse(JSON.stringify(t));
+                document.getElementById("themeName").value = t.name || "";
+                document.getElementById("themeTitle").value = t.title || "";
+                document.getElementById("themeSubtitle").value = t.subtitle || "";
+                document.getElementById("themeCtaText").value = t.cta?.text || "";
+                document.getElementById("themeCtaUrl").value = t.cta?.url || "";
+                document.getElementById("themeFont").value = t.font || "Inter,system-ui";
+                document.getElementById("themeBg1").value = t.colors?.bg1 || "#101635";
+                document.getElementById("themeBg2").value = t.colors?.bg2 || "#0b0f23";
+                document.getElementById("themeFg").value  = t.colors?.fg  || "#f3f6ff";
+                document.getElementById("themeCtaBg").value = t.colors?.ctaBg || "#6c7dff";
+                document.getElementById("themeCtaFg").value = t.colors?.ctaFg || "#09122a";
+                document.getElementById("themeAlt").value = t.media?.alt || "";
+                document.getElementById("themeDelay").value = t.settings?.redirectDelay ?? 2;
+                document.getElementById("themeShowSkip").checked = t.settings?.showSkip ?? true;
+                document.getElementById("themeSkipText").value = t.settings?.skipText ?? "Skip";
+                const chk = document.getElementById("themeOverrideUrl");
+                if (chk) chk.checked = !!t.settings?.overrideWithThemeUrl;
+          
+                applySim();                 // ← immediately reflect in Live preview
+                renderThemesList(t.id);     // ← visually mark it selected in the rail
+              }
+            }
               window.currentRow = row; // keep “Update” mode
               document.getElementById("saveBtn").textContent = "Update";
               if (typeof drawQR === "function") drawQR(); // QR stays stable
