@@ -2941,7 +2941,9 @@
               if (chk) chk.checked = !!t.settings?.overrideWithThemeUrl;
 
               applySim();
-              renderThemesList(t.id);
+              setTimeout(() => {
+               renderThemesList(t.id);
+              }, 0);
             };
 
             const copyId = document.createElement("button");
