@@ -2849,30 +2849,60 @@
           applySim();
         });
 
+
+        /**
+         * Populates all Theme Studio form fields from a theme object.
+         * @param {object} theme The theme object to load into the editor.
+         */
+        function hydrateThemeEditor(theme) {
+          if (!theme) return;
+          document.getElementById("themeName").value = theme.name || "";
+          document.getElementById("themeTitle").value = theme.title || "";
+          document.getElementById("themeSubtitle").value = theme.subtitle || "";
+          document.getElementById("themeCtaText").value = theme.cta?.text || "";
+          document.getElementById("themeCtaUrl").value = theme.cta?.url || "";
+          document.getElementById("themeFont").value = theme.font || "Inter,system-ui";
+          document.getElementById("themeBg1").value = theme.colors?.bg1 || "#101635";
+          document.getElementById("themeBg2").value = theme.colors?.bg2 || "#0b0f23";
+          document.getElementById("themeFg").value = theme.colors?.fg || "#f3f6ff";
+          document.getElementById("themeCtaBg").value = theme.colors?.ctaBg || "#6c7dff";
+          document.getElementById("themeCtaFg").value = theme.colors?.ctaFg || "#09122a";
+          document.getElementById("themeAlt").value = theme.media?.alt || "";
+          document.getElementById("themeDelay").value = theme.settings?.redirectDelay ?? 2;
+          document.getElementById("themeShowSkip").checked = theme.settings?.showSkip ?? true;
+          document.getElementById("themeSkipText").value = theme.settings?.skipText ?? "Skip";
+          
+          const chk = document.getElementById("themeOverrideUrl");
+          if (chk) chk.checked = !!theme.settings?.overrideWithThemeUrl;
+        }
+
+        // ===== REPLACE your old renderThemesList function with this one =====
+
         function renderThemesList(selectedId = "") {
           const list = document.getElementById("themesList");
           if (!list) return;
-
+        
           list.innerHTML = "";
           const currentId = selectedId || window.workingTheme?.id || "";
-
+        
+          // The existing logic for showing user themes (from Supabase) vs.
+          // local/standard themes is already handled by the cloudSyncDown() function,
+          // which runs on page load. This meets your requirement automatically.
           for (const t of db.themes()) {
-            // Card shell (keeps your rail sizing)
             const card = document.createElement("div");
             card.className = "item";
             card.dataset.id = t.id;
             if (t.id === currentId) card.classList.add("selected");
-
-            // Inner layout similar to your Modes cards: preview + body
+        
             const inner = document.createElement("div");
             inner.className = "theme-rail-card";
-
-            // --- Preview (image or video if present) ---
+        
+            // --- Preview Image/Video ---
             const thumb = document.createElement("div");
             thumb.className = "thumb";
             const kind = t?.media?.kind || "";
             const data = t?.media?.data || "";
-
+        
             if (kind === "image" && data) {
               const img = document.createElement("img");
               img.src = data;
@@ -2892,86 +2922,75 @@
               empty.textContent = "No media";
               thumb.appendChild(empty);
             }
-
-            // --- Text content (title/name + tiny meta) ---
+        
+            // --- Text content ---
             const body = document.createElement("div");
             const title = document.createElement("div");
             title.style.fontWeight = "700";
             title.textContent = t.name || "(untitled)";
-
+        
             const meta = document.createElement("div");
             meta.className = "meta";
-            meta.textContent = t.title || "—";
-
-            // --- Actions (Load + Copy ID) ---
+            // CHANGED: Displays the subtitle for the one-line description
+            meta.textContent = t.subtitle || "—";
+        
+            // --- Actions (Load + Copy) ---
             const actions = document.createElement("div");
             actions.className = "stack";
-
+        
+            // NEW: "Load" button uses the helper function
             const useBtn = document.createElement("button");
             useBtn.className = "btn";
             useBtn.textContent = "Load";
             useBtn.onclick = () => {
-              // hydrate editor from the selected card
+              // Deep clone to prevent accidental mutation of the original
               workingTheme = JSON.parse(JSON.stringify(t));
-              document.getElementById("themeName").value = t.name || "";
-              document.getElementById("themeTitle").value = t.title || "";
-              document.getElementById("themeSubtitle").value = t.subtitle || "";
-              document.getElementById("themeCtaText").value = t.cta?.text || "";
-              document.getElementById("themeCtaUrl").value = t.cta?.url || "";
-              document.getElementById("themeFont").value =
-                t.font || "Inter,system-ui";
-              document.getElementById("themeBg1").value =
-                t.colors?.bg1 || "#101635";
-              document.getElementById("themeBg2").value =
-                t.colors?.bg2 || "#0b0f23";
-              document.getElementById("themeFg").value =
-                t.colors?.fg || "#f3f6ff";
-              document.getElementById("themeCtaBg").value =
-                t.colors?.ctaBg || "#6c7dff";
-              document.getElementById("themeCtaFg").value =
-                t.colors?.ctaFg || "#09122a";
-              document.getElementById("themeAlt").value = t.media?.alt || "";
-              document.getElementById("themeDelay").value =
-                t.settings?.redirectDelay ?? 2;
-              document.getElementById("themeShowSkip").checked =
-                t.settings?.showSkip ?? true;
-              document.getElementById("themeSkipText").value =
-                t.settings?.skipText ?? "Skip";
-              const chk = document.getElementById("themeOverrideUrl");
-              if (chk) chk.checked = !!t.settings?.overrideWithThemeUrl;
-
+              hydrateThemeEditor(workingTheme);
               applySim();
               setTimeout(() => {
-               renderThemesList(t.id);
+                renderThemesList(t.id);
               }, 0);
             };
-
-            const copyId = document.createElement("button");
-            copyId.className = "btn ghost";
-            copyId.textContent = "Copy ID";
-            copyId.onclick = () => {
-              navigator.clipboard.writeText(t.id || "");
-              copyId.textContent = "Copied!";
-              setTimeout(() => (copyId.textContent = "Copy ID"), 1000);
+        
+            // NEW: "Copy" button implements the copy functionality
+            const copyBtn = document.createElement("button");
+            copyBtn.className = "btn ghost";
+            copyBtn.textContent = "Copy";
+            copyBtn.onclick = () => {
+              const newTheme = JSON.parse(JSON.stringify(t));
+              
+              // Modify for "copy" functionality
+              newTheme.name = `${t.name || 'Untitled'} copy`;
+              newTheme.id = uid("theme"); // Generate a new unique local ID
+              delete newTheme.remoteId;   // Unlink from any Supabase record
+              
+              // Set as the current working theme
+              workingTheme = newTheme;
+              
+              hydrateThemeEditor(workingTheme);
+              applySim();
+              
+              // Re-render the list without selecting anything, as this is a new theme
+              renderThemesList(); 
+              document.getElementById("themeName").focus();
             };
-
-            actions.append(useBtn, copyId);
-
+        
+            actions.append(useBtn, copyBtn);
+        
             body.appendChild(title);
             body.appendChild(meta);
-
+        
             inner.appendChild(thumb);
             inner.appendChild(body);
             inner.appendChild(actions);
-
+        
             card.appendChild(inner);
             list.appendChild(card);
           }
-
-          // Keep your existing behaviors (dropdown + rail arrows)
+        
           refreshThemeDropdown();
           bindThemesRail();
-          initThemesRailControls?.(); // safe if defined
+          initThemesRailControls?.();
         }
 
         function initThemesRailControls() {
