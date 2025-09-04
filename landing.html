@@ -175,7 +175,7 @@
       const qs = new URLSearchParams(location.search);
       const linkId = qs.get("linkId") || "";
       const themeId = qs.get("themeId") || "";
-
+      console.log("Detected linkId:", new URLSearchParams(window.location.search).get("linkId")); 
       /* ===================== Helpers ===================== */
       const isNumericId = (v) => /^\d+$/.test(String(v || ""));
       function normalizeHttpUrl(input) {
@@ -372,69 +372,93 @@
       }
 
       function resolveLink(link, theme) {
+        // Normalize both possible URLs
+        const linkUrl = link?.url ? normalizeHttpUrl(link.url) : "";
+        const themeCtaUrl = theme?.cta?.url
+          ? normalizeHttpUrl(theme.cta.url)
+          : "";
+
+        // Compute the chosen policy:
+        // Priority: link.redirect_policy → theme.settings.overrideWithThemeUrl → default 'link'
+        const themeOverride = !!theme?.settings?.overrideWithThemeUrl;
+        const policy = link?.redirect_policy
+          ? link.redirect_policy // 'link' | 'theme' | 'none'
+          : themeOverride
+          ? "theme"
+          : "link";
+
+        // Determine target URL based on policy
+        let dest = "";
+        if (policy === "link") dest = linkUrl;
+        else if (policy === "theme") dest = themeCtaUrl;
+        else dest = ""; // 'none' → no redirect
+
+        // Pull optional delay/skip from theme settings (fallbacks ok)
+        const delay = Number(theme?.settings?.redirectDelay ?? 2);
+        const showSkip = theme?.settings?.showSkip ?? true;
+        const skipText = theme?.settings?.skipText || "Skip";
+
         const note = document.getElementById("note");
-        if (!link || !link.url) {
-          note.textContent = "";
+        note.innerHTML = "";
+
+        // No redirect requested
+        if (policy === "none" || !dest) {
+          if (policy !== "none" && !dest) {
+            // If a policy was set but URL was missing, you may show a gentle info
+            note.textContent = "No redirect URL set.";
+          }
           return;
         }
 
-        const dest = normalizeHttpUrl(link.url);
-        const delay = Number(theme?.settings?.redirectDelay ?? 0);
-        const showSkip = theme?.settings?.showSkip ?? true;
-        const skipText = theme?.settings?.skipText || "Skip now";
+        // Build the UI note + countdown, respecting delay and skip
+        const secSpan = document.createElement("b");
+        secSpan.id = "sec";
 
-        const parts = [];
-        if (delay > 0) {
-          parts.push(
-            `Redirecting to <span class="muted">${dest}</span> in <b id="sec">${delay}</b>s…`
-          );
-        } else {
-          parts.push(`Destination: <span class="muted">${dest}</span>`);
-        }
-        if (showSkip)
-          parts.push(
-            `<a href="#" id="skipNow" class="cta" style="padding:6px 10px; margin-left:8px">${skipText}</a>`
-          );
-        parts.push(
-          `<a href="#" id="stay" class="muted" style="margin-left:8px">Stay here</a>`
-        );
-        note.innerHTML = parts.join(" ");
+        const stayLink = document.createElement("a");
+        stayLink.href = "#";
+        stayLink.textContent = showSkip ? skipText : "";
+        stayLink.style.marginLeft = showSkip ? "6px" : "0";
+        if (!showSkip) stayLink.style.display = "none";
 
-        let timerId = null;
         if (delay > 0) {
+          // note: "You’ll be redirected to <dest> in X… [Skip]"
+          note.innerHTML = `You’ll be redirected to <span class="muted">${dest}</span> in `;
+          note.appendChild(secSpan);
+          note.appendChild(document.createTextNode("… "));
+          note.appendChild(stayLink);
+
           let s = delay;
-          timerId = setInterval(() => {
-            s--;
-            const secEl = document.getElementById("sec");
-            if (secEl) secEl.textContent = Math.max(0, s);
+          secSpan.textContent = s;
+          const id = setInterval(() => {
+            s -= 1;
+            secSpan.textContent = s;
             if (s <= 0) {
-              clearInterval(timerId);
+              clearInterval(id);
               location.assign(dest);
             }
           }, 1000);
-        }
-        document.getElementById("skipNow")?.addEventListener("click", (e) => {
-          e.preventDefault();
-          if (timerId) clearInterval(timerId);
+
+          stayLink.onclick = (e) => {
+            e.preventDefault();
+            clearInterval(id);
+            note.textContent = "";
+          };
+        } else {
+          // No delay → immediate redirect
           location.assign(dest);
-        });
-        document.getElementById("stay")?.addEventListener("click", (e) => {
-          e.preventDefault();
-          if (timerId) clearInterval(timerId);
-          note.textContent = "";
-        });
+        }
       }
 
       /* ===================== Data loaders ===================== */
       async function loadDataViaSupabase(linkId, themeId) {
         let link = null;
         if (linkId) {
-          const { data, error } = await sb
+          const { data: linkRow, error } = await sb
             .from("links")
             .select("*")
-            .eq("id", linkId)
+            .eq("link_id", linkId)
             .maybeSingle();
-          if (!error && data) link = data;
+          if (!error && linkRow) link = linkRow;
         }
 
         let theme = null;
@@ -471,7 +495,8 @@
         const links = link
           ? [
               {
-                id: link.id,
+                id: link.link_id, // ← expose friendly id so start() can match
+                numericId: link.id, // (optional) keep the DB id if needed it later
                 url: link.url,
                 themeId: link.theme_id ?? link.themeId,
               },
@@ -506,9 +531,24 @@
 
       /* ===================== Boot ===================== */
       (async function start() {
+        // loadData should return { themes, links, theme } where `theme` is optional preselected
         const { themes, links, theme } = await loadData();
-        const link = linkId ? links.find((l) => l.id === linkId) : null;
 
+        // linkId/themeId come from the URL, e.g. landing.html?linkId=...&themeId=...
+        // (Declared these once at the top from URLSearchParams)
+        // const qs = new URLSearchParams(location.search);
+        // const linkId = qs.get('linkId') || '';
+        // const themeId = qs.get('themeId') || '';
+
+        // Find the link by its ID (for local-storage format where `id` is the human linkId string)
+        const link = linkId
+          ? (links || []).find((l) => String(l.id) === String(linkId))
+          : null;
+
+        // Choose a theme with layered fallback precedence:
+        // 1) explicit `theme` returned by loadData() (e.g., remote-resolved)
+        // 2) themeId from the URL (?themeId=...)
+        // 3) themeId attached to the link record (link.themeId)
         let chosenTheme =
           theme ||
           (themeId
@@ -523,10 +563,24 @@
             : null) ||
           null;
 
+        // Apply visuals first (colors, fonts, media, text)
         applyTheme(chosenTheme);
-        placeOverlay(chosenTheme, link);
-        if (link) resolveLink(link, chosenTheme);
+
+        // If you overlay QR or extra UI bits tied to theme/link, do that here
+        if (typeof placeOverlay === "function") {
+          placeOverlay(chosenTheme, link);
+        }
+
+        // Finally, resolve navigation behavior:
+        // - If link.url exists and no override, you may show countdown/redirect
+        // - If chosenTheme.settings?.overrideWithThemeUrl is true and theme CTA URL exists,
+        //   honor the theme CTA URL instead of link.url
+        console.log("Calling resolveLink with:", link, chosenTheme);
+        if (typeof resolveLink === "function") {
+          if (link) resolveLink(link, chosenTheme);
+        }
       })();
     </script>
   </body>
 </html>
+
