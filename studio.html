@@ -496,7 +496,6 @@
       }
       .mode-card .t {
         font-weight: 700;
-        color: white;
       }
 
       .chart {
@@ -632,21 +631,25 @@
         position: absolute;
         top: 50%;
         transform: translateY(-50%);
-        border: 1px solid #317322;
+        border: 0;
         width: 32px;
-        height: 110px;
+        height: 56px;
         border-radius: 10px;
         background: rgba(23, 26, 43, 0.9);
-        color: #fdffef;
+        color: #e8ebff;
         display: grid;
         place-items: center;
         cursor: pointer;
-        z-index: 2;
+        z-index: 3;
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
-        font-size: xxx-large;
       }
 
- 
+      .rail-btn.left {
+        left: -6px;
+      }
+      .rail-btn.right {
+        right: -6px;
+      }
 
       .rail-btn:disabled {
         opacity: 0.35;
@@ -729,6 +732,24 @@
           rgba(108, 125, 255, 0.08),
           transparent
         );
+      }
+
+      /* Arrow buttons */
+      .rail-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: var(--btn-size);
+        height: var(--btn-size);
+        border-radius: 999px;
+        border: 1px solid #2a2e4d;
+        background: #141834;
+        color: #e8ebff;
+        box-shadow: var(--shadow);
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        z-index: 2; /* above scroll area */
       }
 
       .rail-btn.left {
@@ -1352,9 +1373,9 @@
                 <div class="body">
                   <div class="landing-preview">
                     <div id="landingSim" class="landing-sim">
-                     <div id="simMedia" class="media-placeholder">
-                        Upload media to preview…
-                     </div>
+                      <div class="media" id="simMedia">
+                        <div class="placard">Upload media to preview…</div>
+                      </div>
                       <div class="content">
                         <div
                           id="simTitle"
@@ -1860,6 +1881,7 @@
           }
         }
 
+ 
         // initial + react to changes
         sb.auth.getSession().then(renderAuthNav);
         sb.auth.onAuthStateChange((_e, _s) => {
@@ -2630,31 +2652,12 @@
             s.settings?.showSkip ?? true ? "inline-block" : "none";
 
           const mwrap = $("#simMedia");
-          while (mwrap.firstChild) {
-            mwrap.removeChild(mwrap.firstChild);
-          }
-          
+          mwrap.innerHTML = "";
+
           const errBox = (msg) => {
             mwrap.innerHTML = `<div class="placard" style="color:#ffb4b4">${msg}</div>`;
           };
-          
-          const media = workingTheme.media;
-          if (media && media.data) {
-            if (media.kind === "image") {
-              const img = document.createElement("img");
-              img.src = media.data;
-              img.alt = media.alt || "";
-              mwrap.appendChild(img);
-            } else if (media.kind === "video") {
-              const video = document.createElement("video");
-              video.src = media.data;
-              video.controls = true;
-              video.alt = media.alt || "";
-              mwrap.appendChild(video);
-            } else {
-              errBox("Unsupported media type");
-            }
-          }
+
           const createWrapper = () => {
             const wrap = document.createElement("div");
             wrap.className = "resizable";
@@ -2937,13 +2940,13 @@
                 t.settings?.showSkip ?? true;
               document.getElementById("themeSkipText").value =
                 t.settings?.skipText ?? "Skip";
+              document.getElementById("saveBtn").onclick = saveOrUpdateLink;
+              document.getElementById("newBtn").onclick = resetFormToNew;
               const chk = document.getElementById("themeOverrideUrl");
               if (chk) chk.checked = !!t.settings?.overrideWithThemeUrl;
 
               applySim();
-              setTimeout(() => {
-               renderThemesList(t.id);
-              }, 0);
+              renderThemesList(t.id);
             };
 
             const copyId = document.createElement("button");
@@ -2973,7 +2976,6 @@
           bindThemesRail();
           initThemesRailControls?.(); // safe if defined
         }
-
         function initThemesRailControls() {
           const rail = document.getElementById("themesList");
           const view = document.querySelector(".themes-rail .rail-view");
@@ -3014,13 +3016,10 @@
             formData.append("file", mediaFile);
             formData.append("upload_preset", "theme_preset"); // 🔁 Replace
             try {
-              const res = await fetch(
-                "https://api.cloudinary.com/v1_1/theme-test/image/upload",
-                {
-                  method: "POST",
-                  body: formData,
-                }
-              );
+              const res = await fetch("https://api.cloudinary.com/v1_1/theme-test/image/upload", {
+                method: "POST",
+                body: formData
+              });
               if (res.ok) {
                 const data = await res.json();
                 workingTheme.meta = workingTheme.meta || {};
@@ -3758,101 +3757,79 @@
           return n;
         }
         function renderPresetsGrid() {
-          const modesGrid = document.getElementById("presetsGrid");
-          modesGrid.innerHTML = ""; // Clear existing grid
-
+          const mode = getMode();
+          const grid = $("#presetsGrid");
           const themes = db.themes();
-          if (!themes || themes.length === 0) {
-            modesGrid.innerHTML = `
-              <div class="muted small" style="text-align: center; grid-column: 1/-1">
-                You haven't saved any themes yet.
-              </div>
-            `;
+          const linkId = $("#modeLinkSelect").value;
+          const list =
+            mode === "event"
+              ? themes.filter(
+                  (t) =>
+                    t?.meta?.preset === true && t?.meta?.category === "event"
+                )
+              : themes;
+          grid.innerHTML = "";
+          if (!list.length) {
+            grid.innerHTML = `<div class="muted small">No presets yet. Create themes in Theme Studio.</div>`;
             return;
           }
-
-          themes.forEach((theme) => {
-            const card = document.createElement("button");
-            card.className = "mode-card";
-            card.dataset.id = theme.id;
-            card.dataset.type = "theme";
-
-            const mediaKind = theme.media?.kind;
-            const mediaData = theme.media?.data;
-            const mediaAlt = theme.media?.alt || "";
-
-            let mediaHtml = "";
-            if (mediaKind === "image" && mediaData) {
-              mediaHtml = `<img src="${mediaData}" alt="${mediaAlt}" style="width:100%; height:100%; object-fit: cover;">`;
-            } else if (mediaKind === "video" && mediaData) {
-              mediaHtml = `<video src="${mediaData}" muted loop playsinline autoplay style="width:100%; height:100%; object-fit: cover;"></video>`;
+          list.forEach((t) => {
+            const card = el("div", { class: "mode-card" });
+            const preview = el(
+              "div",
+              { class: "preview" },
+              t.title ? escapeHtml(t.title) : "No media"
+            );
+            const bg1 = t.colors?.bg1 || "#101635";
+            const bg2 = t.colors?.bg2 || "#0b0f23";
+            const image = t.meta?.image;
+            if (image) {
+              preview.style.backgroundImage = `linear-gradient(140deg, ${bg1}, ${bg2}), url('${t.image}')`;
+              preview.style.backgroundSize = "cover";
+              preview.style.backgroundPosition = "center";
+              preview.style.backgroundRepeat = "no-repeat";
+              preview.style.backgroundBlendMode = "overlay";
             } else {
-              mediaHtml = '<div class="placard">No media</div>';
+              preview.style.background = `linear-gradient(140deg, ${bg1}, ${bg2})`;
             }
 
-            // Create a div for the button with a centering style
-            const buttonWrapper = document.createElement("div");
-            buttonWrapper.style.textAlign = "center";
-
-            // Add to Playlist Button
-            const addBtn = document.createElement("button");
-            addBtn.className = "btn ghost";
-            addBtn.textContent = "Add to Playlist";
-            addBtn.onclick = async () => {
-              const linkId = document.getElementById("linkSelect").value;
-
-              // This is a new log to help you debug
-              console.log(
-                "Attempting to add to playlist. Current linkSelect value:",
-                linkId
-              );
-
-              if (!linkId) {
-                alert("Please select a link from the dropdown first.");
-                return;
-              }
-              const { error } = await db.linkThemes(linkId, theme.id);
-              if (error) {
-                alert("Failed to add theme to playlist.");
-              } else {
-                addBtn.textContent = "Added!";
-                setTimeout(
-                  () => (addBtn.textContent = "Add to Playlist"),
-                  1500
-                );
-              }
-            };
-            buttonWrapper.appendChild(addBtn);
-
-            card.innerHTML = `
-              <div class="preview">
-                ${mediaHtml}
-              </div>
-              <div class="t" style="overflow-wrap: anywhere">${theme.name}</div>
-            `;
-
-            // Append the centered button wrapper to the card
-            card.appendChild(buttonWrapper);
-
-            card.addEventListener("click", () => {
-              // ... (code to populate inputs)
-              const simMedia = document.getElementById("simMedia");
-              let simMediaHtml = "";
-              if (mediaKind === "image" && mediaData) {
-                simMediaHtml = `<img src="${mediaData}" alt="${mediaAlt}" style="width:100%; height:100%; object-fit: cover;">`;
-              } else if (mediaKind === "video" && mediaData) {
-                simMediaHtml = `<video src="${mediaData}" muted loop playsinline autoplay style="width:100%; height:100%; object-fit: cover;"></video>`;
-              } else {
-                simMediaHtml =
-                  '<div class="placard">Upload media to preview…</div>';
-              }
-              simMedia.innerHTML = simMediaHtml;
-            });
-
-            modesGrid.appendChild(card);
+            preview.style.borderRadius = "12px";
+            preview.style.color = t.colors?.fg || "#fff";
+            preview.style.textShadow = "0 1px 3px rgba(0,0,0,0.6)";
+            const title = el(
+              "div",
+              { class: "t" },
+              escapeHtml(t.name || "Theme")
+            );
+            const btn = el("button", { class: "btn" });
+            if (mode === "event") {
+              btn.textContent = "Apply to Link";
+              btn.addEventListener("click", () => {
+                if (!linkId) {
+                  alert("Pick an active link first.");
+                  return;
+                }
+                applyThemeToLink(linkId, t.id);
+              });
+            } else {
+              btn.textContent = "Add to Playlist";
+              btn.addEventListener("click", () => {
+                const pl = getPlaylist();
+                if (!pl.includes(t.id)) {
+                  pl.push(t.id);
+                  savePlaylist(pl);
+                  renderPlaylist();
+                }
+              });
+            }
+            card.append(preview, title, btn);
+            grid.appendChild(card);
           });
+          $("#modesHeader").textContent =
+            mode === "event"
+              ? "Event Presets"
+              : "Pick Themes for Social Playlist";
         }
-
         function renderPlaylist() {
           const box = $("#playlist");
           const pl = getPlaylist();
@@ -4139,12 +4116,6 @@
         const linkSelect = document.getElementById("linkSelect");
 
         function renderLinksDropdown() {
-          const linkSelect = document.getElementById("linkSelect");
-          if (!linkSelect) return;
-
-          // Save the currently selected link's ID before clearing the dropdown
-          const selectedId = linkSelect.value;
-          
           const links = db.links();
           linkSelect.innerHTML = `<option value="">— Select a Link —</option>`;
           for (const link of links) {
@@ -4152,11 +4123,6 @@
             opt.value = link.id; // actual unique ID
             opt.textContent = link.link_id || `Link ${link.id}`; // readable name
             linkSelect.appendChild(opt);
-          }
-
-          // Re-select the previously selected link if it exists
-          if (selectedId) {
-            linkSelect.value = selectedId;
           }
         }
         linkSelect.addEventListener("change", () => {
@@ -4171,7 +4137,6 @@
           document.getElementById("qrBg").value = link.bg || "#ffffff";
           document.getElementById("qrEcc").value = link.ecc || "M";
           document.getElementById("linkTheme").value = link.theme_id || "";
-          drawQR();
         });
 
         document.getElementById("deleteBtn").addEventListener("click", () => {
@@ -4186,27 +4151,10 @@
 
         document.getElementById("openBtn").addEventListener("click", () => {
           const id = linkSelect.value;
-          console.log("Button clicked. The value of linkSelect is:", id); // Check the value
-
-          if (!id) {
-            console.log("The linkSelect value is empty, stopping execution.");
-            return;
-          }
-
-          const link = db.links().find((l) => l.id === parseInt(id, 10));
-          console.log("Found link object:", link); // Check if the link object is found
-
-          if (!link) {
-            console.log("No link object found, stopping execution.");
-            return;
-          }
-
+          if (!id) return;
           const theme = getSelectedThemeId();
           const url = new URL("landing.html", location.href);
-
-          // This line is likely the source of the problem, as discussed previously
           url.searchParams.set("linkId", id);
-
           if (theme) url.searchParams.set("themeId", theme);
           window.open(url.toString(), "_blank", "noopener");
         });
@@ -4703,63 +4651,12 @@
             const b = btn.cloneNode(true);
             btn.replaceWith(b);
             b.id = "saveTheme";
-
             b.addEventListener("click", async (e) => {
               e.preventDefault();
               if (!workingTheme.name?.trim())
                 return alert("Please give your theme a name.");
               const uid = await currentUserId();
               if (!uid) return alert("Please sign in.");
-
-              // --- NEW MEDIA UPLOAD LOGIC STARTS HERE ---
-              const themeMediaInput = document.getElementById("themeMedia");
-              const mediaAlt = document.getElementById("themeAlt").value;
-
-              if (themeMediaInput && themeMediaInput.files.length > 0) {
-                const file = themeMediaInput.files[0];
-                const filePath = `themes/${uuidv4()}-${file.name}`;
-
-                let mediaKind = "";
-                if (file.type.startsWith("image/")) {
-                  mediaKind = "image";
-                } else if (file.type.startsWith("video/")) {
-                  mediaKind = "video";
-                } else {
-                  alert(
-                    "Unsupported file type. Please upload an image or video."
-                  );
-                  return;
-                }
-
-                // Upload the file to Supabase storage
-                const { error: uploadError } = await sb.storage
-                  .from("media")
-                  .upload(filePath, file);
-
-                if (uploadError) {
-                  alert("Failed to upload media.");
-                  console.error(uploadError);
-                  return;
-                }
-
-                // Get the public URL of the uploaded file
-                const { data: publicUrlData } = sb.storage
-                  .from("media")
-                  .getPublicUrl(filePath);
-
-                // Update the workingTheme.media object
-                workingTheme.media = {
-                  kind: mediaKind,
-                  data: publicUrlData.publicUrl,
-                  alt: mediaAlt,
-                };
-              } else if (workingTheme.remoteId) {
-                // If updating an existing theme without a new file, ensure the media alt text is updated
-                if (workingTheme.media) {
-                  workingTheme.media.alt = mediaAlt;
-                }
-              }
-              // --- NEW MEDIA UPLOAD LOGIC ENDS HERE ---
 
               const row = {
                 id: Number.isFinite(workingTheme.remoteId)
@@ -4772,7 +4669,7 @@
                 font: workingTheme.font || "Inter,system-ui",
                 colors: workingTheme.colors || {},
                 cta: workingTheme.cta || {},
-                media: workingTheme.media || {}, // This line now uses the updated media object
+                media: workingTheme.media || {},
                 settings: workingTheme.settings || {
                   redirectDelay: 2,
                   showSkip: true,
@@ -4797,7 +4694,23 @@
               applySim();
             });
           })();
+
+          // initial render (also refresh on auth change)
+          await renderThemesList();
+          await renderLinksDropdown();
+          await refreshThemeDropdown();
+          sb.auth.onAuthStateChange(() => {
+            renderThemesList();
+            renderLinksDropdown();
+            refreshThemeDropdown();
+          });
+
+          if (!window.sb) {
+            console.warn("[links] Supabase client (sb) not ready");
+            return;
+          }
         }
+
         async function getUserId() {
           try {
             return (await sb.auth.getUser()).data?.user?.id ?? null;
@@ -4883,36 +4796,6 @@
                 "linkTheme",
                 themeIdVal ? String(themeIdVal) : ""
               );
-
-              if (themeIdVal) {
-              const t = (db.themes() || []).find(
-                (x) => String(x.id) === String(themeIdVal) || String(x.remoteId || "") === String(themeIdVal)
-              );
-              if (t) {
-                // mirror the exact field assignments used by the Themes rail "Load" button
-                workingTheme = JSON.parse(JSON.stringify(t));
-                document.getElementById("themeName").value = t.name || "";
-                document.getElementById("themeTitle").value = t.title || "";
-                document.getElementById("themeSubtitle").value = t.subtitle || "";
-                document.getElementById("themeCtaText").value = t.cta?.text || "";
-                document.getElementById("themeCtaUrl").value = t.cta?.url || "";
-                document.getElementById("themeFont").value = t.font || "Inter,system-ui";
-                document.getElementById("themeBg1").value = t.colors?.bg1 || "#101635";
-                document.getElementById("themeBg2").value = t.colors?.bg2 || "#0b0f23";
-                document.getElementById("themeFg").value  = t.colors?.fg  || "#f3f6ff";
-                document.getElementById("themeCtaBg").value = t.colors?.ctaBg || "#6c7dff";
-                document.getElementById("themeCtaFg").value = t.colors?.ctaFg || "#09122a";
-                document.getElementById("themeAlt").value = t.media?.alt || "";
-                document.getElementById("themeDelay").value = t.settings?.redirectDelay ?? 2;
-                document.getElementById("themeShowSkip").checked = t.settings?.showSkip ?? true;
-                document.getElementById("themeSkipText").value = t.settings?.skipText ?? "Skip";
-                const chk = document.getElementById("themeOverrideUrl");
-                if (chk) chk.checked = !!t.settings?.overrideWithThemeUrl;
-          
-                applySim();                 // ← immediately reflect in Live preview
-                renderThemesList(t.id);     // ← visually mark it selected in the rail
-              }
-            }
               window.currentRow = row; // keep “Update” mode
               document.getElementById("saveBtn").textContent = "Update";
               if (typeof drawQR === "function") drawQR(); // QR stays stable
@@ -4959,12 +4842,6 @@
             button.addEventListener("click", () => {
               const tabKey = button.getAttribute("data-tab");
               localStorage.setItem("activeTab", tabKey);
-
-              // Preserve the selected link ID before the tab switch
-              const linkSelect = document.getElementById("linkSelect");
-              if (linkSelect && linkSelect.value) {
-                localStorage.setItem("selectedLink", linkSelect.value);
-              }
             });
           });
         });
