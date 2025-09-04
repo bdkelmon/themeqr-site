@@ -2630,7 +2630,9 @@
             s.settings?.showSkip ?? true ? "inline-block" : "none";
 
           const mwrap = $("#simMedia");
-          mwrap.innerHTML = "";
+          while (mwrap.firstChild) {
+            mwrap.removeChild(mwrap.firstChild);
+          }
           
           const errBox = (msg) => {
             mwrap.innerHTML = `<div class="placard" style="color:#ffb4b4">${msg}</div>`;
