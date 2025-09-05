@@ -1,91 +1,382 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>ThemeQR • Merch Studio (T-Shirts + QR)</title>
-<style>
-  :root{
-    --bg:#0f1220; --panel:#171a2b; --muted:#8c93b2; --text:#e8ebff;
-    --accent:#6c7dff; --accent-2:#2de6c5; --danger:#ff6b6b; --ok:#27d980;
-    --radius:14px; --shadow:0 10px 30px rgba(0,0,0,.35);
-    --sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
-    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0; background:radial-gradient(1200px 600px at 70% -10%, #4fc724 0%, #0f1220 55%) fixed;
-    color:var(--text); font-family:var(--sans);
-  }
-  header{
-    display:flex; align-items:center; justify-content:space-between; gap:12px;
-    padding:16px 18px; border-bottom:1px solid #232741; background:linear-gradient(180deg,#15182a,#12162a);
-    position:sticky; top:0; z-index:5;
-  }
-  .logo{display:flex; gap:10px; align-items:center; font-weight:800}
-  .dot{width:12px;height:12px;border-radius:50%;background:conic-gradient(from 200deg, var(--accent), var(--accent-2))}
-  nav{display:flex; gap:10px; flex-wrap:wrap}
-  nav button{background:#1b1f35; border:1px solid #262a45; color:var(--text); padding:10px 14px; border-radius:10px; cursor:pointer}
-  nav button.active{border-color:var(--accent); box-shadow:0 0 0 2px rgba(108,125,255,.25) inset}
-  main{max-width:1400px; margin:0 auto; padding:16px; display:grid; grid-template-columns:360px 1fr; gap:16px}
-  aside, section{border:1px solid #232741; border-radius:var(--radius); box-shadow:var(--shadow)}
-  aside{background:var(--panel); padding:14px; height:calc(100vh - 110px); position:sticky; top:90px; overflow:auto}
-  section{background:rgba(18,22,43,.65); backdrop-filter:saturate(110%) blur(6px); min-height:480px}
-  .pad{padding:14px}
-  h2{margin:6px 0 10px; font-size:18px}
-  label{display:block; font-size:12px; color:var(--muted); margin:12px 0 6px}
-  input[type="text"],input[type="number"],input[type="url"],select,textarea{
-    width:100%; padding:10px 12px; border:1px solid #2a2e4d; background:#13182e; color:var(--text); border-radius:10px; font-size:14px;
-  }
-  input[type="color"]{width:48px; height:36px; padding:0; border-radius:8px; border:1px solid #2a2e4d; background:#13182e}
-  .row{display:flex; gap:10px}
-  .row > div{flex:1}
-  .stack{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
-  .btn{appearance:none; border:1px solid #2b2f4e; background:#171b34; color:#e8ebff; border-radius:10px; padding:10px 12px; cursor:pointer}
-  .btn.primary{background:linear-gradient(180deg,#3b47ff,#6c7dff); border-color:#5563ff}
-  .btn.warn{border-color:var(--danger); color:#ffd6d6}
-  .btn:disabled{opacity:.6; cursor:not-allowed}
-  .muted{color:var(--muted)} .small{font-size:12px} .code{font-family:var(--mono); background:#0b0f23; border:1px solid #262a45; border-radius:8px; padding:4px 6px}
-  /* Designer Stage */
-  .stage{
-    display:grid; grid-template-columns: 1fr 420px; gap:12px;
-  }
-  .mock{
-    background:#0b0f23; border:1px solid #232741; border-radius:12px; padding:12px; display:grid; place-items:center; min-height:560px; position:relative;
-  }
-  .tee{
-    width:620px; max-width:100%; aspect-ratio: 620 / 760; position:relative; background:#111; border-radius:18px; overflow:hidden;
-    box-shadow: inset 0 0 0 12px #0b0f23;
-  }
-  .tee .fabric{position:absolute; inset:0; background:var(--shirt,#ddd)}
-  .tee .neck{position:absolute; left:50%; top:40px; transform:translateX(-50%); width:160px; height:90px; border:24px solid #0b0f23; border-bottom:0; border-radius:120px 120px 0 0}
-  .print-area{
-    position:absolute; left:50%; top:150px; transform:translateX(-50%);
-    width:600px; height:700px; max-width:86%; max-height:72%; outline:1px dashed rgba(255,255,255,.1);
-  }
-  .layer{
-    position:absolute; left:100px; top:100px; width:180px; user-select:none; cursor:move; transform-origin:center center;
-  }
-  .layer .box{position:relative}
-  .layer .handle{position:absolute; right:-10px; bottom:-10px; width:18px; height:18px; background:#6c7dff; border-radius:4px; cursor:nwse-resize; box-shadow:0 2px 6px rgba(0,0,0,.4)}
-  .layer .del{position:absolute; left:-10px; top:-10px; width:20px; height:20px; border-radius:50%; background:#ff6b6b; color:#111; font-weight:800; display:grid; place-items:center; cursor:pointer}
-  .layer.selected{outline:2px dashed #6c7dff}
-  .props{background:#0b0f23; border:1px solid #232741; border-radius:12px; padding:12px}
-  .kpi{background:#0b0f23; border:1px solid #232741; border-radius:12px; padding:12px}
-  /* Cart */
-  .table{width:100%; border-collapse:collapse}
-  .table th,.table td{border-bottom:1px dashed #2a2e4d; padding:8px; text-align:left}
-  .right{text-align:right}
-  /* ROI */
-  .grid{display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:10px}
-  @media (max-width:1200px){ main{grid-template-columns:1fr} .stage{grid-template-columns:1fr} }
-  @media (max-width:800px){ .grid{grid-template-columns:1fr} }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ThemeQR • Merch Studio (T-Shirts + QR)</title>
+  <style>
+    :root {
+      --bg: #0f1220;
+      --panel: #171a2b;
+      --muted: #8c93b2;
+      --text: #e8ebff;
+      --accent: #6c7dff;
+      --accent-2: #2de6c5;
+      --danger: #ff6b6b;
+      --ok: #27d980;
+      --radius: 14px;
+      --shadow: 0 10px 30px rgba(0, 0, 0, .35);
+      --sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      height: 100%
+    }
+
+    body {
+      margin: 0;
+      background: radial-gradient(1200px 600px at 70% -10%, #4fc724 0%, #0f1220 55%) fixed;
+      color: var(--text);
+      font-family: var(--sans);
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid #232741;
+      background: linear-gradient(180deg, #15182a, #12162a);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    .logo {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-weight: 800
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: conic-gradient(from 200deg, var(--accent), var(--accent-2))
+    }
+
+    nav {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap
+    }
+
+    nav button {
+      background: #1b1f35;
+      border: 1px solid #262a45;
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 10px;
+      cursor: pointer
+    }
+
+    nav button.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(108, 125, 255, .25) inset
+    }
+
+    main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 16px
+    }
+
+    aside,
+    section {
+      border: 1px solid #232741;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow)
+    }
+
+    aside {
+      background: var(--panel);
+      padding: 14px;
+      height: calc(100vh - 110px);
+      position: sticky;
+      top: 90px;
+      overflow: auto
+    }
+
+    section {
+      background: rgba(18, 22, 43, .65);
+      backdrop-filter: saturate(110%) blur(6px);
+      min-height: 480px
+    }
+
+    .pad {
+      padding: 14px
+    }
+
+    h2 {
+      margin: 6px 0 10px;
+      font-size: 18px
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 12px 0 6px
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="url"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #2a2e4d;
+      background: #13182e;
+      color: var(--text);
+      border-radius: 10px;
+      font-size: 14px;
+    }
+
+    input[type="color"] {
+      width: 48px;
+      height: 36px;
+      padding: 0;
+      border-radius: 8px;
+      border: 1px solid #2a2e4d;
+      background: #13182e
+    }
+
+    .row {
+      display: flex;
+      gap: 10px
+    }
+
+    .row>div {
+      flex: 1
+    }
+
+    .stack {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid #2b2f4e;
+      background: #171b34;
+      color: #e8ebff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      cursor: pointer
+    }
+
+    .btn.primary {
+      background: linear-gradient(180deg, #3b47ff, #6c7dff);
+      border-color: #5563ff
+    }
+
+    .btn.warn {
+      border-color: var(--danger);
+      color: #ffd6d6
+    }
+
+    .btn:disabled {
+      opacity: .6;
+      cursor: not-allowed
+    }
+
+    .muted {
+      color: var(--muted)
+    }
+
+    .small {
+      font-size: 12px
+    }
+
+    .code {
+      font-family: var(--mono);
+      background: #0b0f23;
+      border: 1px solid #262a45;
+      border-radius: 8px;
+      padding: 4px 6px
+    }
+
+    /* Designer Stage */
+    .stage {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 12px;
+    }
+
+    .mock {
+      background: #0b0f23;
+      border: 1px solid #232741;
+      border-radius: 12px;
+      padding: 12px;
+      display: grid;
+      place-items: center;
+      min-height: 560px;
+      position: relative;
+    }
+
+    .tee {
+      width: 620px;
+      max-width: 100%;
+      aspect-ratio: 620 / 760;
+      position: relative;
+      background: #111;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 12px #0b0f23;
+    }
+
+    .tee .fabric {
+      position: absolute;
+      inset: 0;
+      background: var(--shirt, #ddd)
+    }
+
+    .tee .neck {
+      position: absolute;
+      left: 50%;
+      top: 40px;
+      transform: translateX(-50%);
+      width: 160px;
+      height: 90px;
+      border: 24px solid #0b0f23;
+      border-bottom: 0;
+      border-radius: 120px 120px 0 0
+    }
+
+    .print-area {
+      position: absolute;
+      left: 50%;
+      top: 150px;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 700px;
+      max-width: 86%;
+      max-height: 72%;
+      outline: 1px dashed rgba(255, 255, 255, .1);
+    }
+
+    .layer {
+      position: absolute;
+      left: 100px;
+      top: 100px;
+      width: 180px;
+      user-select: none;
+      cursor: move;
+      transform-origin: center center;
+    }
+
+    .layer .box {
+      position: relative
+    }
+
+    .layer .handle {
+      position: absolute;
+      right: -10px;
+      bottom: -10px;
+      width: 18px;
+      height: 18px;
+      background: #6c7dff;
+      border-radius: 4px;
+      cursor: nwse-resize;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, .4)
+    }
+
+    .layer .del {
+      position: absolute;
+      left: -10px;
+      top: -10px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #ff6b6b;
+      color: #111;
+      font-weight: 800;
+      display: grid;
+      place-items: center;
+      cursor: pointer
+    }
+
+    .layer.selected {
+      outline: 2px dashed #6c7dff
+    }
+
+    .props {
+      background: #0b0f23;
+      border: 1px solid #232741;
+      border-radius: 12px;
+      padding: 12px
+    }
+
+    .kpi {
+      background: #0b0f23;
+      border: 1px solid #232741;
+      border-radius: 12px;
+      padding: 12px
+    }
+
+    /* Cart */
+    .table {
+      width: 100%;
+      border-collapse: collapse
+    }
+
+    .table th,
+    .table td {
+      border-bottom: 1px dashed #2a2e4d;
+      padding: 8px;
+      text-align: left
+    }
+
+    .right {
+      text-align: right
+    }
+
+    /* ROI */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px
+    }
+
+    @media (max-width:1200px) {
+      main {
+        grid-template-columns: 1fr
+      }
+
+      .stage {
+        grid-template-columns: 1fr
+      }
+    }
+
+    @media (max-width:800px) {
+      .grid {
+        grid-template-columns: 1fr
+      }
+    }
+  </style>
 </head>
+
 <body>
   <header>
-    <div class="logo"><div class="dot"></div><div>ThemeQR Merch Studio</div></div>
+    <div class="logo">
+      <div class="dot"></div>
+      <div>ThemeQR Merch Studio</div>
+    </div>
     <nav id="tabs">
       <button data-tab="designer" class="active">Designer</button>
       <button data-tab="cart">Cart / Checkout</button>
@@ -96,19 +387,20 @@
   <main>
     <aside id="left">
       <h3 style="margin:6px 0 10px">Controls</h3>
-      <div class="small muted">Design a T-shirt with your QR code. Drag, resize, rotate layers. Add to cart when ready.</div>
+      <div class="small muted">Design a T-shirt with your QR code. Drag, resize, rotate layers. Add to cart when ready.
+      </div>
 
       <label>Shirt Color</label>
       <div class="row">
         <div><input type="color" id="shirtColor" value="#ffffff"></div>
         <div><select id="shirtShade">
-          <option value="light" selected>Light shirt</option>
-          <option value="dark">Dark shirt</option>
-        </select></div>
+            <option value="light" selected>Light shirt</option>
+            <option value="dark">Dark shirt</option>
+          </select></div>
         <div><select id="shirtSide">
-          <option value="front" selected>Front</option>
-          <option value="back">Back</option>
-        </select></div>
+            <option value="front" selected>Front</option>
+            <option value="back">Back</option>
+          </select></div>
       </div>
 
       <label>Add Element</label>
@@ -136,11 +428,17 @@
               <div><label>QR FG</label><input type="color" id="qrFg" value="#000000"></div>
               <div><label>QR BG</label><input type="color" id="qrBg" value="#ffffff"></div>
               <div><label>Error</label>
-                <select id="qrEcc"><option>L</option><option selected>M</option><option>Q</option><option>H</option></select>
+                <select id="qrEcc">
+                  <option>L</option>
+                  <option selected>M</option>
+                  <option>Q</option>
+                  <option>H</option>
+                </select>
               </div>
             </div>
             <button class="btn" id="qrRegen" style="margin-top:6px">Regenerate QR</button>
-            <div class="small muted">Tip: paste your <span class="code">landing.html?linkId=…&themeId=…</span> URL here.</div>
+            <div class="small muted">Tip: paste your <span class="code">landing.html?linkId=…&themeId=…</span> URL here.
+            </div>
           </div>
         </div>
       </div>
@@ -168,7 +466,8 @@
           </div>
         </div>
         <div class="row">
-          <div><label>Blank Shirt Cost (light)</label><input type="number" id="blankLight" step="0.01" value="4.25"></div>
+          <div><label>Blank Shirt Cost (light)</label><input type="number" id="blankLight" step="0.01" value="4.25">
+          </div>
           <div><label>Blank Shirt Cost (dark)</label><input type="number" id="blankDark" step="0.01" value="5.25"></div>
         </div>
         <div class="row">
@@ -216,7 +515,8 @@
           <div class="props">
             <strong>How costs are estimated</strong>
             <div class="small muted" style="margin-top:6px; line-height:1.6">
-              We estimate variable cost from: blank shirt (light vs dark) + print method. Print area uses the bounding box of your layers on the selected side.
+              We estimate variable cost from: blank shirt (light vs dark) + print method. Print area uses the bounding
+              box of your layers on the selected side.
               Defaults (editable in ROI panel):
               <ul>
                 <li><b>DTF</b>: transfer ≈ $0.03/in² + $0.50 press</li>
@@ -228,9 +528,9 @@
           <div class="props" style="margin-top:10px">
             <strong>Tips</strong>
             <div class="small muted" style="line-height:1.6">
-              • Use <b>+ QR</b> to generate one from a URL (paste your ThemeQR landing URL).<br/>
-              • Use <b>+ Image</b> to add logos or an exported QR PNG.<br/>
-              • Drag to move; use the square handle to resize; rotate in “Selected Layer”.<br/>
+              • Use <b>+ QR</b> to generate one from a URL (paste your ThemeQR landing URL).<br />
+              • Use <b>+ Image</b> to add logos or an exported QR PNG.<br />
+              • Drag to move; use the square handle to resize; rotate in “Selected Layer”.<br />
               • The printable width is modeled as <b>12 inches</b> so inches are roughly accurate for pricing.
             </div>
           </div>
@@ -243,7 +543,12 @@
       <table class="table" id="cartTable">
         <thead>
           <tr>
-            <th>Item</th><th>Sizes</th><th class="right">Qty</th><th class="right">Unit Price</th><th class="right">Subtotal</th><th></th>
+            <th>Item</th>
+            <th>Sizes</th>
+            <th class="right">Qty</th>
+            <th class="right">Unit Price</th>
+            <th class="right">Subtotal</th>
+            <th></th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -255,7 +560,8 @@
           <div class="small">ThemeQR Bundle: <b id="tBundle">$0</b></div>
           <div class="small">Shipping: <b id="tShip">$0</b></div>
           <div class="small">Estimated Profit: <b id="tProfit">$0</b></div>
-          <div style="margin-top:8px" class="small muted">Demo only. Hook this up to Stripe/Shopify for real checkout.</div>
+          <div style="margin-top:8px" class="small muted">Demo only. Hook this up to Stripe/Shopify for real checkout.
+          </div>
         </div>
         <div style="width:360px">
           <div class="props">
@@ -294,7 +600,10 @@
           <label>Blank (light)</label><input type="number" id="var_blank_light" value="4.25">
           <label>Blank (dark)</label><input type="number" id="var_blank_dark" value="5.25">
           <label>DTF $/in² + press</label>
-          <div class="row"><div><input type="number" id="var_dtf_area" value="0.03"></div><div><input type="number" id="var_dtf_press" value="0.5"></div></div>
+          <div class="row">
+            <div><input type="number" id="var_dtf_area" value="0.03"></div>
+            <div><input type="number" id="var_dtf_press" value="0.5"></div>
+          </div>
           <label>DTG $/in² (light / dark) + fixed</label>
           <div class="row">
             <div><input type="number" id="var_dtg_light" value="0.05"></div>
@@ -308,10 +617,14 @@
       <div class="row" style="margin-top:10px">
         <div class="kpi" style="flex:1">
           <div class="small muted">Results (editable assumptions above)</div>
-          <div class="small">DTF unit cost ~ <b id="roi_dtf_unit">$0.00</b> • DTG unit cost ~ <b id="roi_dtg_unit">$0.00</b> • Outsource unit cost ~ <b id="roi_out_unit">$0.00</b></div>
-          <div class="small">DTF gross profit/mo ~ <b id="roi_dtf_gp">$0</b> • DTG gross profit/mo ~ <b id="roi_dtg_gp">$0</b> • Outsource gross profit/mo ~ <b id="roi_out_gp">$0</b></div>
-          <div class="small">Break-even (DTF cap) ~ <b id="roi_dtf_beu">—</b> shirts / <b id="roi_dtf_bem">—</b> months • Break-even (DTG cap) ~ <b id="roi_dtg_beu">—</b> shirts / <b id="roi_dtg_bem">—</b> months</div>
-          <div class="small muted" style="margin-top:6px">These are planning estimates—tune numbers to your vendors. Outsourcing has $0 capex but lower margin.</div>
+          <div class="small">DTF unit cost ~ <b id="roi_dtf_unit">$0.00</b> • DTG unit cost ~ <b
+              id="roi_dtg_unit">$0.00</b> • Outsource unit cost ~ <b id="roi_out_unit">$0.00</b></div>
+          <div class="small">DTF gross profit/mo ~ <b id="roi_dtf_gp">$0</b> • DTG gross profit/mo ~ <b
+              id="roi_dtg_gp">$0</b> • Outsource gross profit/mo ~ <b id="roi_out_gp">$0</b></div>
+          <div class="small">Break-even (DTF cap) ~ <b id="roi_dtf_beu">—</b> shirts / <b id="roi_dtf_bem">—</b> months
+            • Break-even (DTG cap) ~ <b id="roi_dtg_beu">—</b> shirts / <b id="roi_dtg_bem">—</b> months</div>
+          <div class="small muted" style="margin-top:6px">These are planning estimates—tune numbers to your vendors.
+            Outsourcing has $0 capex but lower margin.</div>
         </div>
         <div style="width:360px">
           <div class="props">
@@ -327,588 +640,589 @@
     </section>
   </main>
 
-<!-- QR code lib -->
-<script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <!-- QR code lib -->
+  <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
 
-<script>
-  // ===== Utilities
-  const $ = (s)=>document.querySelector(s);
-  const uid = (p='id') => p + '_' + Math.random().toString(36).slice(2,8);
-  const money = n => (isFinite(n)?n:0).toLocaleString(undefined,{style:'currency',currency:'USD',maximumFractionDigits:2});
-  const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
-  const normalizeHttpUrl = (input) => {
-    if (!input) return "";
-    const u = String(input).trim().replace(/\\/g,"/");
-    if (u.startsWith("//")) return "https:" + u;
-    if (/^https?:\/\//i.test(u)) return u;
-    if (/^[a-z][a-z0-9+.-]*:/i.test(u)) return u;
-    return "https://" + u.replace(/^\/+/, "");
-  };
-
-  // Tabs
-  const pages = { designer: $('#designer'), cart: $('#cart'), roi: $('#roi') };
-  $('#tabs').addEventListener('click', (e)=>{
-    if (e.target.tagName!=='BUTTON') return;
-    $('#tabs .active')?.classList.remove('active');
-    e.target.classList.add('active');
-    const tab = e.target.dataset.tab;
-    Object.entries(pages).forEach(([k,v])=>v.hidden = (k!==tab));
-    if (tab === 'cart') renderCart();
-    if (tab === 'roi') calcROI();
-  });
-
-  // ===== Designer state
-  const SHIRT_INCH_WIDTH = 12; // model: printable width ~12in
-  const PRINT_W = 600; // px width mapped to 12in
-  let selection = null;
-  const layers = { front: [], back: [] };
-
-  // Build stage
-  const tee = $('#tee');
-  const areaFront = $('#printFront');
-  const areaBack = $('#printBack');
-
-  function switchSide(side){
-    areaFront.style.display = side==='front' ? '' : 'none';
-    areaBack.style.display = side==='back' ? '' : 'none';
-    $('#shirtSide').value = side;
-    selection = null;
-    refreshProps();
-    computePricing();
-  }
-
-  // Shirt color/shade
-  function applyShirtColor(){
-    const c = $('#shirtColor').value || '#ffffff';
-    tee.style.setProperty('--shirt', c);
-    $('#shirtShade').value = isDark(c) ? 'dark' : 'light';
-    computePricing();
-  }
-  function isDark(hex){
-    const v = hex.replace('#','');
-    const r = parseInt(v.slice(0,2),16), g = parseInt(v.slice(2,4),16), b = parseInt(v.slice(4,6),16);
-    const l = 0.2126*r + 0.7152*g + 0.0722*b; // luminance
-    return l < 140;
-  }
-
-  // Layer factory
-  function createLayer(kind, side){
-    const id = uid('layer');
-    const el = document.createElement('div');
-    el.className = 'layer';
-    el.dataset.id = id;
-    el.dataset.kind = kind;
-    el.style.left = '210px';
-    el.style.top = '160px';
-    el.style.width = '180px';
-    el.style.opacity = '1';
-    el.style.transform = 'rotate(0deg)';
-    const box = document.createElement('div');
-    box.className = 'box';
-    const handle = document.createElement('div'); handle.className='handle';
-    const del = document.createElement('div'); del.className='del'; del.textContent='×';
-    box.appendChild(handle); box.appendChild(del);
-    el.appendChild(box);
-
-    // content host
-    let content;
-    if (kind==='text'){
-      content = document.createElement('div');
-      content.textContent = 'Your text';
-      content.style.fontSize = '36px';
-      content.style.color = '#000';
-      content.style.fontWeight = '800';
-      content.style.textAlign = 'center';
-      content.style.lineHeight = '1.1';
-      content.style.wordBreak = 'break-word';
-    } else {
-      content = document.createElement('div');
-    }
-    box.insertBefore(content, handle);
-    const layer = { id, kind, el, side, contentEl: content, w:180, h:180, rot:0, opacity:1, text:'Your text', font:36, color:'#000', qr:{ url:'', fg:'#000', bg:'#fff', ecc:'M' } };
-    (side==='front'?layers.front:layers.back).push(layer);
-
-    // Interactions
-    el.addEventListener('mousedown', startDrag);
-    handle.addEventListener('mousedown', startResize);
-    del.addEventListener('click', ()=> removeLayer(layer));
-    el.addEventListener('click', ()=> selectLayer(layer));
-    (side==='front'?areaFront:areaBack).appendChild(el);
-    selectLayer(layer);
-    return layer;
-  }
-
-  // Drag/Resize
-  let dragState=null, resizeState=null;
-  function startDrag(e){
-    if (e.target.closest('.handle') || e.target.closest('.del')) return;
-    const el = e.currentTarget;
-    selection = findLayer(el.dataset.id);
-    const rect = el.getBoundingClientRect();
-    const parentRect = el.parentElement.getBoundingClientRect();
-    dragState = {
-      el, startX:e.clientX, startY:e.clientY,
-      origLeft: rect.left - parentRect.left, origTop: rect.top - parentRect.top
+  <script>
+    // ===== Utilities
+    const $ = (s) => document.querySelector(s);
+    const uid = (p = 'id') => p + '_' + Math.random().toString(36).slice(2, 8);
+    const money = n => (isFinite(n) ? n : 0).toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+    const normalizeHttpUrl = (input) => {
+      if (!input) return "";
+      const u = String(input).trim().replace(/\\/g, "/");
+      if (u.startsWith("//")) return "https:" + u;
+      if (/^https?:\/\//i.test(u)) return u;
+      if (/^[a-z][a-z0-9+.-]*:/i.test(u)) return u;
+      return "https://" + u.replace(/^\/+/, "");
     };
-    document.addEventListener('mousemove', onDrag);
-    document.addEventListener('mouseup', endDrag);
-    refreshProps();
-  }
-  function onDrag(e){
-    if (!dragState) return;
-    const p = dragState.el.parentElement;
-    const nx = clamp(dragState.origLeft + (e.clientX - dragState.startX), 0, p.clientWidth - dragState.el.clientWidth);
-    const ny = clamp(dragState.origTop + (e.clientY - dragState.startY), 0, p.clientHeight - dragState.el.clientHeight);
-    dragState.el.style.left = nx + 'px';
-    dragState.el.style.top = ny + 'px';
-    computePricing();
-  }
-  function endDrag(){ document.removeEventListener('mousemove', onDrag); document.removeEventListener('mouseup', endDrag); dragState=null; }
-  function startResize(e){
-    e.stopPropagation();
-    const el = e.currentTarget.closest('.layer');
-    selection = findLayer(el.dataset.id);
-    resizeState = { el, startX:e.clientX, startW: el.clientWidth };
-    document.addEventListener('mousemove', onResize);
-    document.addEventListener('mouseup', endResize);
-    refreshProps();
-  }
-  function onResize(e){
-    if (!resizeState) return;
-    const d = clamp(resizeState.startW + (e.clientX - resizeState.startX), 40, 800);
-    resizeState.el.style.width = d + 'px';
-    selection.w = d;
-    computePricing();
-    $('#pWidth').value = Math.round(d);
-  }
-  function endResize(){ document.removeEventListener('mousemove', onResize); document.removeEventListener('mouseup', endResize); resizeState=null; }
 
-  function findLayer(id){
-    return layers.front.concat(layers.back).find(l=>l.id===id);
-  }
-  function selectLayer(layer){
-    selection = layer;
-    document.querySelectorAll('.layer').forEach(n=>n.classList.remove('selected'));
-    layer.el.classList.add('selected');
-    refreshProps();
-  }
-  function removeLayer(layer){
-    const arr = layer.side==='front'?layers.front:layers.back;
-    const idx = arr.findIndex(l=>l.id===layer.id);
-    if (idx>=0){ arr.splice(idx,1); layer.el.remove(); }
-    selection=null; refreshProps(); computePricing();
-  }
-
-  function refreshProps(){
-    const p = $('#selProps'), none = $('#noSel');
-    const t = $('#textProps'), q = $('#qrProps');
-    if (!selection){ p.hidden=true; none.hidden=false; return; }
-    p.hidden=false; none.hidden=true;
-    $('#pOpacity').value = selection.el.style.opacity || '1';
-    $('#pRotate').value = selection.rot || 0;
-    $('#pWidth').value = Math.round(selection.el.clientWidth);
-    t.hidden = selection.kind!=='text';
-    q.hidden = selection.kind!=='qr';
-    if (selection.kind==='text'){
-      $('#pText').value = selection.text || '';
-      $('#pFont').value = selection.font || 36;
-      $('#pColor').value = selection.color || '#000000';
-    }
-    if (selection.kind==='qr'){
-      $('#qrUrl').value = selection.qr.url || '';
-      $('#qrFg').value = selection.qr.fg || '#000000';
-      $('#qrBg').value = selection.qr.bg || '#ffffff';
-      $('#qrEcc').value = selection.qr.ecc || 'M';
-    }
-  }
-  // Prop bindings
-  $('#pOpacity').addEventListener('input', e=>{ if(!selection)return; selection.el.style.opacity = e.target.value; selection.opacity = +e.target.value; });
-  $('#pRotate').addEventListener('input', e=>{ if(!selection)return; selection.rot = +e.target.value; selection.el.style.transform = `rotate(${selection.rot}deg)`; });
-  $('#pWidth').addEventListener('input', e=>{ if(!selection)return; const w = clamp(+e.target.value, 40, 800); selection.el.style.width = w + 'px'; selection.w = w; computePricing(); });
-
-  $('#pText').addEventListener('input', e=>{ if(!selection)return; selection.text = e.target.value; selection.contentEl.textContent = selection.text; computePricing(); });
-  $('#pFont').addEventListener('input', e=>{ if(!selection)return; selection.font = +e.target.value || 36; selection.contentEl.style.fontSize = selection.font + 'px'; computePricing(); });
-  $('#pColor').addEventListener('input', e=>{ if(!selection)return; selection.color = e.target.value; selection.contentEl.style.color = selection.color; });
-
-  // Add elements
-  $('#addText').addEventListener('click', ()=> createLayer('text', $('#shirtSide').value));
-  $('#addImage').addEventListener('click', ()=>{
-    const f = document.createElement('input'); f.type = 'file'; f.accept = 'image/*';
-    f.onchange = async ()=> {
-      const file = f.files?.[0]; if(!file) return;
-      const url = URL.createObjectURL(file);
-      const layer = createLayer('image', $('#shirtSide').value);
-      const img = new Image(); img.onload=()=>{ layer.contentEl.innerHTML=''; layer.contentEl.appendChild(img); URL.revokeObjectURL(url); computePricing(); };
-      img.src = url; img.style.maxWidth='100%'; img.style.display='block';
-    };
-    f.click();
-  });
-
-  // QR: generate into layer
-  async function regenQR(layer){
-    const url = normalizeHttpUrl($('#qrUrl').value || layer.qr.url || '');
-    const fg = $('#qrFg').value, bg = $('#qrBg').value, ecc = $('#qrEcc').value;
-    layer.qr = { url, fg, bg, ecc };
-    // draw QR to canvas
-    const c = document.createElement('canvas');
-    const size = 512;
-    c.width = c.height = size;
-    await QRCode.toCanvas(c, String(url || ''), {
-      errorCorrectionLevel: ({L:'low',M:'medium',Q:'quartile',H:'high'})[ecc]||'medium',
-      color:{ dark: fg, light: bg }, width:size, margin:0
+    // Tabs
+    const pages = { designer: $('#designer'), cart: $('#cart'), roi: $('#roi') };
+    $('#tabs').addEventListener('click', (e) => {
+      if (e.target.tagName !== 'BUTTON') return;
+      $('#tabs .active')?.classList.remove('active');
+      e.target.classList.add('active');
+      const tab = e.target.dataset.tab;
+      Object.entries(pages).forEach(([k, v]) => v.hidden = (k !== tab));
+      if (tab === 'cart') renderCart();
+      if (tab === 'roi') calcROI();
     });
-    layer.contentEl.innerHTML='';
-    layer.contentEl.appendChild(c);
-    computePricing();
-  }
 
-  $('#addQr').addEventListener('click', ()=>{
-    const layer = createLayer('qr', $('#shirtSide').value);
-    $('#qrUrl').value = layer.qr.url = 'https://example.com';
-    $('#qrFg').value = layer.qr.fg = '#000000';
-    $('#qrBg').value = layer.qr.bg = isDark($('#shirtColor').value)?'#ffffff':'#ffffff';
-    $('#qrEcc').value = layer.qr.ecc = 'M';
-    regenQR(layer);
-  });
-  $('#qrRegen').addEventListener('click', ()=>{ if(selection && selection.kind==='qr') regenQR(selection); });
+    // ===== Designer state
+    const SHIRT_INCH_WIDTH = 12; // model: printable width ~12in
+    const PRINT_W = 600; // px width mapped to 12in
+    let selection = null;
+    const layers = { front: [], back: [] };
 
-  // Shirt side & color
-  $('#shirtSide').addEventListener('change', e=> switchSide(e.target.value));
-  $('#shirtColor').addEventListener('input', applyShirtColor);
-  $('#shirtShade').addEventListener('change', computePricing);
+    // Build stage
+    const tee = $('#tee');
+    const areaFront = $('#printFront');
+    const areaBack = $('#printBack');
 
-  // ===== Pricing
-  function getQuantities(){
-    const s = +$('#qtyS').value||0, m = +$('#qtyM').value||0, l = +$('#qtyL').value||0, xl = +$('#qtyXL').value||0;
-    return { s, m, l, xl, total: s+m+l+xl };
-  }
-  function boundingBox(side){
-    const area = side==='front'?areaFront:areaBack;
-    const rect = area.getBoundingClientRect();
-    let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity, any=false;
-    (side==='front'?layers.front:layers.back).forEach(l=>{
-      const r = l.el.getBoundingClientRect();
-      const x = r.left - rect.left, y = r.top - rect.top, w = r.width, h = r.height;
-      minX = Math.min(minX, x); minY = Math.min(minY, y);
-      maxX = Math.max(maxX, x+w); maxY = Math.max(maxY, y+h); any=true;
-    });
-    if (!any) return { wpx:0, hpx:0, xin:0, yin:0, areaIn2:0 };
-    const wpx = Math.max(0, maxX-minX), hpx = Math.max(0, maxY-minY);
-    const xin = (wpx/PRINT_W)*SHIRT_INCH_WIDTH, yin = (hpx/PRINT_W)*SHIRT_INCH_WIDTH; // same scale
-    return { wpx, hpx, xin, yin, areaIn2: Math.max(1, xin*yin) };
-  }
-
-  function perPrintCost(method, areaIn2, shade){
-    // Editable base inputs
-    const blankLight = +$('#blankLight').value||0;
-    const blankDark  = +$('#blankDark').value||0;
-    const blank = (shade==='dark') ? blankDark : blankLight;
-
-    const dtfArea = +$('#var_dtf_area')?.value || 0.03;
-    const dtfPress= +$('#var_dtf_press')?.value || 0.5;
-
-    const dtgL = +$('#var_dtg_light')?.value || 0.05;
-    const dtgD = +$('#var_dtg_dark')?.value || 0.08;
-    const dtgF = +$('#var_dtg_fixed')?.value || 1.5;
-
-    const outsourceBase = +$('#var_outsource_base')?.value || 8;
-
-    if (method==='dtf'){
-      return blank + (areaIn2 * dtfArea) + dtfPress;
-    } else if (method==='dtg'){
-      const ink = ( ($('#shirtShade').value==='dark') ? dtgD : dtgL );
-      return blank + (areaIn2 * ink) + dtgF;
-    } else { // outsource
-      // naive sliding scale by qty later; here return blank + base print (adjusted in computePricing with qty)
-      return blank + outsourceBase;
-    }
-  }
-
-  function bundleCost(){
-    const opt = $('#bundleSub').value;
-    if (opt==='starter3') return 3*7.5;
-    if (opt==='pro3') return 3*24;
-    return 0;
-  }
-
-  function computePricing(){
-    const q = getQuantities();
-    const side = $('#shirtSide').value;
-    const area = boundingBox(side);
-    const method = $('#method').value;
-    const shade = $('#shirtShade').value;
-    const sell = +$('#sellPrice').value||0;
-    const ship = +$('#shipCost').value||0;
-    const labor = +$('#laborOrder').value||0;
-
-    // unit cost
-    let unit = perPrintCost(method, area.areaIn2, shade);
-    // outsource simple discount with qty: $8 base minus 2¢ per extra, floor $5
-    if (method==='outsource'){
-      const prints = q.total;
-      const printCost = Math.max(5, (+$('#var_outsource_base').value||8) - 0.02 * Math.max(0, prints-1));
-      // replace non-blank part with printCost
-      const blankOnly = perPrintCost('dtf', 0, shade) - (+$('#var_dtf_press').value||0.5); // hack: use blank as earlier
-      unit = (shade==='dark'?+$('#blankDark').value:+$('#blankLight').value) + printCost;
+    function switchSide(side) {
+      areaFront.style.display = side === 'front' ? '' : 'none';
+      areaBack.style.display = side === 'back' ? '' : 'none';
+      $('#shirtSide').value = side;
+      selection = null;
+      refreshProps();
+      computePricing();
     }
 
-    const marginPer = sell - unit;
-    const merchRevenue = sell * q.total;
-    const bundle = bundleCost();
-    const orderProfit = (marginPer * q.total) - ship - labor;
+    // Shirt color/shade
+    function applyShirtColor() {
+      const c = $('#shirtColor').value || '#ffffff';
+      tee.style.setProperty('--shirt', c);
+      $('#shirtShade').value = isDark(c) ? 'dark' : 'light';
+      computePricing();
+    }
+    function isDark(hex) {
+      const v = hex.replace('#', '');
+      const r = parseInt(v.slice(0, 2), 16), g = parseInt(v.slice(2, 4), 16), b = parseInt(v.slice(4, 6), 16);
+      const l = 0.2126 * r + 0.7152 * g + 0.0722 * b; // luminance
+      return l < 140;
+    }
 
-    // UI
-    $('#kQty').textContent = q.total;
-    $('#kArea').textContent = isFinite(area.areaIn2)? area.areaIn2.toFixed(1) : '—';
-    $('#kUnit').textContent = money(unit);
-    $('#kMargin').textContent = money(marginPer);
-    $('#kRev').textContent = money(merchRevenue + bundle);
-    $('#kProfit').textContent = money(orderProfit);
+    // Layer factory
+    function createLayer(kind, side) {
+      const id = uid('layer');
+      const el = document.createElement('div');
+      el.className = 'layer';
+      el.dataset.id = id;
+      el.dataset.kind = kind;
+      el.style.left = '210px';
+      el.style.top = '160px';
+      el.style.width = '180px';
+      el.style.opacity = '1';
+      el.style.transform = 'rotate(0deg)';
+      const box = document.createElement('div');
+      box.className = 'box';
+      const handle = document.createElement('div'); handle.className = 'handle';
+      const del = document.createElement('div'); del.className = 'del'; del.textContent = '×';
+      box.appendChild(handle); box.appendChild(del);
+      el.appendChild(box);
 
-    return { unit, marginPer, merchRevenue, orderProfit, bundle, areaIn2: area.areaIn2, side };
-  }
-
-  // Recompute on inputs
-  ['qtyS','qtyM','qtyL','qtyXL','method','sellPrice','blankLight','blankDark','shipCost','laborOrder','bundleSub']
-    .forEach(id => document.getElementById(id).addEventListener('input', computePricing));
-
-  // ===== Mockup & export
-  function downloadMockup(){
-    const side = $('#shirtSide').value;
-    const area = side==='front'?areaFront:areaBack;
-    // Render tee element to canvas via HTML2Canvas-like? We'll synthesize: capture fabric + layers inside print area.
-    // Simple approach: snapshot just the print area (most relevant for vendors)
-    const canvas = document.createElement('canvas');
-    const scale = 2;
-    const w = area.clientWidth, h = area.clientHeight;
-    canvas.width = w*scale; canvas.height = h*scale;
-    const ctx = canvas.getContext('2d'); ctx.scale(scale, scale);
-    // background to shirt color
-    ctx.fillStyle = getComputedStyle(tee).getPropertyValue('--shirt') || '#ffffff';
-    ctx.fillRect(0,0,w,h);
-    // draw layers in DOM order for this side
-    const arr = (side==='front'?layers.front:layers.back);
-    const rect = area.getBoundingClientRect();
-    arr.forEach(l=>{
-      const r = l.el.getBoundingClientRect();
-      const x = r.left - rect.left, y = r.top - rect.top, lw = r.width, lh = r.height;
-      ctx.save();
-      // center/rotate
-      ctx.translate(x + lw/2, y + lh/2);
-      ctx.rotate((l.rot||0) * Math.PI/180);
-      ctx.globalAlpha = parseFloat(l.el.style.opacity||'1') || 1;
-      // draw content
-      if (l.kind==='text'){
-        const text = l.text || '';
-        ctx.fillStyle = l.color || '#000';
-        ctx.font = `bold ${l.font||36}px Inter, system-ui`;
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        // wrap naive: max width = lw*0.9
-        wrapText(ctx, text, 0, 0, lw*0.9, (l.font||36)*1.2);
+      // content host
+      let content;
+      if (kind === 'text') {
+        content = document.createElement('div');
+        content.textContent = 'Your text';
+        content.style.fontSize = '36px';
+        content.style.color = '#000';
+        content.style.fontWeight = '800';
+        content.style.textAlign = 'center';
+        content.style.lineHeight = '1.1';
+        content.style.wordBreak = 'break-word';
       } else {
-        // draw canvas/img
-        const node = l.contentEl.firstElementChild;
-        if (node){
-          if (node.tagName==='CANVAS' || node.tagName==='IMG'){
-            ctx.drawImage(node, -lw/2, -lh/2, lw, lh);
+        content = document.createElement('div');
+      }
+      box.insertBefore(content, handle);
+      const layer = { id, kind, el, side, contentEl: content, w: 180, h: 180, rot: 0, opacity: 1, text: 'Your text', font: 36, color: '#000', qr: { url: '', fg: '#000', bg: '#fff', ecc: 'M' } };
+      (side === 'front' ? layers.front : layers.back).push(layer);
+
+      // Interactions
+      el.addEventListener('mousedown', startDrag);
+      handle.addEventListener('mousedown', startResize);
+      del.addEventListener('click', () => removeLayer(layer));
+      el.addEventListener('click', () => selectLayer(layer));
+      (side === 'front' ? areaFront : areaBack).appendChild(el);
+      selectLayer(layer);
+      return layer;
+    }
+
+    // Drag/Resize
+    let dragState = null, resizeState = null;
+    function startDrag(e) {
+      if (e.target.closest('.handle') || e.target.closest('.del')) return;
+      const el = e.currentTarget;
+      selection = findLayer(el.dataset.id);
+      const rect = el.getBoundingClientRect();
+      const parentRect = el.parentElement.getBoundingClientRect();
+      dragState = {
+        el, startX: e.clientX, startY: e.clientY,
+        origLeft: rect.left - parentRect.left, origTop: rect.top - parentRect.top
+      };
+      document.addEventListener('mousemove', onDrag);
+      document.addEventListener('mouseup', endDrag);
+      refreshProps();
+    }
+    function onDrag(e) {
+      if (!dragState) return;
+      const p = dragState.el.parentElement;
+      const nx = clamp(dragState.origLeft + (e.clientX - dragState.startX), 0, p.clientWidth - dragState.el.clientWidth);
+      const ny = clamp(dragState.origTop + (e.clientY - dragState.startY), 0, p.clientHeight - dragState.el.clientHeight);
+      dragState.el.style.left = nx + 'px';
+      dragState.el.style.top = ny + 'px';
+      computePricing();
+    }
+    function endDrag() { document.removeEventListener('mousemove', onDrag); document.removeEventListener('mouseup', endDrag); dragState = null; }
+    function startResize(e) {
+      e.stopPropagation();
+      const el = e.currentTarget.closest('.layer');
+      selection = findLayer(el.dataset.id);
+      resizeState = { el, startX: e.clientX, startW: el.clientWidth };
+      document.addEventListener('mousemove', onResize);
+      document.addEventListener('mouseup', endResize);
+      refreshProps();
+    }
+    function onResize(e) {
+      if (!resizeState) return;
+      const d = clamp(resizeState.startW + (e.clientX - resizeState.startX), 40, 800);
+      resizeState.el.style.width = d + 'px';
+      selection.w = d;
+      computePricing();
+      $('#pWidth').value = Math.round(d);
+    }
+    function endResize() { document.removeEventListener('mousemove', onResize); document.removeEventListener('mouseup', endResize); resizeState = null; }
+
+    function findLayer(id) {
+      return layers.front.concat(layers.back).find(l => l.id === id);
+    }
+    function selectLayer(layer) {
+      selection = layer;
+      document.querySelectorAll('.layer').forEach(n => n.classList.remove('selected'));
+      layer.el.classList.add('selected');
+      refreshProps();
+    }
+    function removeLayer(layer) {
+      const arr = layer.side === 'front' ? layers.front : layers.back;
+      const idx = arr.findIndex(l => l.id === layer.id);
+      if (idx >= 0) { arr.splice(idx, 1); layer.el.remove(); }
+      selection = null; refreshProps(); computePricing();
+    }
+
+    function refreshProps() {
+      const p = $('#selProps'), none = $('#noSel');
+      const t = $('#textProps'), q = $('#qrProps');
+      if (!selection) { p.hidden = true; none.hidden = false; return; }
+      p.hidden = false; none.hidden = true;
+      $('#pOpacity').value = selection.el.style.opacity || '1';
+      $('#pRotate').value = selection.rot || 0;
+      $('#pWidth').value = Math.round(selection.el.clientWidth);
+      t.hidden = selection.kind !== 'text';
+      q.hidden = selection.kind !== 'qr';
+      if (selection.kind === 'text') {
+        $('#pText').value = selection.text || '';
+        $('#pFont').value = selection.font || 36;
+        $('#pColor').value = selection.color || '#000000';
+      }
+      if (selection.kind === 'qr') {
+        $('#qrUrl').value = selection.qr.url || '';
+        $('#qrFg').value = selection.qr.fg || '#000000';
+        $('#qrBg').value = selection.qr.bg || '#ffffff';
+        $('#qrEcc').value = selection.qr.ecc || 'M';
+      }
+    }
+    // Prop bindings
+    $('#pOpacity').addEventListener('input', e => { if (!selection) return; selection.el.style.opacity = e.target.value; selection.opacity = +e.target.value; });
+    $('#pRotate').addEventListener('input', e => { if (!selection) return; selection.rot = +e.target.value; selection.el.style.transform = `rotate(${selection.rot}deg)`; });
+    $('#pWidth').addEventListener('input', e => { if (!selection) return; const w = clamp(+e.target.value, 40, 800); selection.el.style.width = w + 'px'; selection.w = w; computePricing(); });
+
+    $('#pText').addEventListener('input', e => { if (!selection) return; selection.text = e.target.value; selection.contentEl.textContent = selection.text; computePricing(); });
+    $('#pFont').addEventListener('input', e => { if (!selection) return; selection.font = +e.target.value || 36; selection.contentEl.style.fontSize = selection.font + 'px'; computePricing(); });
+    $('#pColor').addEventListener('input', e => { if (!selection) return; selection.color = e.target.value; selection.contentEl.style.color = selection.color; });
+
+    // Add elements
+    $('#addText').addEventListener('click', () => createLayer('text', $('#shirtSide').value));
+    $('#addImage').addEventListener('click', () => {
+      const f = document.createElement('input'); f.type = 'file'; f.accept = 'image/*';
+      f.onchange = async () => {
+        const file = f.files?.[0]; if (!file) return;
+        const url = URL.createObjectURL(file);
+        const layer = createLayer('image', $('#shirtSide').value);
+        const img = new Image(); img.onload = () => { layer.contentEl.innerHTML = ''; layer.contentEl.appendChild(img); URL.revokeObjectURL(url); computePricing(); };
+        img.src = url; img.style.maxWidth = '100%'; img.style.display = 'block';
+      };
+      f.click();
+    });
+
+    // QR: generate into layer
+    async function regenQR(layer) {
+      const url = normalizeHttpUrl($('#qrUrl').value || layer.qr.url || '');
+      const fg = $('#qrFg').value, bg = $('#qrBg').value, ecc = $('#qrEcc').value;
+      layer.qr = { url, fg, bg, ecc };
+      // draw QR to canvas
+      const c = document.createElement('canvas');
+      const size = 512;
+      c.width = c.height = size;
+      await QRCode.toCanvas(c, String(url || ''), {
+        errorCorrectionLevel: ({ L: 'low', M: 'medium', Q: 'quartile', H: 'high' })[ecc] || 'medium',
+        color: { dark: fg, light: bg }, width: size, margin: 0
+      });
+      layer.contentEl.innerHTML = '';
+      layer.contentEl.appendChild(c);
+      computePricing();
+    }
+
+    $('#addQr').addEventListener('click', () => {
+      const layer = createLayer('qr', $('#shirtSide').value);
+      $('#qrUrl').value = layer.qr.url = 'https://example.com';
+      $('#qrFg').value = layer.qr.fg = '#000000';
+      $('#qrBg').value = layer.qr.bg = isDark($('#shirtColor').value) ? '#ffffff' : '#ffffff';
+      $('#qrEcc').value = layer.qr.ecc = 'M';
+      regenQR(layer);
+    });
+    $('#qrRegen').addEventListener('click', () => { if (selection && selection.kind === 'qr') regenQR(selection); });
+
+    // Shirt side & color
+    $('#shirtSide').addEventListener('change', e => switchSide(e.target.value));
+    $('#shirtColor').addEventListener('input', applyShirtColor);
+    $('#shirtShade').addEventListener('change', computePricing);
+
+    // ===== Pricing
+    function getQuantities() {
+      const s = +$('#qtyS').value || 0, m = +$('#qtyM').value || 0, l = +$('#qtyL').value || 0, xl = +$('#qtyXL').value || 0;
+      return { s, m, l, xl, total: s + m + l + xl };
+    }
+    function boundingBox(side) {
+      const area = side === 'front' ? areaFront : areaBack;
+      const rect = area.getBoundingClientRect();
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, any = false;
+      (side === 'front' ? layers.front : layers.back).forEach(l => {
+        const r = l.el.getBoundingClientRect();
+        const x = r.left - rect.left, y = r.top - rect.top, w = r.width, h = r.height;
+        minX = Math.min(minX, x); minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x + w); maxY = Math.max(maxY, y + h); any = true;
+      });
+      if (!any) return { wpx: 0, hpx: 0, xin: 0, yin: 0, areaIn2: 0 };
+      const wpx = Math.max(0, maxX - minX), hpx = Math.max(0, maxY - minY);
+      const xin = (wpx / PRINT_W) * SHIRT_INCH_WIDTH, yin = (hpx / PRINT_W) * SHIRT_INCH_WIDTH; // same scale
+      return { wpx, hpx, xin, yin, areaIn2: Math.max(1, xin * yin) };
+    }
+
+    function perPrintCost(method, areaIn2, shade) {
+      // Editable base inputs
+      const blankLight = +$('#blankLight').value || 0;
+      const blankDark = +$('#blankDark').value || 0;
+      const blank = (shade === 'dark') ? blankDark : blankLight;
+
+      const dtfArea = +$('#var_dtf_area')?.value || 0.03;
+      const dtfPress = +$('#var_dtf_press')?.value || 0.5;
+
+      const dtgL = +$('#var_dtg_light')?.value || 0.05;
+      const dtgD = +$('#var_dtg_dark')?.value || 0.08;
+      const dtgF = +$('#var_dtg_fixed')?.value || 1.5;
+
+      const outsourceBase = +$('#var_outsource_base')?.value || 8;
+
+      if (method === 'dtf') {
+        return blank + (areaIn2 * dtfArea) + dtfPress;
+      } else if (method === 'dtg') {
+        const ink = (($('#shirtShade').value === 'dark') ? dtgD : dtgL);
+        return blank + (areaIn2 * ink) + dtgF;
+      } else { // outsource
+        // naive sliding scale by qty later; here return blank + base print (adjusted in computePricing with qty)
+        return blank + outsourceBase;
+      }
+    }
+
+    function bundleCost() {
+      const opt = $('#bundleSub').value;
+      if (opt === 'starter3') return 3 * 7.5;
+      if (opt === 'pro3') return 3 * 24;
+      return 0;
+    }
+
+    function computePricing() {
+      const q = getQuantities();
+      const side = $('#shirtSide').value;
+      const area = boundingBox(side);
+      const method = $('#method').value;
+      const shade = $('#shirtShade').value;
+      const sell = +$('#sellPrice').value || 0;
+      const ship = +$('#shipCost').value || 0;
+      const labor = +$('#laborOrder').value || 0;
+
+      // unit cost
+      let unit = perPrintCost(method, area.areaIn2, shade);
+      // outsource simple discount with qty: $8 base minus 2¢ per extra, floor $5
+      if (method === 'outsource') {
+        const prints = q.total;
+        const printCost = Math.max(5, (+$('#var_outsource_base').value || 8) - 0.02 * Math.max(0, prints - 1));
+        // replace non-blank part with printCost
+        const blankOnly = perPrintCost('dtf', 0, shade) - (+$('#var_dtf_press').value || 0.5); // hack: use blank as earlier
+        unit = (shade === 'dark' ? +$('#blankDark').value : +$('#blankLight').value) + printCost;
+      }
+
+      const marginPer = sell - unit;
+      const merchRevenue = sell * q.total;
+      const bundle = bundleCost();
+      const orderProfit = (marginPer * q.total) - ship - labor;
+
+      // UI
+      $('#kQty').textContent = q.total;
+      $('#kArea').textContent = isFinite(area.areaIn2) ? area.areaIn2.toFixed(1) : '—';
+      $('#kUnit').textContent = money(unit);
+      $('#kMargin').textContent = money(marginPer);
+      $('#kRev').textContent = money(merchRevenue + bundle);
+      $('#kProfit').textContent = money(orderProfit);
+
+      return { unit, marginPer, merchRevenue, orderProfit, bundle, areaIn2: area.areaIn2, side };
+    }
+
+    // Recompute on inputs
+    ['qtyS', 'qtyM', 'qtyL', 'qtyXL', 'method', 'sellPrice', 'blankLight', 'blankDark', 'shipCost', 'laborOrder', 'bundleSub']
+      .forEach(id => document.getElementById(id).addEventListener('input', computePricing));
+
+    // ===== Mockup & export
+    function downloadMockup() {
+      const side = $('#shirtSide').value;
+      const area = side === 'front' ? areaFront : areaBack;
+      // Render tee element to canvas via HTML2Canvas-like? We'll synthesize: capture fabric + layers inside print area.
+      // Simple approach: snapshot just the print area (most relevant for vendors)
+      const canvas = document.createElement('canvas');
+      const scale = 2;
+      const w = area.clientWidth, h = area.clientHeight;
+      canvas.width = w * scale; canvas.height = h * scale;
+      const ctx = canvas.getContext('2d'); ctx.scale(scale, scale);
+      // background to shirt color
+      ctx.fillStyle = getComputedStyle(tee).getPropertyValue('--shirt') || '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      // draw layers in DOM order for this side
+      const arr = (side === 'front' ? layers.front : layers.back);
+      const rect = area.getBoundingClientRect();
+      arr.forEach(l => {
+        const r = l.el.getBoundingClientRect();
+        const x = r.left - rect.left, y = r.top - rect.top, lw = r.width, lh = r.height;
+        ctx.save();
+        // center/rotate
+        ctx.translate(x + lw / 2, y + lh / 2);
+        ctx.rotate((l.rot || 0) * Math.PI / 180);
+        ctx.globalAlpha = parseFloat(l.el.style.opacity || '1') || 1;
+        // draw content
+        if (l.kind === 'text') {
+          const text = l.text || '';
+          ctx.fillStyle = l.color || '#000';
+          ctx.font = `bold ${l.font || 36}px Inter, system-ui`;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          // wrap naive: max width = lw*0.9
+          wrapText(ctx, text, 0, 0, lw * 0.9, (l.font || 36) * 1.2);
+        } else {
+          // draw canvas/img
+          const node = l.contentEl.firstElementChild;
+          if (node) {
+            if (node.tagName === 'CANVAS' || node.tagName === 'IMG') {
+              ctx.drawImage(node, -lw / 2, -lh / 2, lw, lh);
+            }
           }
         }
-      }
-      ctx.restore();
-    });
-    const a = document.createElement('a'); a.download = `mockup-${side}.png`; a.href = canvas.toDataURL('image/png'); a.click();
-  }
-  function wrapText(ctx, text, x,y,maxWidth,lineHeight){
-    const words = text.split(' '); let line = '', yy = y;
-    for (let n=0;n<words.length;n++){
-      const test = line + words[n] + ' ';
-      if (ctx.measureText(test).width > maxWidth && n>0){
-        ctx.fillText(line, x, yy); line = words[n] + ' '; yy += lineHeight;
-      } else line = test;
+        ctx.restore();
+      });
+      const a = document.createElement('a'); a.download = `mockup-${side}.png`; a.href = canvas.toDataURL('image/png'); a.click();
     }
-    ctx.fillText(line, x, yy);
-  }
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+      const words = text.split(' '); let line = '', yy = y;
+      for (let n = 0; n < words.length; n++) {
+        const test = line + words[n] + ' ';
+        if (ctx.measureText(test).width > maxWidth && n > 0) {
+          ctx.fillText(line, x, yy); line = words[n] + ' '; yy += lineHeight;
+        } else line = test;
+      }
+      ctx.fillText(line, x, yy);
+    }
 
-  $('#downloadMock').addEventListener('click', downloadMockup);
+    $('#downloadMock').addEventListener('click', downloadMockup);
 
-  $('#exportOrder').addEventListener('click', ()=>{
-    const side = $('#shirtSide').value;
-    const q = getQuantities();
-    const calc = computePricing();
-    const order = {
-      id: uid('order'),
-      date: new Date().toISOString(),
-      shirt: {
-        color: $('#shirtColor').value, shade: $('#shirtShade').value, side,
-      },
-      sizes: q, method: $('#method').value, sellPrice: +$('#sellPrice').value,
-      costs: {
-        blankLight:+$('#blankLight').value, blankDark:+$('#blankDark').value,
-        shipping:+$('#shipCost').value, labor:+$('#laborOrder').value
-      },
-      bundle: $('#bundleSub').value,
-      calc
-    };
-    const a = document.createElement('a');
-    a.download = `order-${order.id}.json`;
-    a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(order,null,2));
-    a.click();
-  });
+    $('#exportOrder').addEventListener('click', () => {
+      const side = $('#shirtSide').value;
+      const q = getQuantities();
+      const calc = computePricing();
+      const order = {
+        id: uid('order'),
+        date: new Date().toISOString(),
+        shirt: {
+          color: $('#shirtColor').value, shade: $('#shirtShade').value, side,
+        },
+        sizes: q, method: $('#method').value, sellPrice: +$('#sellPrice').value,
+        costs: {
+          blankLight: +$('#blankLight').value, blankDark: +$('#blankDark').value,
+          shipping: +$('#shipCost').value, labor: +$('#laborOrder').value
+        },
+        bundle: $('#bundleSub').value,
+        calc
+      };
+      const a = document.createElement('a');
+      a.download = `order-${order.id}.json`;
+      a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(order, null, 2));
+      a.click();
+    });
 
-  // ===== Cart
-  const cart = [];
-  $('#addToCart').addEventListener('click', ()=>{
-    const q = getQuantities();
-    if (q.total<=0){ alert('Set a quantity > 0'); return; }
-    const calc = computePricing();
-    const item = {
-      id: uid('item'),
-      mockSide: $('#shirtSide').value,
-      color: $('#shirtColor').value,
-      shade: $('#shirtShade').value,
-      method: $('#method').value,
-      sizes: q,
-      sell: +$('#sellPrice').value,
-      unitCost: calc.unit,
-      marginPer: calc.marginPer,
-      areaIn2: calc.areaIn2,
-      bundle: $('#bundleSub').value,
-      ship: +$('#shipCost').value,
-      labor: +$('#laborOrder').value
-    };
-    cart.push(item);
-    alert('Added to cart!');
-  });
+    // ===== Cart
+    const cart = [];
+    $('#addToCart').addEventListener('click', () => {
+      const q = getQuantities();
+      if (q.total <= 0) { alert('Set a quantity > 0'); return; }
+      const calc = computePricing();
+      const item = {
+        id: uid('item'),
+        mockSide: $('#shirtSide').value,
+        color: $('#shirtColor').value,
+        shade: $('#shirtShade').value,
+        method: $('#method').value,
+        sizes: q,
+        sell: +$('#sellPrice').value,
+        unitCost: calc.unit,
+        marginPer: calc.marginPer,
+        areaIn2: calc.areaIn2,
+        bundle: $('#bundleSub').value,
+        ship: +$('#shipCost').value,
+        labor: +$('#laborOrder').value
+      };
+      cart.push(item);
+      alert('Added to cart!');
+    });
 
-  function renderCart(){
-    const tbody = $('#cartTable tbody'); tbody.innerHTML='';
-    let merch = 0, bundle=0, shipping=0, profit=0;
-    cart.forEach((it, idx)=>{
-      const qty = it.sizes.total;
-      const sub = qty * it.sell;
-      merch += sub;
-      if (it.bundle==='starter3') bundle += 22.5;
-      if (it.bundle==='pro3') bundle += 72.0;
-      shipping += it.ship;
-      profit += (it.sell - it.unitCost) * qty - it.ship - it.labor;
+    function renderCart() {
+      const tbody = $('#cartTable tbody'); tbody.innerHTML = '';
+      let merch = 0, bundle = 0, shipping = 0, profit = 0;
+      cart.forEach((it, idx) => {
+        const qty = it.sizes.total;
+        const sub = qty * it.sell;
+        merch += sub;
+        if (it.bundle === 'starter3') bundle += 22.5;
+        if (it.bundle === 'pro3') bundle += 72.0;
+        shipping += it.ship;
+        profit += (it.sell - it.unitCost) * qty - it.ship - it.labor;
 
-      const sizes = Object.entries(it.sizes).filter(([k])=>k!=='total').map(([k,v])=> v?`${k.toUpperCase()}:${v}`:'').filter(Boolean).join(' ');
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
+        const sizes = Object.entries(it.sizes).filter(([k]) => k !== 'total').map(([k, v]) => v ? `${k.toUpperCase()}:${v}` : '').filter(Boolean).join(' ');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
         <td>Tee (${it.method.toUpperCase()}) <span class="code" style="background:#121632">${it.shade}</span> <span class="code">${it.color}</span></td>
-        <td>${sizes||'—'}</td>
+        <td>${sizes || '—'}</td>
         <td class="right">${qty}</td>
         <td class="right">${money(it.sell)}</td>
         <td class="right">${money(sub)}</td>
         <td class="right"><button class="btn warn" data-i="${idx}">Remove</button></td>
       `;
-      tbody.appendChild(tr);
+        tbody.appendChild(tr);
+      });
+      tbody.querySelectorAll('button[data-i]').forEach(btn => {
+        btn.onclick = () => { cart.splice(+btn.dataset.i, 1); renderCart(); };
+      });
+
+      $('#tMerch').textContent = money(merch);
+      $('#tBundle').textContent = money(bundle);
+      $('#tShip').textContent = money(shipping);
+      $('#tProfit').textContent = money(profit);
+    }
+
+    $('#exportCart').addEventListener('click', () => {
+      const order = {
+        id: uid('cart'),
+        customer: { name: $('#custName').value, email: $('#custEmail').value, address: $('#custAddr').value },
+        items: cart,
+        totals: {
+          merch: $('#tMerch').textContent, bundle: $('#tBundle').textContent,
+          shipping: $('#tShip').textContent, estProfit: $('#tProfit').textContent
+        }
+      };
+      const a = document.createElement('a');
+      a.download = `cart-${order.id}.json`;
+      a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(order, null, 2));
+      a.click();
     });
-    tbody.querySelectorAll('button[data-i]').forEach(btn=>{
-      btn.onclick = ()=>{ cart.splice(+btn.dataset.i,1); renderCart(); };
+
+    $('#placeOrder').addEventListener('click', () => {
+      if (!cart.length) return alert('Cart is empty.');
+      alert('Demo checkout: connect Stripe/Shopify to accept payment.');
     });
 
-    $('#tMerch').textContent = money(merch);
-    $('#tBundle').textContent = money(bundle);
-    $('#tShip').textContent = money(shipping);
-    $('#tProfit').textContent = money(profit);
-  }
+    // ===== ROI Calculator
+    function calcROI() {
+      const vol = +$('#roi_volume').value || 0;
+      const price = +$('#roi_price').value || 0;
+      const area = +$('#roi_area').value || 0;
+      const darkPct = clamp(+$('#roi_dark').value || 0, 0, 100) / 100;
 
-  $('#exportCart').addEventListener('click', ()=>{
-    const order = {
-      id: uid('cart'),
-      customer: { name: $('#custName').value, email: $('#custEmail').value, address: $('#custAddr').value },
-      items: cart,
-      totals: {
-        merch: $('#tMerch').textContent, bundle: $('#tBundle').textContent,
-        shipping: $('#tShip').textContent, estProfit: $('#tProfit').textContent
-      }
-    };
-    const a = document.createElement('a');
-    a.download = `cart-${order.id}.json`;
-    a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(order,null,2));
-    a.click();
-  });
+      const blankL = +$('#var_blank_light').value || 0;
+      const blankD = +$('#var_blank_dark').value || 0;
+      const dtfArea = +$('#var_dtf_area').value || 0.03;
+      const dtfPress = +$('#var_dtf_press').value || 0.5;
+      const dtgL = +$('#var_dtg_light').value || 0.05;
+      const dtgD = +$('#var_dtg_dark').value || 0.08;
+      const dtgF = +$('#var_dtg_fixed').value || 1.5;
+      const outBase = +$('#var_outsource_base').value || 8;
 
-  $('#placeOrder').addEventListener('click', ()=>{
-    if (!cart.length) return alert('Cart is empty.');
-    alert('Demo checkout: connect Stripe/Shopify to accept payment.');
-  });
+      const capDTF = +$('#cap_dtf').value || 0 + +$('#cap_press').value || 0 + +$('#cap_misc').value || 0;
+      const capDTG = +$('#cap_dtg').value || 0 + +$('#cap_misc').value || 0;
 
-  // ===== ROI Calculator
-  function calcROI(){
-    const vol = +$('#roi_volume').value||0;
-    const price = +$('#roi_price').value||0;
-    const area = +$('#roi_area').value||0;
-    const darkPct = clamp(+$('#roi_dark').value||0,0,100)/100;
+      // Expected blank mix
+      const blankAvg = blankL * (1 - darkPct) + blankD * (darkPct);
 
-    const blankL = +$('#var_blank_light').value||0;
-    const blankD = +$('#var_blank_dark').value||0;
-    const dtfArea = +$('#var_dtf_area').value||0.03;
-    const dtfPress= +$('#var_dtf_press').value||0.5;
-    const dtgL = +$('#var_dtg_light').value||0.05;
-    const dtgD = +$('#var_dtg_dark').value||0.08;
-    const dtgF = +$('#var_dtg_fixed').value||1.5;
-    const outBase= +$('#var_outsource_base').value||8;
+      const unitDTF = blankAvg + area * dtfArea + dtfPress;
+      const unitDTG = blankAvg + area * ((dtgL * (1 - darkPct) + dtgD * (darkPct))) + dtgF;
+      const unitOUT = blankAvg + outBase;
 
-    const capDTF = +$('#cap_dtf').value||0 + +$('#cap_press').value||0 + +$('#cap_misc').value||0;
-    const capDTG = +$('#cap_dtg').value||0 + +$('#cap_misc').value||0;
+      const gpDTF = Math.max(0, price - unitDTF) * vol;
+      const gpDTG = Math.max(0, price - unitDTG) * vol;
+      const gpOUT = Math.max(0, price - unitOUT) * vol;
 
-    // Expected blank mix
-    const blankAvg = blankL*(1-darkPct) + blankD*(darkPct);
+      const beUnitsDTF = (capDTF > 0 && (price - unitDTF) > 0) ? Math.ceil(capDTF / (price - unitDTF)) : '—';
+      const beMonthsDTF = (typeof beUnitsDTF === 'number' && vol > 0) ? Math.ceil(beUnitsDTF / vol) : '—';
+      const beUnitsDTG = (capDTG > 0 && (price - unitDTG) > 0) ? Math.ceil(capDTG / (price - unitDTG)) : '—';
+      const beMonthsDTG = (typeof beUnitsDTG === 'number' && vol > 0) ? Math.ceil(beUnitsDTG / vol) : '—';
 
-    const unitDTF = blankAvg + area*dtfArea + dtfPress;
-    const unitDTG = blankAvg + area*( (dtgL*(1-darkPct)+dtgD*(darkPct)) ) + dtgF;
-    const unitOUT = blankAvg + outBase;
+      // UI
+      $('#roi_dtf_unit').textContent = money(unitDTF);
+      $('#roi_dtg_unit').textContent = money(unitDTG);
+      $('#roi_out_unit').textContent = money(unitOUT);
+      $('#roi_dtf_gp').textContent = money(gpDTF);
+      $('#roi_dtg_gp').textContent = money(gpDTG);
+      $('#roi_out_gp').textContent = money(gpOUT);
+      $('#roi_dtf_beu').textContent = beUnitsDTF;
+      $('#roi_dtf_bem').textContent = beMonthsDTF;
+      $('#roi_dtg_beu').textContent = beUnitsDTG;
+      $('#roi_dtg_bem').textContent = beMonthsDTG;
 
-    const gpDTF = Math.max(0, price - unitDTF) * vol;
-    const gpDTG = Math.max(0, price - unitDTG) * vol;
-    const gpOUT = Math.max(0, price - unitOUT) * vol;
+      // Helper blurb
+      let msg = '';
+      const best = Math.max(gpDTF, gpDTG, gpOUT);
+      if (best === gpOUT) msg = 'Outsourcing yields the highest monthly profit under current assumptions (likely due to low volume or high capex). Consider outsourcing until demand is proven.';
+      if (best === gpDTF) msg = 'DTF shows the best margin at your assumed area/volume. A capable DTF setup + heat press often has lower capex than DTG and handles darks well.';
+      if (best === gpDTG) msg = 'DTG shows the best margin. This can make sense for high volume and complex prints, but requires higher upfront capex and maintenance.';
+      $('#roi_note').textContent = msg;
+    }
+    ['roi_volume', 'roi_price', 'roi_area', 'roi_dark', 'cap_press', 'cap_dtf', 'cap_dtg', 'cap_misc', 'var_blank_light', 'var_blank_dark', 'var_dtf_area', 'var_dtf_press', 'var_dtg_light', 'var_dtg_dark', 'var_dtg_fixed', 'var_outsource_base']
+      .forEach(id => document.getElementById(id).addEventListener('input', calcROI));
+    $('#recalcRoi').addEventListener('click', calcROI);
+    $('#exportRoi').addEventListener('click', () => {
+      const ids = ['roi_volume', 'roi_price', 'roi_area', 'roi_dark', 'cap_press', 'cap_dtf', 'cap_dtg', 'cap_misc', 'var_blank_light', 'var_blank_dark', 'var_dtf_area', 'var_dtf_press', 'var_dtg_light', 'var_dtg_dark', 'var_dtg_fixed', 'var_outsource_base'];
+      const data = Object.fromEntries(ids.map(id => [id, +document.getElementById(id).value || 0]));
+      const a = document.createElement('a'); a.download = 'merch-roi.json';
+      a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(data, null, 2));
+      a.click();
+    });
 
-    const beUnitsDTF = (capDTF>0 && (price - unitDTF)>0) ? Math.ceil(capDTF / (price - unitDTF)) : '—';
-    const beMonthsDTF = (typeof beUnitsDTF==='number' && vol>0) ? Math.ceil(beUnitsDTF / vol) : '—';
-    const beUnitsDTG = (capDTG>0 && (price - unitDTG)>0) ? Math.ceil(capDTG / (price - unitDTG)) : '—';
-    const beMonthsDTG = (typeof beUnitsDTG==='number' && vol>0) ? Math.ceil(beUnitsDTG / vol) : '—';
-
-    // UI
-    $('#roi_dtf_unit').textContent = money(unitDTF);
-    $('#roi_dtg_unit').textContent = money(unitDTG);
-    $('#roi_out_unit').textContent = money(unitOUT);
-    $('#roi_dtf_gp').textContent = money(gpDTF);
-    $('#roi_dtg_gp').textContent = money(gpDTG);
-    $('#roi_out_gp').textContent = money(gpOUT);
-    $('#roi_dtf_beu').textContent = beUnitsDTF;
-    $('#roi_dtf_bem').textContent = beMonthsDTF;
-    $('#roi_dtg_beu').textContent = beUnitsDTG;
-    $('#roi_dtg_bem').textContent = beMonthsDTG;
-
-    // Helper blurb
-    let msg = '';
-    const best = Math.max(gpDTF, gpDTG, gpOUT);
-    if (best===gpOUT) msg = 'Outsourcing yields the highest monthly profit under current assumptions (likely due to low volume or high capex). Consider outsourcing until demand is proven.';
-    if (best===gpDTF) msg = 'DTF shows the best margin at your assumed area/volume. A capable DTF setup + heat press often has lower capex than DTG and handles darks well.';
-    if (best===gpDTG) msg = 'DTG shows the best margin. This can make sense for high volume and complex prints, but requires higher upfront capex and maintenance.';
-    $('#roi_note').textContent = msg;
-  }
-  ['roi_volume','roi_price','roi_area','roi_dark','cap_press','cap_dtf','cap_dtg','cap_misc','var_blank_light','var_blank_dark','var_dtf_area','var_dtf_press','var_dtg_light','var_dtg_dark','var_dtg_fixed','var_outsource_base']
-    .forEach(id => document.getElementById(id).addEventListener('input', calcROI));
-  $('#recalcRoi').addEventListener('click', calcROI);
-  $('#exportRoi').addEventListener('click', ()=>{
-    const ids = ['roi_volume','roi_price','roi_area','roi_dark','cap_press','cap_dtf','cap_dtg','cap_misc','var_blank_light','var_blank_dark','var_dtf_area','var_dtf_press','var_dtg_light','var_dtg_dark','var_dtg_fixed','var_outsource_base'];
-    const data = Object.fromEntries(ids.map(id=>[id, +document.getElementById(id).value || 0]));
-    const a = document.createElement('a'); a.download='merch-roi.json';
-    a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(data,null,2));
-    a.click();
-  });
-
-  // ===== Init
-  function init(){
-    applyShirtColor();
-    switchSide('front');
-    computePricing();
-    calcROI();
-  }
-  init();
-</script>
+    // ===== Init
+    function init() {
+      applyShirtColor();
+      switchSide('front');
+      computePricing();
+      calcROI();
+    }
+    init();
+  </script>
 </body>
+
 </html>
