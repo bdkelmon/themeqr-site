@@ -2045,6 +2045,8 @@
           },
         };
 
+        // ===== REPLACE your old enableRailSwipe function with this one =====
+
         (function enableRailSwipe() {
           const rail = document.querySelector("#themesList");
           if (!rail) return;
@@ -2072,6 +2074,13 @@
           };
 
           rail.addEventListener("pointerdown", (e) => {
+            // NEW: Check if the interaction started on a button. If so, do nothing.
+            // This allows the button's own click event to fire without interference.
+            if (e.target.closest("button")) {
+              isDragging = false;
+              return;
+            }
+
             if (e.button !== undefined && e.button !== 0) return;
             rail.setPointerCapture?.(e.pointerId);
             isDragging = true;
