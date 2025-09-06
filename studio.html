@@ -1082,6 +1082,30 @@
         overflow: hidden;
         background: #070a18;
       }
+
+      /* Styling for GIF Search Results */
+      #gifSearchResults {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 8px;
+        max-height: 400px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        border-radius: var(--radius-sm);
+        background: rgba(0, 0, 0, 0.2);
+        padding: 8px;
+      }
+      #gifSearchResults img {
+        width: 100%;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+      }
+      #gifSearchResults img:hover {
+        transform: scale(1.05);
+      }
     </style>
   </head>
   <body>
@@ -1418,6 +1442,26 @@
                     ›
                   </button>
                 </div>
+              </div>
+            </div>
+            <div class="theme-card" style="margin-top: 10px">
+              <header><strong>Find a GIF</strong></header>
+              <div class="body">
+                <div class="stack">
+                  <input
+                    type="text"
+                    id="gifSearchBox"
+                    placeholder="Search Tenor for GIFs..."
+                    style="flex: 1"
+                  />
+                  <button
+                    class="btn"
+                    onclick="searchGifs(document.getElementById('gifSearchBox').value)"
+                  >
+                    Search
+                  </button>
+                </div>
+                <div id="gifSearchResults" style="margin-top: 10px"></div>
               </div>
             </div>
             <input type="text" id="searchBox" placeholder="Search GIFs..." />
@@ -4289,10 +4333,75 @@
         renderLinksDropdown();
         refreshAnalyticsSelectors();
 
-        /***********************
-         * Init
-         ************************/
+        async function searchGifs(query) {
+          const resultsContainer = document.getElementById("gifSearchResults");
+          const searchBox = document.getElementById("gifSearchBox");
+          if (!query.trim()) return;
 
+          // 1. Show a loading message
+          resultsContainer.innerHTML = `<div class="muted" style="padding: 20px; text-align: center; grid-column: 1 / -1;">Searching...</div>`;
+
+          try {
+            // 2. Fetch results from your backend endpoint
+            const response = await fetch(
+              `/api/tenor-search?q=${encodeURIComponent(query)}`
+            );
+            if (!response.ok) throw new Error("Search request failed");
+
+            const data = await response.json();
+
+            // 3. Clear the container and display the results
+            resultsContainer.innerHTML = "";
+            if (!data.ok || data.results.length === 0) {
+              resultsContainer.innerHTML = `<div class="muted" style="padding: 20px; text-align: center; grid-column: 1 / -1;">No results found.</div>`;
+              return;
+            }
+
+            // 4. Create an image element for each GIF and make it clickable
+            data.results.forEach((item) => {
+              if (!item.preview) return; // Skip if there's no preview image
+
+              const img = document.createElement("img");
+              img.src = item.preview; // Use the smaller preview for the grid
+              img.alt = item.title;
+
+              // When a GIF is clicked, apply it to the theme!
+              img.addEventListener("click", () => {
+                // Use the full-quality GIF for the theme's media
+                const fullGifUrl = item.gif?.url;
+                if (!fullGifUrl) {
+                  alert("Could not load full quality GIF.");
+                  return;
+                }
+
+                // Update the working theme object
+                workingTheme.media = {
+                  kind: "image", // GIFs are treated as images
+                  data: fullGifUrl,
+                  alt: item.title,
+                };
+
+                // Update the form fields in the UI
+                $("#themeAlt").value = item.title;
+
+                // Refresh the live preview
+                applySim();
+
+                // Clean up the search UI for a better experience
+                resultsContainer.innerHTML = "";
+                searchBox.value = "";
+                alert("GIF added to your theme!");
+              });
+
+              resultsContainer.appendChild(img);
+            });
+          } catch (error) {
+            console.error("GIF Search Error:", error);
+            resultsContainer.innerHTML = `<div class="muted" style="padding: 20px; text-align: center; grid-column: 1 / -1;">Error: Could not fetch GIFs.</div>`;
+          }
+        }
+
+        // Init
         async function init() {
           // This part handles the UI setup and can run immediately
           const DEFAULT_TAB = localStorage.getItem("activeTab") || "qr";
