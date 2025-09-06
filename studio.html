@@ -1130,6 +1130,12 @@
         margin-left: 5px;
         flex-shrink: 0;
       }
+      #simMedia.drop-target-active {
+        outline: 3px dashed var(--accent);
+        outline-offset: -8px;
+        background-color: rgba(108, 125, 255, 0.1);
+        transition: all 0.2s ease-in-out;
+      }
     </style>
   </head>
   <body>
@@ -4318,17 +4324,32 @@
           }
 
           items.forEach((item) => {
-            if (!item.url) return; // Skip if there's no valid URL
+            if (!item.thumbnailUrl) return;
 
             const img = document.createElement("img");
-            img.src = item.url;
+            img.src = item.thumbnailUrl;
             img.alt = item.alt;
-            img.style.cursor = "pointer";
 
+            // --- DRAG-AND-DROP CHANGES START HERE ---
+            img.draggable = true; // 1. Make the image draggable
+            img.style.cursor = "grab";
+
+            // 2. Add the dragstart event listener
+            img.addEventListener("dragstart", (event) => {
+              // Pack the essential data (full URL and alt text) for the drop event
+              const transferData = JSON.stringify({
+                fullUrl: item.fullUrl,
+                alt: item.alt,
+              });
+              event.dataTransfer.setData("application/json", transferData);
+            });
+            // --- DRAG-AND-DROP CHANGES END HERE ---
+
+            // The existing click-to-select functionality remains
             img.addEventListener("click", () => {
               workingTheme.media = {
                 kind: "image",
-                data: item.url, // Use the same URL for the theme
+                data: item.fullUrl,
                 alt: item.alt,
               };
               $("#themeAlt").value = item.alt;
@@ -4344,7 +4365,7 @@
         }
 
         /**
-         * Main search function that checks the API selector and calls the correct service.
+         * Main search function, now provides both thumbnail and full URLs.
          */
         async function searchGifs() {
           const selector = document.getElementById("gifApiSelector");
@@ -4365,9 +4386,9 @@
               );
               if (!response.ok) throw new Error("Tenor API request failed");
               const data = await response.json();
-              // Normalize Tenor results
               normalizedResults = (data.results || []).map((item) => ({
-                url: item.preview, // Use the smaller preview for the grid
+                thumbnailUrl: item.preview, // The small preview GIF
+                fullUrl: item.gif?.url, // The full quality GIF
                 alt: item.title,
               }));
             } else if (selector.value === "giphy") {
@@ -4376,11 +4397,9 @@
               );
               if (!response.ok) throw new Error("Giphy API request failed");
               const data = await response.json();
-              // Normalize Giphy results
               normalizedResults = (data.data || []).map((item) => ({
-                url:
-                  item.images?.fixed_width_downsampled?.url ||
-                  item.images?.original?.url,
+                thumbnailUrl: item.images?.fixed_width_downsampled?.url, // A good thumbnail
+                fullUrl: item.images?.original?.url, // The full quality GIF
                 alt: item.title,
               }));
             }
@@ -4445,6 +4464,49 @@
                 e.preventDefault();
                 const q = gifSearchBox.value.trim();
                 if (q) searchGifs(q);
+              }
+            });
+          }
+          // Activate the Live Preview as a drop zone
+          const dropZone = document.getElementById("simMedia");
+          if (dropZone) {
+            // Add highlight when a GIF is dragged over
+            dropZone.addEventListener("dragenter", (event) => {
+              event.preventDefault();
+              dropZone.classList.add("drop-target-active");
+            });
+
+            // Remove highlight when the GIF leaves the area
+            dropZone.addEventListener("dragleave", (event) => {
+              event.preventDefault();
+              dropZone.classList.remove("drop-target-active");
+            });
+
+            // This is required to allow a drop
+            dropZone.addEventListener("dragover", (event) => {
+              event.preventDefault();
+            });
+
+            // This handles the actual drop
+            dropZone.addEventListener("drop", (event) => {
+              event.preventDefault();
+              dropZone.classList.remove("drop-target-active");
+
+              try {
+                const dataString =
+                  event.dataTransfer.getData("application/json");
+                const gifData = JSON.parse(dataString);
+
+                // Update the theme and UI just like the click handler
+                workingTheme.media = {
+                  kind: "image",
+                  data: gifData.fullUrl,
+                  alt: gifData.alt,
+                };
+                $("#themeAlt").value = gifData.alt;
+                applySim();
+              } catch (e) {
+                console.error("Failed to handle drop event:", e);
               }
             });
           }
