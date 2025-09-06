@@ -334,7 +334,7 @@
       }
       .landing-sim {
         display: grid;
-        grid-template-rows: 260px auto;
+        grid-template-rows: minmax(260px, auto) auto;
         min-height: 360px;
         background: linear-gradient(
           140deg,
@@ -1076,6 +1076,13 @@
       #sidebar .nav-btn {
         scroll-margin-inline: var(--nav-edge-pad);
       }
+      #simMedia {
+       display: grid;
+       place-items: center;
+       overflow: hidden;
+       background: #070a18;
+      }
+     
     </style>
   </head>
   <body>
