@@ -1451,31 +1451,23 @@
                           target="_blank"
                           rel="noopener"
                           >Shop Now</a
-                        >
+                          >
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div class="small muted" style="margin-top: 8px">
-                    This simulates <code>landing.html?themeId=…</code>
+                    
+                    <div class="small muted" style="margin-top: 8px">
+                      This simulates <code>landing.html?themeId=…</code>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            <div class="stack" style="margin-top: 10px">
-              <button class="btn primary" id="saveTheme">
-                Save / Update Theme
-              </button>
-              <button id="newThemeBtn" class="btn">New</button>
-              <button class="btn warn" id="deleteTheme">Delete</button>
-              <div>
-                <label>Upload Image or Video</label
-                ><input id="themeMedia" type="file" accept="image/*,video/*" />
-              </div>
-            </div>
-            <div class="theme-card" style="margin-top: 10px">
-              <header><strong>Find a GIF</strong></header>
-              <div class="body">
+              <div class="stack" style="margin-top: 10px">
+                <button class="btn primary" id="saveTheme">
+                  Save / Update Theme
+                </button>
+                <button id="newThemeBtn" class="btn">New</button>
+                <button class="btn warn" id="deleteTheme">Delete</button>
                 <div class="gif-search-group">
                   <select id="gifApiSelector" class="gif-search-select">
                     <option value="tenor">Tenor</option>
@@ -1491,8 +1483,16 @@
                     Search
                   </button>
                 </div>
-                <div id="gifSearchResults" style="margin-top: 10px"></div>
+                <div>
+                  <label>Upload Image or Video</label
+                ><input id="themeMedia" type="file" accept="image/*,video/*" />
               </div>
+            </div>
+            <div class="theme-card" style="margin-top: 10px">
+              <header><strong>Find a GIF</strong></header>
+              <div class="body">
+              </div>
+              <div id="gifSearchResults" style="margin-top: 10px"></div>
             </div>
           </div>
 
