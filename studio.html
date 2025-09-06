@@ -1785,7 +1785,6 @@
       <!-- QRCode library (CDN) -->
       <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
 
-      <!-- APP SCRIPT: includes single Supabase client + helpers at the top -->
       <script>
         /***********************
          * Supabase: SINGLE client + helpers (put first)
@@ -2851,10 +2850,12 @@
           $("#themeAlt").value = "";
           applySim();
         });
-        
-         
-         // Resets the theme editor to a blank state for creating a new theme.
-         function resetThemeEditor() {
+
+        /**
+         * Resets the theme editor to a blank state for creating a new theme.
+         */
+        function resetThemeEditor() {
+          // Reset the global workingTheme object to its default state
           workingTheme = {
             id: "",
             name: "",
@@ -2877,24 +2878,25 @@
               mediaBox: { w: 320 },
             },
           };
-        
-          //clear all the input fields on the screen
+
+          // Use the existing hydrate function to clear all form fields
           hydrateThemeEditor(workingTheme);
-        
-          //update the live preview, showing the placeholder
+
+          // Update the live preview to its default placeholder state
           applySim();
-        
-          //Deselects any highlighted theme in the "Saved Themes" list
+
+          // Re-render the saved themes list to deselect any highlighted item
           renderThemesList();
-        
-          //Make sure the file upload field is cleared
+
+          // Explicitly clear the file input field
           $("#themeMedia").value = "";
-        }   
-
-
-        // Populates all Theme Studio form fields from a theme object.
-        // @param {object} theme The theme object to load into the editor.
-         function hydrateThemeEditor(theme) {
+        }
+        
+        /**
+         * Populates all Theme Studio form fields from a theme object.
+         * @param {object} theme The theme object to load into the editor.
+         */
+        function hydrateThemeEditor(theme) {
           if (!theme) return;
           document.getElementById("themeName").value = theme.name || "";
           document.getElementById("themeTitle").value = theme.title || "";
@@ -3161,7 +3163,8 @@
           renderThemesList();
           applySim();
         });
-        
+
+        // Event listener for the new "New Theme" button
         document.getElementById("newThemeBtn").addEventListener("click", resetThemeEditor);
 
         /***********************
