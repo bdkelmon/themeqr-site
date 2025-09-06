@@ -1107,31 +1107,32 @@
         transform: scale(1.05);
       }
       /* Styling for the new API Search Group */
-.gif-search-group {
-  display: flex;
-  width: 100%; /* Default to full width for flexibility */
-  max-width: 400px; /* Limit the overall width of the search bar */
-  margin: 0 auto; /* Center the search bar if max-width is applied */
-}
-.gif-search-select {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-  border-right: 0;
-  background: #171b34 !important;
-  flex-shrink: 0; /* Prevents the select from shrinking */
-  padding-right: 8px; /* Add space inside the select */
-}
-.gif-search-input {
-  border-radius: 0;
-  flex-grow: 1; /* Allows the input to take up available space */
-  margin-left: 5px; /* Add space between select and input */
-}
-.gif-search-button {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-  margin-left: 5px; /* Add space between input and button */
-  flex-shrink: 0; /* Prevents the button from shrinking */
-}
+      .gif-search-group {
+        display: flex;
+        width: 100%;
+        max-width: 550px; /* Increased width to give the input more space */
+        margin: 0; /* Removed 'auto' to left-align the component */
+      }
+      .gif-search-select {
+        width: 90px; /* Set a fixed width to make the dropdown narrower */
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+        border-right: 0;
+        background: #171b34 !important;
+        flex-shrink: 0;
+        padding-right: 8px;
+      }
+      .gif-search-input {
+        border-radius: 0;
+        flex-grow: 1;
+        margin-left: 5px;
+      }
+      .gif-search-button {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        margin-left: 5px;
+        flex-shrink: 0;
+      }
     </style>
   </head>
   <body>
@@ -1474,14 +1475,21 @@
               <header><strong>Find a GIF</strong></header>
               <div class="body">
                 <div class="gif-search-group">
-                <select id="gifApiSelector" class="gif-search-select">
-                  <option value="tenor">Tenor</option>
-                  <option value="giphy">Giphy</option>
-                </select>
-                <input type="text" id="gifSearchBox" class="gif-search-input" placeholder="Search for GIFs...">
-                <button class="btn gif-search-button" onclick="searchGifs()">Search</button>
-              </div>
-              <div id="gifSearchResults" style="margin-top: 10px"></div>
+                  <select id="gifApiSelector" class="gif-search-select">
+                    <option value="tenor">Tenor</option>
+                    <option value="giphy">Giphy</option>
+                  </select>
+                  <input
+                    type="text"
+                    id="gifSearchBox"
+                    class="gif-search-input"
+                    placeholder="Search for GIFs..."
+                  />
+                  <button class="btn gif-search-button" onclick="searchGifs()">
+                    Search
+                  </button>
+                </div>
+                <div id="gifSearchResults" style="margin-top: 10px"></div>
               </div>
             </div>
           </div>
@@ -4220,7 +4228,6 @@
             openMerchWithSelection();
           });
 
-
         const linkSelect = document.getElementById("linkSelect");
 
         function renderLinksDropdown() {
@@ -4300,89 +4307,93 @@
         refreshAnalyticsSelectors();
 
         /**
- * Renders a list of normalized GIF results into the results container.
- * @param {Array} items An array of objects with { url, alt }.
- */
-function renderGifResults(items) {
-  const resultsContainer = document.getElementById("gifSearchResults");
-  const searchBox = document.getElementById("gifSearchBox");
-  resultsContainer.innerHTML = ""; // Clear previous results or loading message
+         * Renders a list of normalized GIF results into the results container.
+         * @param {Array} items An array of objects with { url, alt }.
+         */
+        function renderGifResults(items) {
+          const resultsContainer = document.getElementById("gifSearchResults");
+          const searchBox = document.getElementById("gifSearchBox");
+          resultsContainer.innerHTML = ""; // Clear previous results or loading message
 
-  if (!items || items.length === 0) {
-    resultsContainer.innerHTML = `<div class="muted" style="padding: 20px; text-align: center; grid-column: 1 / -1;">No results found.</div>`;
-    return;
-  }
+          if (!items || items.length === 0) {
+            resultsContainer.innerHTML = `<div class="muted" style="padding: 20px; text-align: center; grid-column: 1 / -1;">No results found.</div>`;
+            return;
+          }
 
-  items.forEach(item => {
-    if (!item.url) return; // Skip if there's no valid URL
+          items.forEach((item) => {
+            if (!item.url) return; // Skip if there's no valid URL
 
-    const img = document.createElement("img");
-    img.src = item.url;
-    img.alt = item.alt;
-    img.style.cursor = "pointer";
+            const img = document.createElement("img");
+            img.src = item.url;
+            img.alt = item.alt;
+            img.style.cursor = "pointer";
 
-    img.addEventListener('click', () => {
-      workingTheme.media = {
-        kind: 'image',
-        data: item.url, // Use the same URL for the theme
-        alt: item.alt
-      };
-      $('#themeAlt').value = item.alt;
-      applySim();
-      
-      resultsContainer.innerHTML = "";
-      searchBox.value = "";
-      alert("GIF added to your theme!");
-    });
+            img.addEventListener("click", () => {
+              workingTheme.media = {
+                kind: "image",
+                data: item.url, // Use the same URL for the theme
+                alt: item.alt,
+              };
+              $("#themeAlt").value = item.alt;
+              applySim();
 
-    resultsContainer.appendChild(img);
-  });
-}
+              resultsContainer.innerHTML = "";
+              searchBox.value = "";
+              alert("GIF added to your theme!");
+            });
 
-/**
- * Main search function that checks the API selector and calls the correct service.
- */
-async function searchGifs() {
-  const selector = document.getElementById("gifApiSelector");
-  const query = document.getElementById("gifSearchBox").value;
-  const resultsContainer = document.getElementById("gifSearchResults");
-  
-  if (!query.trim()) return;
+            resultsContainer.appendChild(img);
+          });
+        }
 
-  resultsContainer.innerHTML = `<div class="muted" style="padding: 20px; text-align: center; grid-column: 1 / -1;">Searching ${selector.value}...</div>`;
+        /**
+         * Main search function that checks the API selector and calls the correct service.
+         */
+        async function searchGifs() {
+          const selector = document.getElementById("gifApiSelector");
+          const query = document.getElementById("gifSearchBox").value;
+          const resultsContainer = document.getElementById("gifSearchResults");
 
-  try {
-    let normalizedResults = [];
-    const encodedQuery = encodeURIComponent(query);
+          if (!query.trim()) return;
 
-    if (selector.value === 'tenor') {
-      const response = await fetch(`/api/tenor-search?q=${encodedQuery}`);
-      if (!response.ok) throw new Error("Tenor API request failed");
-      const data = await response.json();
-      // Normalize Tenor results
-      normalizedResults = (data.results || []).map(item => ({
-        url: item.preview, // Use the smaller preview for the grid
-        alt: item.title
-      }));
+          resultsContainer.innerHTML = `<div class="muted" style="padding: 20px; text-align: center; grid-column: 1 / -1;">Searching ${selector.value}...</div>`;
 
-    } else if (selector.value === 'giphy') {
-      const response = await fetch(`/api/giphy-search?q=${encodedQuery}`);
-      if (!response.ok) throw new Error("Giphy API request failed");
-      const data = await response.json();
-      // Normalize Giphy results
-      normalizedResults = (data.data || []).map(item => ({
-        url: item.images?.fixed_width_downsampled?.url || item.images?.original?.url,
-        alt: item.title
-      }));
-    }
-    
-    renderGifResults(normalizedResults);
+          try {
+            let normalizedResults = [];
+            const encodedQuery = encodeURIComponent(query);
 
-  } catch (error) {
-    console.error("GIF Search Error:", error);
-    resultsContainer.innerHTML = `<div class="muted" style="padding: 20px; text-align: center; grid-column: 1 / -1;">Error: Could not fetch GIFs from ${selector.value}.</div>`;
-  }
-}
+            if (selector.value === "tenor") {
+              const response = await fetch(
+                `/api/tenor-search?q=${encodedQuery}`
+              );
+              if (!response.ok) throw new Error("Tenor API request failed");
+              const data = await response.json();
+              // Normalize Tenor results
+              normalizedResults = (data.results || []).map((item) => ({
+                url: item.preview, // Use the smaller preview for the grid
+                alt: item.title,
+              }));
+            } else if (selector.value === "giphy") {
+              const response = await fetch(
+                `/api/giphy-search?q=${encodedQuery}`
+              );
+              if (!response.ok) throw new Error("Giphy API request failed");
+              const data = await response.json();
+              // Normalize Giphy results
+              normalizedResults = (data.data || []).map((item) => ({
+                url:
+                  item.images?.fixed_width_downsampled?.url ||
+                  item.images?.original?.url,
+                alt: item.title,
+              }));
+            }
+
+            renderGifResults(normalizedResults);
+          } catch (error) {
+            console.error("GIF Search Error:", error);
+            resultsContainer.innerHTML = `<div class="muted" style="padding: 20px; text-align: center; grid-column: 1 / -1;">Error: Could not fetch GIFs from ${selector.value}.</div>`;
+          }
+        }
 
         // Init
         async function init() {
