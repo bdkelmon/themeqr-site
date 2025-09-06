@@ -1284,7 +1284,7 @@
                 />
                 <div class="small muted">0 = no auto-redirect</div>
               </div>
-              <div style="display: flex; align-items: flex-end; gap: 8px">
+              <div style="display: flex; align-items: center; gap: 8px">
                 <label>
                   <input id="themeShowSkip" type="checkbox" checked
                     style="vertical-align: middle; margin-right: 6px"
@@ -2133,13 +2133,26 @@
             .select("*")
             .eq("user_id", uid)
             .order("updated", { ascending: false });
+
+          // This part now correctly formats the themes after syncing.
+          if (cloudThemes) {
+            // Normalize the data from Supabase to match our local format.
+            const normalizedThemes = cloudThemes.map(theme => {
+              const localId = theme.id || theme.remoteId; // Use existing ID if available
+              return {
+                ...theme, // Keep all original theme data (name, colors, etc.)
+                remoteId: localId, // IMPORTANT: Map Supabase's 'id' to our 'remoteId'
+                id: `theme_db_${localId}` // Create a stable, unique local ID from the remote ID
+              };
+            });
+            db.saveThemes(normalizedThemes);
+          }  
           const { data: links } = await sb
             .from("links")
             .select("*")
             .eq("user_id", uid)
             .order("updated", { ascending: false });
 
-          if (themes) db.saveThemes(themes);
           if (links) db.saveLinks(links);
 
           if (typeof renderThemesList === "function") renderThemesList();
