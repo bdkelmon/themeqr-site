@@ -2124,6 +2124,7 @@
         })();
 
         // ===== Cloud sync (Supabase) =====
+        // PASTE THIS to replace the entire old cloudSyncDown() function
         async function cloudSyncDown() {
           const session = await sbSession();
           if (!session) return; // guests use local only
@@ -2135,10 +2136,11 @@
             .eq("user_id", uid)
             .order("updated", { ascending: false });
 
-          // This part now correctly formats the themes after syncing.
-          if (cloudThemes) {
+          // --- THIS BLOCK IS NOW CORRECTED ---
+          // It correctly uses the 'themes' variable from the line above.
+          if (themes) {
             // Normalize the data from Supabase to match our local format.
-            const normalizedThemes = cloudThemes.map((theme) => {
+            const normalizedThemes = themes.map((theme) => {
               const localId = theme.id || theme.remoteId; // Use existing ID if available
               return {
                 ...theme, // Keep all original theme data (name, colors, etc.)
@@ -2148,6 +2150,8 @@
             });
             db.saveThemes(normalizedThemes);
           }
+          // --- END CORRECTION ---
+
           const { data: links } = await sb
             .from("links")
             .select("*")
@@ -2161,7 +2165,8 @@
           if (typeof refreshThemeDropdown === "function")
             refreshThemeDropdown();
           if (typeof drawQR === "function") drawQR();
-        }
+        } //End of cloudSyncDown
+
         async function cloudSaveTheme(theme) {
           const session = await sbSession();
           if (!session) return;
@@ -4330,9 +4335,6 @@
           }
         }
         init();
-
-        // Also pull themes/links down once after init
-        cloudSyncDown().catch(console.warn);
 
         // Track what’s currently loaded into the form.
         // If null => we’re creating a new link. If set => we’re updating that row in Supabase.
