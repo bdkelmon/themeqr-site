@@ -1397,6 +1397,7 @@
               <button class="btn primary" id="saveTheme">
                 Save / Update Theme
               </button>
+              <button id="newBtn" class="btn">New</button>
               <button class="btn warn" id="deleteTheme">Delete</button>
             </div>
             <!-- Saved Themes: now a true horizontal scroller -->
@@ -2850,12 +2851,50 @@
           $("#themeAlt").value = "";
           applySim();
         });
+        
+         
+         // Resets the theme editor to a blank state for creating a new theme.
+         function resetThemeEditor() {
+          workingTheme = {
+            id: "",
+            name: "",
+            title: "",
+            subtitle: "",
+            font: "Inter,system-ui",
+            colors: {
+              bg1: "#101635",
+              bg2: "#0b0f23",
+              fg: "#f3f6ff",
+              ctaBg: "#6c7dff",
+              ctaFg: "#09122a",
+            },
+            cta: { text: "Shop Now", url: "" },
+            media: { kind: "", data: "", alt: "" },
+            settings: {
+              redirectDelay: 2,
+              showSkip: true,
+              skipText: "Skip",
+              mediaBox: { w: 320 },
+            },
+          };
+        
+          //clear all the input fields on the screen
+          hydrateThemeEditor(workingTheme);
+        
+          //update the live preview, showing the placeholder
+          applySim();
+        
+          //Deselects any highlighted theme in the "Saved Themes" list
+          renderThemesList();
+        
+          //Make sure the file upload field is cleared
+          $("#themeMedia").value = "";
+        }   
 
-        /**
-         * Populates all Theme Studio form fields from a theme object.
-         * @param {object} theme The theme object to load into the editor.
-         */
-        function hydrateThemeEditor(theme) {
+
+        // Populates all Theme Studio form fields from a theme object.
+        // @param {object} theme The theme object to load into the editor.
+         function hydrateThemeEditor(theme) {
           if (!theme) return;
           document.getElementById("themeName").value = theme.name || "";
           document.getElementById("themeTitle").value = theme.title || "";
@@ -3122,6 +3161,8 @@
           renderThemesList();
           applySim();
         });
+        
+        document.getElementById("newThemeBtn").addEventListener("click", resetThemeEditor);
 
         /***********************
          * Overlay Composer
