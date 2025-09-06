@@ -1081,7 +1081,7 @@
        place-items: center;
        overflow: hidden;
        background: #070a18;
-      }
+     }
      
     </style>
   </head>
@@ -1397,7 +1397,6 @@
               <button class="btn primary" id="saveTheme">
                 Save / Update Theme
               </button>
-              <button id="newBtn" class="btn">New</button>
               <button class="btn warn" id="deleteTheme">Delete</button>
             </div>
             <!-- Saved Themes: now a true horizontal scroller -->
@@ -1785,6 +1784,7 @@
       <!-- QRCode library (CDN) -->
       <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
 
+      <!-- APP SCRIPT: includes single Supabase client + helpers at the top -->
       <script>
         /***********************
          * Supabase: SINGLE client + helpers (put first)
@@ -2852,47 +2852,6 @@
         });
 
         /**
-         * Resets the theme editor to a blank state for creating a new theme.
-         */
-        function resetThemeEditor() {
-          // Reset the global workingTheme object to its default state
-          workingTheme = {
-            id: "",
-            name: "",
-            title: "",
-            subtitle: "",
-            font: "Inter,system-ui",
-            colors: {
-              bg1: "#101635",
-              bg2: "#0b0f23",
-              fg: "#f3f6ff",
-              ctaBg: "#6c7dff",
-              ctaFg: "#09122a",
-            },
-            cta: { text: "Shop Now", url: "" },
-            media: { kind: "", data: "", alt: "" },
-            settings: {
-              redirectDelay: 2,
-              showSkip: true,
-              skipText: "Skip",
-              mediaBox: { w: 320 },
-            },
-          };
-
-          // Use the existing hydrate function to clear all form fields
-          hydrateThemeEditor(workingTheme);
-
-          // Update the live preview to its default placeholder state
-          applySim();
-
-          // Re-render the saved themes list to deselect any highlighted item
-          renderThemesList();
-
-          // Explicitly clear the file input field
-          $("#themeMedia").value = "";
-        }
-        
-        /**
          * Populates all Theme Studio form fields from a theme object.
          * @param {object} theme The theme object to load into the editor.
          */
@@ -3163,9 +3122,6 @@
           renderThemesList();
           applySim();
         });
-
-        // Event listener for the new "New Theme" button
-        document.getElementById("newThemeBtn").addEventListener("click", resetThemeEditor);
 
         /***********************
          * Overlay Composer
