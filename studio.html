@@ -4284,23 +4284,25 @@
           Object.entries(pages).forEach(
             ([k, v]) => (v.hidden = k !== DEFAULT_TAB)
           );
-
+        
           const activeBtn = document.querySelector("#sidebar .nav-btn.active");
           activeBtn?.classList.remove("active");
           document
             .querySelector(`#sidebar .nav-btn[data-tab="${DEFAULT_TAB}"]`)
             ?.classList.add("active");
-
-          refreshThemeDropdown();
-          renderThemesList();
-          renderLinksDropdown();
+        
+          // By commenting these out, we wait for the cloud sync to draw the lists.
+          // refreshThemeDropdown();
+          // renderThemesList();
+          // renderLinksDropdown();
+        
           drawQR();
           ensureDraggableQR();
           setOverlayOpacity($("#overlayOpacity").value);
           refreshAnalyticsSelectors();
           seedPresetsIfEmpty();
-          syncLinksFromCloud(); // safe now (sb + sbSession exist)
-
+          cloudSyncDown(); // This function will now be the ONLY one to draw the initial lists.
+        
           // Enable Enter-to-search for GIFs
           const sbx = document.getElementById("searchBox");
           if (sbx) {
