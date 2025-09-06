@@ -1077,12 +1077,11 @@
         scroll-margin-inline: var(--nav-edge-pad);
       }
       #simMedia {
-       display: grid;
-       place-items: center;
-       overflow: hidden;
-       background: #070a18;
-     }
-     
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        background: #070a18;
+      }
     </style>
   </head>
   <body>
@@ -1286,7 +1285,10 @@
               </div>
               <div style="display: flex; align-items: center; gap: 8px">
                 <label>
-                  <input id="themeShowSkip" type="checkbox" checked
+                  <input
+                    id="themeShowSkip"
+                    type="checkbox"
+                    checked
                     style="vertical-align: middle; margin-right: 6px"
                   />
                   Show “Skip” button
@@ -1793,7 +1795,6 @@
 
         const authNav = document.getElementById("authNav");
 
-        // Reuse if already present (avoid multiple GoTrueClient instances)
         if (!window.sb) {
           window.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
             auth: {
@@ -1801,7 +1802,7 @@
               autoRefreshToken: true,
               detectSessionInUrl: true,
               flowType: "pkce",
-              // (optional) custom storage key to avoid collisions with other apps
+              //custom storage key to avoid collisions with other apps
               storageKey: "themeqr-auth",
             },
           });
@@ -2137,16 +2138,16 @@
           // This part now correctly formats the themes after syncing.
           if (cloudThemes) {
             // Normalize the data from Supabase to match our local format.
-            const normalizedThemes = cloudThemes.map(theme => {
+            const normalizedThemes = cloudThemes.map((theme) => {
               const localId = theme.id || theme.remoteId; // Use existing ID if available
               return {
                 ...theme, // Keep all original theme data (name, colors, etc.)
                 remoteId: localId, // IMPORTANT: Map Supabase's 'id' to our 'remoteId'
-                id: `theme_db_${localId}` // Create a stable, unique local ID from the remote ID
+                id: `theme_db_${localId}`, // Create a stable, unique local ID from the remote ID
               };
             });
             db.saveThemes(normalizedThemes);
-          }  
+          }
           const { data: links } = await sb
             .from("links")
             .select("*")
@@ -2886,16 +2887,16 @@
               mediaBox: { w: 320 },
             },
           };
-        
+
           // Use the existing hydrate function to clear all form fields
           hydrateThemeEditor(workingTheme);
-        
+
           // Update the live preview to its default placeholder state
           applySim();
-        
+
           // Re-render the saved themes list to deselect any highlighted item
           renderThemesList();
-        
+
           // Explicitly clear the file input field
           $("#themeMedia").value = "";
         }
@@ -2942,9 +2943,6 @@
           list.innerHTML = "";
           const currentId = selectedId || window.workingTheme?.id || "";
 
-          // The existing logic for showing user themes (from Supabase) vs.
-          // local/standard themes is already handled by the cloudSyncDown() function,
-          // which runs on page load. This meets your requirement automatically.
           for (const t of db.themes()) {
             const card = document.createElement("div");
             card.className = "item";
@@ -3171,9 +3169,11 @@
           renderThemesList();
           applySim();
         });
-    
+
         // Event listener for the new "New Theme" button
-        document.getElementById("newThemeBtn").addEventListener("click", resetThemeEditor); 
+        document
+          .getElementById("newThemeBtn")
+          .addEventListener("click", resetThemeEditor);
 
         /***********************
          * Overlay Composer
@@ -4279,30 +4279,44 @@
         /***********************
          * Init
          ************************/
-        function init() {
+
+        async function init() {
+          // This part handles the UI setup and can run immediately
           const DEFAULT_TAB = localStorage.getItem("activeTab") || "qr";
           Object.entries(pages).forEach(
             ([k, v]) => (v.hidden = k !== DEFAULT_TAB)
           );
-        
+
           const activeBtn = document.querySelector("#sidebar .nav-btn.active");
           activeBtn?.classList.remove("active");
           document
             .querySelector(`#sidebar .nav-btn[data-tab="${DEFAULT_TAB}"]`)
             ?.classList.add("active");
-        
-          // By commenting these out, we wait for the cloud sync to draw the lists.
-          // refreshThemeDropdown();
-          // renderThemesList();
-          // renderLinksDropdown();
-        
+
+          // --- NEW LOGIC STARTS HERE ---
+          // First, check if there is an active login session
+          const session = await sbSession();
+
+          if (session) {
+            // If the user is logged in, prioritize getting the latest data from the cloud.
+            // The cloudSyncDown() function will handle rendering everything.
+            await cloudSyncDown();
+          } else {
+            // If the user is NOT logged in, load themes from local storage as a fallback.
+            console.log("No session found. Loading from local storage.");
+            refreshThemeDropdown();
+            renderThemesList();
+            renderLinksDropdown();
+          }
+          // --- NEW LOGIC ENDS HERE ---
+
+          // These functions are safe to run after the data is loaded.
           drawQR();
           ensureDraggableQR();
           setOverlayOpacity($("#overlayOpacity").value);
           refreshAnalyticsSelectors();
           seedPresetsIfEmpty();
-          cloudSyncDown(); // This function will now be the ONLY one to draw the initial lists.
-        
+
           // Enable Enter-to-search for GIFs
           const sbx = document.getElementById("searchBox");
           if (sbx) {
