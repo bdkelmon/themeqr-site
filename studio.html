@@ -1176,7 +1176,7 @@
               <span class="code">landing.html</span> with your chosen Theme. You
               can change where it goes later — the printed QR still works.
             </p>
-
+            
             <div class="qr-wrap" style="margin-top: 12px">
               <div class="qr-box"><div id="qrCanvas"></div></div>
               <div>
@@ -1184,21 +1184,21 @@
                   <div>
                     <label>Link ID (letters, digits, “-”)</label>
                     <input
-                      id="linkId"
-                      type="text"
-                      placeholder="e.g. spring-campaign"
+                    id="linkId"
+                    type="text"
+                    placeholder="e.g. spring-campaign"
                     />
                   </div>
                   <div>
                     <label>Destination URL</label>
                     <input
-                      id="linkUrl"
-                      type="url"
-                      placeholder="https://example.com/landing"
+                    id="linkUrl"
+                    type="url"
+                    placeholder="https://example.com/landing"
                     />
                   </div>
                 </div>
-
+                
                 <div class="row">
                   <div>
                     <label>Theme to apply on landing (optional)</label>
@@ -1207,12 +1207,12 @@
                   <div>
                     <label>QR Size (px)</label>
                     <input
-                      id="qrSize"
-                      type="number"
-                      value="512"
-                      min="128"
+                    id="qrSize"
+                    type="number"
+                    value="512"
+                    min="128"
                       max="1024"
-                    />
+                      />
                   </div>
                 </div>
 
@@ -1259,7 +1259,7 @@
               </div>
             </div>
           </div>
-
+          
           <!-- ===== THEME STUDIO ===== -->
           <div id="themes" class="pad" hidden>
             <h2>Theme Studio</h2>
@@ -1267,7 +1267,28 @@
               Design a landing: image/video, colors, and a CTA. Save it as a
               theme and apply it to any QR.
             </p>
-
+            <!-- Saved Themes: now a true horizontal scroller -->
+            <div
+              class="theme-card"
+              id="savedThemesCard"
+              style="margin-top: 10px"
+            >
+              <header><strong>Saved Themes</strong></header>
+              <div class="body">
+                <div class="themes-rail">
+                  <button class="rail-btn left" aria-label="Scroll left">
+                    ‹
+                  </button>
+                  <div class="rail-view">
+                    <div id="themesList" class="rail"></div>
+                  </div>
+                  <button class="rail-btn right" aria-label="Scroll right">
+                    ›
+                  </button>
+                </div>
+              </div>
+            </div>
+            
             <div class="row">
               <div>
                 <label>Theme Name</label
@@ -1294,7 +1315,7 @@
                 />
               </div>
             </div>
-
+    
             <div class="row">
               <div>
                 <label>CTA Text</label
@@ -1321,7 +1342,7 @@
                 </select>
               </div>
             </div>
-
+    
             <!-- Redirect + Skip -->
             <div class="row">
               <div>
@@ -1362,7 +1383,7 @@
                 </label>
               </div>
             </div>
-
+    
             <div class="row">
               <div>
                 <label>BG Color 1</label
@@ -1385,7 +1406,7 @@
                 ><input id="themeCtaFg" type="color" value="#09122a" />
               </div>
             </div>
-
+    
             <div class="row">
               <div>
                 <label>Media Alt Text (for images)</label
@@ -1399,7 +1420,7 @@
                 <button id="clearMedia" class="btn ghost">Remove Media</button>
               </div>
             </div>
-
+    
             <div class="row" style="margin-top: 8px">
               <div class="theme-card" style="flex: 1">
                 <header><strong>Live Preview</strong></header>
@@ -1450,27 +1471,6 @@
               <div>
                 <label>Upload Image or Video</label
                 ><input id="themeMedia" type="file" accept="image/*,video/*" />
-              </div>
-            </div>
-            <!-- Saved Themes: now a true horizontal scroller -->
-            <div
-              class="theme-card"
-              id="savedThemesCard"
-              style="margin-top: 10px"
-            >
-              <header><strong>Saved Themes</strong></header>
-              <div class="body">
-                <div class="themes-rail">
-                  <button class="rail-btn left" aria-label="Scroll left">
-                    ‹
-                  </button>
-                  <div class="rail-view">
-                    <div id="themesList" class="rail"></div>
-                  </div>
-                  <button class="rail-btn right" aria-label="Scroll right">
-                    ›
-                  </button>
-                </div>
               </div>
             </div>
             <div class="theme-card" style="margin-top: 10px">
