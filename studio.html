@@ -1858,18 +1858,18 @@
             <a id="lnkLogout" class="auth-link" href="#">Log out</a>
           `;
             el.querySelector("#lnkLogout").onclick = async (e) => {
-             e.preventDefault();
-           
-             //Sign the user out from Supabase
-             await sb.auth.signOut();
-           
-             //Clear the user-specific data from local storage
-             localStorage.removeItem("qrstudio.themes");
-             localStorage.removeItem("qrstudio.links");
-           
-             //Force a full refresh of the page to reset the UI
-             location.reload();
-           };
+              e.preventDefault();
+
+              //Sign the user out from Supabase
+              await sb.auth.signOut();
+
+              //Clear the user-specific data from local storage
+              localStorage.removeItem("qrstudio.themes");
+              localStorage.removeItem("qrstudio.links");
+
+              //Force a full refresh of the page to reset the UI
+              location.reload();
+            };
           }
         }
 
@@ -4311,8 +4311,15 @@
           const session = await sbSession();
 
           if (session) {
-            // If the user is logged in, prioritize getting the latest data from the cloud.
-            // The cloudSyncDown() function will handle rendering everything.
+            // If the user is logged in, show a loading message first.
+            const themesList = document.getElementById("themesList");
+            if (themesList) {
+              themesList.innerHTML = `<div class="muted" style="padding: 20px; text-align: center; width: 100%;">Loading your themes...</div>`;
+            }
+
+            // Then, go to the cloud to get the freshest data.
+            // The cloudSyncDown() function will automatically replace the loading message
+            // with the themes when it's done.
             await cloudSyncDown();
           } else {
             // If the user is NOT logged in, load themes from local storage as a fallback.
