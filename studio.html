@@ -1109,22 +1109,28 @@
       /* Styling for the new API Search Group */
 .gif-search-group {
   display: flex;
-  width: 100%;
+  width: 100%; /* Default to full width for flexibility */
+  max-width: 400px; /* Limit the overall width of the search bar */
+  margin: 0 auto; /* Center the search bar if max-width is applied */
 }
 .gif-search-select {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
   border-right: 0;
   background: #171b34 !important;
-  flex-shrink: 0;
+  flex-shrink: 0; /* Prevents the select from shrinking */
+  padding-right: 8px; /* Add space inside the select */
 }
 .gif-search-input {
   border-radius: 0;
-  flex-grow: 1;
+  flex-grow: 1; /* Allows the input to take up available space */
+  margin-left: 5px; /* Add space between select and input */
 }
 .gif-search-button {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
+  margin-left: 5px; /* Add space between input and button */
+  flex-shrink: 0; /* Prevents the button from shrinking */
 }
     </style>
   </head>
@@ -1478,13 +1484,6 @@
               <div id="gifSearchResults" style="margin-top: 10px"></div>
               </div>
             </div>
-            <input type="text" id="searchBox" placeholder="Search GIFs..." />
-            <button
-              onclick="searchGifs(document.getElementById('searchBox').value)"
-            >
-              Search
-            </button>
-            <div id="results"></div>
           </div>
 
           <!-- ===== OVERLAY ===== -->
@@ -4431,12 +4430,12 @@ async function searchGifs() {
           seedPresetsIfEmpty();
 
           // Enable Enter-to-search for GIFs
-          const sbx = document.getElementById("searchBox");
-          if (sbx) {
-            sbx.addEventListener("keydown", (e) => {
+          const sbx = document.getElementById("gifSearchBox");
+          if (gifSearchBox) {
+            gifSearchBox.addEventListener("keydown", (e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
-                const q = sbx.value.trim();
+                const q = gifSearchBox.value.trim();
                 if (q) searchGifs(q);
               }
             });
