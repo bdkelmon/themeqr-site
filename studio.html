@@ -3161,6 +3161,9 @@
           renderThemesList();
           applySim();
         });
+    
+        // Event listener for the new "New Theme" button
+        document.getElementById("newThemeBtn").addEventListener("click", resetThemeEditor); 
 
         /***********************
          * Overlay Composer
