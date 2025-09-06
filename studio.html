@@ -1858,10 +1858,18 @@
             <a id="lnkLogout" class="auth-link" href="#">Log out</a>
           `;
             el.querySelector("#lnkLogout").onclick = async (e) => {
-              e.preventDefault();
-              await sb.auth.signOut();
-              renderAuthNav(); // repaint anon state
-            };
+             e.preventDefault();
+           
+             //Sign the user out from Supabase
+             await sb.auth.signOut();
+           
+             //Clear the user-specific data from local storage
+             localStorage.removeItem("qrstudio.themes");
+             localStorage.removeItem("qrstudio.links");
+           
+             //Force a full refresh of the page to reset the UI
+             location.reload();
+           };
           }
         }
 
