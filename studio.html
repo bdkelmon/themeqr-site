@@ -2851,6 +2851,44 @@
           applySim();
         });
 
+        function resetThemeEditor() {
+          // Reset the global workingTheme object to its default state
+          workingTheme = {
+            id: "",
+            name: "",
+            title: "",
+            subtitle: "",
+            font: "Inter,system-ui",
+            colors: {
+              bg1: "#101635",
+              bg2: "#0b0f23",
+              fg: "#f3f6ff",
+              ctaBg: "#6c7dff",
+              ctaFg: "#09122a",
+            },
+            cta: { text: "Shop Now", url: "" },
+            media: { kind: "", data: "", alt: "" },
+            settings: {
+              redirectDelay: 2,
+              showSkip: true,
+              skipText: "Skip",
+              mediaBox: { w: 320 },
+            },
+          };
+        
+          // Use the existing hydrate function to clear all form fields
+          hydrateThemeEditor(workingTheme);
+        
+          // Update the live preview to its default placeholder state
+          applySim();
+        
+          // Re-render the saved themes list to deselect any highlighted item
+          renderThemesList();
+        
+          // Explicitly clear the file input field
+          $("#themeMedia").value = "";
+        }
+
         /**
          * Populates all Theme Studio form fields from a theme object.
          * @param {object} theme The theme object to load into the editor.
