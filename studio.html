@@ -1110,14 +1110,11 @@
       .gif-search-group {
         display: flex;
         width: 100%;
-        max-width: 550px; /* Increased width to give the input more space */
+        max-width: -webkit-fill-available; /* Increased width to give the input more space */
         margin: 0; /* Removed 'auto' to left-align the component */
       }
       .gif-search-select {
         width: 90px; /* Set a fixed width to make the dropdown narrower */
-        border-top-right-radius: 0;
-        border-bottom-right-radius: 0;
-        border-right: 0;
         background: #171b34 !important;
         flex-shrink: 0;
         padding-right: 8px;
